@@ -1,26 +1,91 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Backgrounds */
+  --bg-void: #07080c;
+  --bg-surface: #0d0f16;
+  --bg-elevated: #141722;
+  --bg-card: #181c2a;
+  --bg-card-hover: #1e2336;
+  --bg-input: #111420;
+
+  /* Borders */
+  --border-dim: #1e2235;
+  --border-default: #282d42;
+  --border-bright: #3a4060;
+
+  /* Text */
+  --text-primary: #e8eaf0;
+  --text-secondary: #8b90a8;
+  --text-muted: #5a5f78;
+  --text-inverse: #07080c;
+
+  /* Accents */
+  --accent: #e63946;
+  --accent-bright: #ff4d5a;
+  --accent-dim: #a8202b;
+  --gold: #f0a830;
+  --gold-dim: #b8801a;
+  --cyan: #22d3ee;
+  --cyan-dim: #0e7490;
+  --green: #34d399;
+  --green-dim: #059669;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-bg-void: var(--bg-void);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+  --color-bg-input: var(--bg-input);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-border-dim: var(--border-dim);
+  --color-border-default: var(--border-default);
+  --color-border-bright: var(--border-bright);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
+  --color-accent-dim: var(--accent-dim);
+  --color-gold: var(--gold);
+  --color-gold-dim: var(--gold-dim);
+  --color-cyan: var(--cyan);
+  --color-cyan-dim: var(--cyan-dim);
+  --color-green: var(--green);
+  --color-green-dim: var(--green-dim);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+
+  --font-sans: var(--font-noto-sans-thai);
+  --font-display: var(--font-chakra-petch);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-void);
+  color: var(--text-primary);
+}
+
+::selection {
+  background: var(--accent);
+  color: white;
+}
+
+/* Focus ring utility */
+.focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
