@@ -28,6 +28,25 @@ CREATE TRIGGER trg_advent BEFORE UPDATE ON advent_cycles FOR EACH ROW EXECUTE FU
 CREATE TRIGGER trg_advent_profiles BEFORE UPDATE ON advent_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ============================================
+-- Auto-sync auth.users → public.users on signup
+-- Replaces manual upsertUser() calls in application code
+-- ============================================
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, email, username)
+  VALUES (NEW.id, COALESCE(NEW.email, ''), split_part(COALESCE(NEW.email, ''), '@', 1))
+  ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- ============================================
 -- Auto-populate battle_hero_pairs on battle insert/update
 -- ============================================
 CREATE OR REPLACE FUNCTION populate_battle_hero_pairs()

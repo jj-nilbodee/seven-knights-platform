@@ -16,6 +16,7 @@ import {
   getCycleById,
   getActiveCycle,
   saveCyclePlan,
+  updateCycleMemberAvailability,
   listProfiles,
   updateProfileScores,
   upsertProfile,
@@ -157,15 +158,7 @@ export async function generatePlan(
 
     // Save member availability if provided
     if (memberAvailability) {
-      await dbUpdateCycle(cycleId, {} as never);
-      // Update the memberAvailability directly
-      const { db } = await import("@/lib/db");
-      const { adventCycles } = await import("@/lib/db/schema");
-      const { eq } = await import("drizzle-orm");
-      await db
-        .update(adventCycles)
-        .set({ memberAvailability })
-        .where(eq(adventCycles.id, cycleId));
+      await updateCycleMemberAvailability(cycleId, memberAvailability);
     }
 
     revalidate();
@@ -181,7 +174,7 @@ export async function updateMemberProfile(
   profileId: string,
   data: { scores: { teo: number; yeonhee: number; kyle: number; karma: number } },
 ) {
-  const user = await requireOfficer();
+  await requireOfficer();
   if (!uuidSchema.safeParse(profileId).success) return { error: "ID ไม่ถูกต้อง" };
 
   const parsed = profileUpdateSchema.safeParse(data);

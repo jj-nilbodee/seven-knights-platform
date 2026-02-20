@@ -10,7 +10,6 @@ import {
   deleteGuild as dbDeleteGuild,
   listGuilds,
 } from "@/lib/db/queries/guilds";
-import { upsertUser } from "@/lib/db/queries/users";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const uuidSchema = z.string().uuid();
@@ -156,13 +155,6 @@ export async function addOfficer(guildId: string, userId: string) {
   if (user.app_metadata?.role === "officer") {
     return { error: "ผู้ใช้นี้เป็นเจ้าหน้าที่อยู่แล้ว" };
   }
-
-  // Ensure user row exists in DB (FK target for other tables)
-  await upsertUser({
-    id: user.id,
-    email: user.email!,
-    username: user.email!.split("@")[0],
-  });
 
   // Promote via app_metadata
   await admin.auth.admin.updateUserById(userId, {

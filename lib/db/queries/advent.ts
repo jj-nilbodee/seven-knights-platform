@@ -95,6 +95,18 @@ export async function saveCyclePlan(
   return cycle ?? null;
 }
 
+export async function updateCycleMemberAvailability(
+  id: string,
+  memberAvailability: Record<string, string>,
+) {
+  const [cycle] = await db
+    .update(adventCycles)
+    .set({ memberAvailability, updatedAt: new Date() })
+    .where(eq(adventCycles.id, id))
+    .returning();
+  return cycle ?? null;
+}
+
 export async function deleteCycle(id: string) {
   const [cycle] = await db
     .delete(adventCycles)

@@ -28,17 +28,13 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect auth routes
-  const isAuthRoute =
-    request.nextUrl.pathname.startsWith("/dashboard") ||
-    request.nextUrl.pathname.startsWith("/guild-war") ||
-    request.nextUrl.pathname.startsWith("/admin") ||
-    request.nextUrl.pathname.startsWith("/roster") ||
-    request.nextUrl.pathname.startsWith("/advent") ||
-    request.nextUrl.pathname.startsWith("/castle-rush") ||
-    request.nextUrl.pathname.startsWith("/access-requests");
+  // Public routes that don't require auth — everything else is protected
+  const publicPrefixes = ["/login", "/register", "/gvg-guides", "/guidelines", "/submit"];
+  const isPublicRoute =
+    request.nextUrl.pathname === "/" ||
+    publicPrefixes.some((p) => request.nextUrl.pathname.startsWith(p));
 
-  if (isAuthRoute && !user) {
+  if (!isPublicRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
