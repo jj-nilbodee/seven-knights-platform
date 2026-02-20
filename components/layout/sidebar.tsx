@@ -8,7 +8,6 @@ import {
   BarChart3,
   Users,
   BookOpen,
-  Mountain,
   Castle,
   Shield,
   Crown,
@@ -26,7 +25,6 @@ const navItems = [
   { href: "/guild-war", label: "สงครามกิลด์", icon: Swords },
   { href: "/guild-war/analytics", label: "วิเคราะห์", icon: BarChart3 },
   { href: "/roster", label: "สมาชิก", icon: Users },
-  { href: "/advent-expedition", label: "Advent", icon: Mountain },
   { href: "/castle-rush", label: "Castle Rush", icon: Castle },
 ];
 

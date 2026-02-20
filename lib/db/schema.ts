@@ -275,67 +275,6 @@ export const attackGuidelines = pgTable("attack_guidelines", {
 });
 
 // ============================================
-// Advent Expedition
-// ============================================
-export const adventCycles = pgTable(
-  "advent_cycles",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    guildId: uuid("guild_id")
-      .notNull()
-      .references(() => guilds.id),
-    name: text("name").notNull().default(""),
-    status: text("status").default("collecting"), // collecting, planning, active, completed
-    startDate: date("start_date"),
-    endDate: date("end_date"),
-    targetDay: integer("target_day").default(9),
-    autoRegenerate: boolean("auto_regenerate").default(true),
-    bossHp: jsonb("boss_hp").default({
-      teo: 100000000,
-      yeonhee: 100000000,
-      kyle: 100000000,
-      karma: 100000000,
-    }),
-    plan: jsonb("plan"), // GeneratedPlan JSON
-    memberAvailability: jsonb("member_availability"), // { memberId: "YYYY-MM-DD" }[]
-    estimatedDays: integer("estimated_days"),
-    actualDays: integer("actual_days"),
-    createdByUserId: uuid("created_by_user_id").references(() => users.id),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-  },
-  (table) => [index("idx_advent_guild").on(table.guildId, table.createdAt)],
-);
-
-export const adventProfiles = pgTable(
-  "advent_profiles",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    guildId: uuid("guild_id")
-      .notNull()
-      .references(() => guilds.id),
-    memberId: uuid("member_id").references(() => members.id),
-    memberIgn: text("member_ign").notNull(),
-    scores: jsonb("scores").notNull().default({}), // { teo: number, yeonhee: number, kyle: number, karma: number }
-    cycleId: uuid("cycle_id").references(() => adventCycles.id, {
-      onDelete: "cascade",
-    }),
-    imageUrl: text("image_url"),
-    extractionConfidence: integer("extraction_confidence"), // 0-100
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("advent_profile_unique").on(
-      table.guildId,
-      table.memberIgn,
-      table.cycleId,
-    ),
-    index("idx_advent_profile_cycle").on(table.cycleId),
-  ],
-);
-
-// ============================================
 // Castle Rush
 // ============================================
 export const castleRushScores = pgTable(

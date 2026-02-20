@@ -29,7 +29,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Public routes that don't require auth — everything else is protected
-  const publicPrefixes = ["/login", "/register", "/gvg-guides", "/guidelines", "/submit"];
+  const publicPrefixes = ["/login", "/register", "/gvg-guides", "/guidelines"];
   const isPublicRoute =
     request.nextUrl.pathname === "/" ||
     publicPrefixes.some((p) => request.nextUrl.pathname.startsWith(p));

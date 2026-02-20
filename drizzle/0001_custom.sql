@@ -24,8 +24,6 @@ CREATE TRIGGER trg_battles BEFORE UPDATE ON battles FOR EACH ROW EXECUTE FUNCTIO
 CREATE TRIGGER trg_guides BEFORE UPDATE ON gvg_guides FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_guilds BEFORE UPDATE ON guilds FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_guidelines BEFORE UPDATE ON attack_guidelines FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER trg_advent BEFORE UPDATE ON advent_cycles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER trg_advent_profiles BEFORE UPDATE ON advent_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ============================================
 -- Auto-sync auth.users → public.users on signup
