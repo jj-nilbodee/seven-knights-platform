@@ -370,10 +370,10 @@ export function RosterClient({
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-text-primary">
-                  ชื่อเล่น *
+                  ชื่อเล่น
                 </label>
                 <Input
-                  placeholder="ชื่อเล่น"
+                  placeholder="ถ้าไม่กรอกจะใช้ IGN"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   disabled={isAdding}
@@ -392,7 +392,7 @@ export function RosterClient({
               >
                 ยกเลิก
               </Button>
-              <Button type="submit" disabled={isAdding || !ign.trim() || !nickname.trim()}>
+              <Button type="submit" disabled={isAdding || !ign.trim()}>
                 {isAdding ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
