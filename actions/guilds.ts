@@ -8,11 +8,9 @@ import {
   createGuild as dbCreateGuild,
   updateGuild as dbUpdateGuild,
   deleteGuild as dbDeleteGuild,
-  getGuildOfficers as dbGetGuildOfficers,
-  addOfficer as dbAddOfficer,
-  removeOfficer as dbRemoveOfficer,
-  getUserByEmail,
 } from "@/lib/db/queries/guilds";
+import { upsertUser } from "@/lib/db/queries/users";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const uuidSchema = z.string().uuid();
 
@@ -81,39 +79,89 @@ export async function deleteGuild(id: string) {
   return { success: true };
 }
 
+// ---------------------------------------------------------------------------
+// Officer management via Supabase Auth app_metadata
+// ---------------------------------------------------------------------------
+
+export async function fetchGuildMembers(guildId: string) {
+  await requireAdmin();
+
+  if (!uuidSchema.safeParse(guildId).success) return [];
+
+  const admin = createAdminClient();
+  const {
+    data: { users },
+  } = await admin.auth.admin.listUsers();
+
+  return users
+    .filter(
+      (u) =>
+        u.app_metadata?.guildId === guildId &&
+        u.app_metadata?.role === "member",
+    )
+    .map((u) => ({
+      userId: u.id,
+      email: u.email ?? "",
+    }));
+}
+
 export async function fetchGuildOfficers(guildId: string) {
   await requireAdmin();
 
   if (!uuidSchema.safeParse(guildId).success) return [];
 
-  return dbGetGuildOfficers(guildId);
+  const admin = createAdminClient();
+  const {
+    data: { users },
+  } = await admin.auth.admin.listUsers();
+
+  return users
+    .filter(
+      (u) =>
+        u.app_metadata?.guildId === guildId &&
+        u.app_metadata?.role === "officer",
+    )
+    .map((u) => ({
+      userId: u.id,
+      email: u.email ?? "",
+    }));
 }
 
-export async function addOfficer(guildId: string, email: string) {
+export async function addOfficer(guildId: string, userId: string) {
   await requireAdmin();
 
-  if (!uuidSchema.safeParse(guildId).success) {
-    return { error: "Guild ID ไม่ถูกต้อง" };
+  if (
+    !uuidSchema.safeParse(guildId).success ||
+    !uuidSchema.safeParse(userId).success
+  ) {
+    return { error: "ID ไม่ถูกต้อง" };
   }
 
-  const emailParsed = z.string().email().safeParse(email);
-  if (!emailParsed.success) {
-    return { error: "อีเมลไม่ถูกต้อง" };
+  const admin = createAdminClient();
+
+  // Verify the user exists and belongs to this guild
+  const {
+    data: { user },
+  } = await admin.auth.admin.getUserById(userId);
+  if (!user) return { error: "ไม่พบผู้ใช้" };
+  if (user.app_metadata?.guildId !== guildId) {
+    return { error: "ผู้ใช้ไม่ได้อยู่ในกิลด์นี้" };
+  }
+  if (user.app_metadata?.role === "officer") {
+    return { error: "ผู้ใช้นี้เป็นเจ้าหน้าที่อยู่แล้ว" };
   }
 
-  const user = await getUserByEmail(emailParsed.data);
-  if (!user) {
-    return { error: "ไม่พบผู้ใช้ที่ใช้อีเมลนี้" };
-  }
+  // Ensure user row exists in DB (FK target for other tables)
+  await upsertUser({
+    id: user.id,
+    email: user.email!,
+    username: user.email!.split("@")[0],
+  });
 
-  try {
-    await dbAddOfficer(guildId, user.id);
-  } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes("unique")) {
-      return { error: "ผู้ใช้นี้เป็นเจ้าหน้าที่อยู่แล้ว" };
-    }
-    return { error: "ไม่สามารถเพิ่มเจ้าหน้าที่ได้" };
-  }
+  // Promote via app_metadata
+  await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { role: "officer", guildId },
+  });
 
   revalidatePath("/admin/guilds");
   return { success: true };
@@ -122,12 +170,31 @@ export async function addOfficer(guildId: string, email: string) {
 export async function removeOfficer(guildId: string, userId: string) {
   await requireAdmin();
 
-  if (!uuidSchema.safeParse(guildId).success || !uuidSchema.safeParse(userId).success) {
+  if (
+    !uuidSchema.safeParse(guildId).success ||
+    !uuidSchema.safeParse(userId).success
+  ) {
     return { error: "ID ไม่ถูกต้อง" };
   }
 
-  const removed = await dbRemoveOfficer(guildId, userId);
-  if (!removed) return { error: "ไม่พบเจ้าหน้าที่" };
+  const admin = createAdminClient();
+
+  // Verify the user is an officer of this guild
+  const {
+    data: { user },
+  } = await admin.auth.admin.getUserById(userId);
+  if (!user) return { error: "ไม่พบผู้ใช้" };
+  if (
+    user.app_metadata?.guildId !== guildId ||
+    user.app_metadata?.role !== "officer"
+  ) {
+    return { error: "ไม่พบเจ้าหน้าที่" };
+  }
+
+  // Demote to member (keep guildId)
+  await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { role: "member", guildId },
+  });
 
   revalidatePath("/admin/guilds");
   return { success: true };

@@ -29,6 +29,7 @@ import {
   addOfficer,
   removeOfficer,
   fetchGuildOfficers,
+  fetchGuildMembers,
 } from "@/actions/guilds";
 
 type Guild = {
@@ -41,8 +42,11 @@ type Guild = {
 type Officer = {
   userId: string;
   email: string;
-  username: string;
-  addedAt: Date | null;
+};
+
+type Member = {
+  userId: string;
+  email: string;
 };
 
 function Toast({
@@ -83,8 +87,9 @@ function GuildRow({ guild }: { guild: Guild }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [officers, setOfficers] = useState<Officer[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loadingOfficers, setLoadingOfficers] = useState(false);
-  const [officerInput, setOfficerInput] = useState("");
+  const [selectedMemberId, setSelectedMemberId] = useState("");
   const [isAdding, startAdd] = useTransition();
   const [isRemoving, startRemove] = useTransition();
   const [isDeleting, startDelete] = useTransition();
@@ -94,31 +99,38 @@ function GuildRow({ guild }: { guild: Guild }) {
     type: "success" | "error";
   } | null>(null);
 
+  async function loadOfficersAndMembers() {
+    setLoadingOfficers(true);
+    try {
+      const [officerData, memberData] = await Promise.all([
+        fetchGuildOfficers(guild.id),
+        fetchGuildMembers(guild.id),
+      ]);
+      setOfficers(officerData);
+      setMembers(memberData);
+    } finally {
+      setLoadingOfficers(false);
+    }
+  }
+
   async function handleExpand() {
     const next = !expanded;
     setExpanded(next);
     if (next) {
-      setLoadingOfficers(true);
-      try {
-        const data = await fetchGuildOfficers(guild.id);
-        setOfficers(data);
-      } finally {
-        setLoadingOfficers(false);
-      }
+      await loadOfficersAndMembers();
     }
   }
 
   function handleAddOfficer() {
-    if (!officerInput.trim()) return;
+    if (!selectedMemberId) return;
     startAdd(async () => {
-      const result = await addOfficer(guild.id, officerInput.trim());
+      const result = await addOfficer(guild.id, selectedMemberId);
       if (result.error) {
         setToast({ message: result.error, type: "error" });
       } else {
-        setToast({ message: "เพิ่มเจ้าหน้าที่สำเร็จ", type: "success" });
-        setOfficerInput("");
-        const data = await fetchGuildOfficers(guild.id);
-        setOfficers(data);
+        setToast({ message: "เลื่อนตำแหน่งเป็นเจ้าหน้าที่สำเร็จ", type: "success" });
+        setSelectedMemberId("");
+        await loadOfficersAndMembers();
         router.refresh();
       }
     });
@@ -130,7 +142,8 @@ function GuildRow({ guild }: { guild: Guild }) {
       if (result.error) {
         setToast({ message: result.error, type: "error" });
       } else {
-        setOfficers((prev) => prev.filter((o) => o.userId !== userId));
+        setToast({ message: "ลดตำแหน่งเจ้าหน้าที่สำเร็จ", type: "success" });
+        await loadOfficersAndMembers();
         router.refresh();
       }
     });
@@ -229,27 +242,40 @@ function GuildRow({ guild }: { guild: Guild }) {
               </p>
             )}
 
-            {/* Add officer */}
+            {/* Promote member to officer */}
             <div className="flex gap-2">
-              <Input
-                placeholder="อีเมลของเจ้าหน้าที่"
-                type="email"
-                value={officerInput}
-                onChange={(e) => setOfficerInput(e.target.value)}
-                className="text-xs"
-                disabled={isAdding}
-              />
-              <Button
-                size="sm"
-                onClick={handleAddOfficer}
-                disabled={isAdding || !officerInput.trim()}
-              >
-                {isAdding ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <UserPlus className="h-3.5 w-3.5" />
-                )}
-              </Button>
+              {members.length > 0 ? (
+                <>
+                  <select
+                    value={selectedMemberId}
+                    onChange={(e) => setSelectedMemberId(e.target.value)}
+                    disabled={isAdding}
+                    className="flex-1 h-9 rounded-[var(--radius-sm)] border border-border-dim bg-bg-input px-3 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                  >
+                    <option value="">เลือกสมาชิกเพื่อเลื่อนตำแหน่ง...</option>
+                    {members.map((m) => (
+                      <option key={m.userId} value={m.userId}>
+                        {m.email}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    onClick={handleAddOfficer}
+                    disabled={isAdding || !selectedMemberId}
+                  >
+                    {isAdding ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <UserPlus className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </>
+              ) : !loadingOfficers ? (
+                <p className="text-xs text-text-muted italic py-2">
+                  ไม่มีสมาชิกที่สามารถเลื่อนตำแหน่งได้
+                </p>
+              ) : null}
             </div>
           </div>
         )}

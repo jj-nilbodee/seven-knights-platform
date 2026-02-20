@@ -81,23 +81,6 @@ export const users = pgTable("users", {
 });
 
 // ============================================
-// Officers
-// ============================================
-export const officers = pgTable(
-  "officers",
-  {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id),
-    guildId: uuid("guild_id")
-      .notNull()
-      .references(() => guilds.id),
-    addedAt: timestamp("added_at", { withTimezone: true }).defaultNow(),
-  },
-  (table) => [uniqueIndex("officers_pk").on(table.userId, table.guildId)],
-);
-
-// ============================================
 // Member Access
 // ============================================
 export const memberAccess = pgTable(
