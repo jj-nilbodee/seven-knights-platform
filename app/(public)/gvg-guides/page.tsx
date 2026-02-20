@@ -2,6 +2,8 @@ import { listHeroes } from "@/lib/db/queries/heroes";
 import { searchGuides } from "@/lib/db/queries/gvg-guides";
 import { GvgGuidesClient } from "./gvg-guides-client";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "GVG Attack Guide — Seven Knights Re:Birth",
   description: "ค้นหาทีมป้องกันที่เจอ เพื่อดูคู่มือทีมโจมตีแนะนำพร้อมลำดับสกิล",
