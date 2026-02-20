@@ -35,18 +35,6 @@ export default function RegisterPage() {
 
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username">ชื่อผู้ใช้</Label>
-            <Input
-              id="username"
-              name="username"
-              type="text"
-              placeholder="ชื่อในเกม"
-              required
-              autoComplete="username"
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="email">อีเมล</Label>
             <Input
               id="email"
