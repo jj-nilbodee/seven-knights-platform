@@ -1,4 +1,4 @@
-import { requireOfficer } from "@/lib/auth";
+import { requireOfficer, resolveGuildId } from "@/lib/auth";
 import { getFormationStats } from "@/lib/db/queries/analytics";
 import { FormationBarChart } from "@/components/analytics/formation-bar-chart";
 import { FormationMatrix } from "@/components/analytics/formation-matrix";
@@ -7,13 +7,14 @@ import { PeriodSelector } from "@/components/analytics/period-selector";
 export default async function FormationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ days?: string }>;
+  searchParams: Promise<{ days?: string; guildId?: string }>;
 }) {
   const user = await requireOfficer();
   const params = await searchParams;
   const days = Number(params.days) || 30;
+  const guildId = resolveGuildId(user, params);
 
-  if (!user.guildId) {
+  if (!guildId) {
     return (
       <div className="flex items-center justify-center h-60 text-text-muted">
         คุณยังไม่ได้อยู่ในกิลด์
@@ -21,7 +22,7 @@ export default async function FormationsPage({
     );
   }
 
-  const formations = await getFormationStats(user.guildId, days);
+  const formations = await getFormationStats(guildId, days);
 
   return (
     <div className="space-y-6">

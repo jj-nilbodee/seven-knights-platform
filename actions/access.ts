@@ -42,7 +42,7 @@ export async function approveAccessRequest(requestId: string) {
   // Verify the request belongs to the officer's guild
   const existing = await getAccessRequestById(requestId);
   if (!existing) return { error: "ไม่พบคำขอ" };
-  if (existing.guildId !== officer.guildId) return { error: "ไม่มีสิทธิ์" };
+  if (officer.role !== "admin" && existing.guildId !== officer.guildId) return { error: "ไม่มีสิทธิ์" };
 
   const row = await updateAccessStatus(requestId, "approved", officer.id);
   if (!row) return { error: "ไม่พบคำขอ" };
@@ -71,7 +71,7 @@ export async function rejectAccessRequest(requestId: string) {
   // Verify the request belongs to the officer's guild
   const existing = await getAccessRequestById(requestId);
   if (!existing) return { error: "ไม่พบคำขอ" };
-  if (existing.guildId !== officer.guildId) return { error: "ไม่มีสิทธิ์" };
+  if (officer.role !== "admin" && existing.guildId !== officer.guildId) return { error: "ไม่มีสิทธิ์" };
 
   const row = await updateAccessStatus(requestId, "rejected", officer.id);
   if (!row) return { error: "ไม่พบคำขอ" };
@@ -96,7 +96,7 @@ export async function revokeAccess(requestId: string) {
   // Verify the request belongs to the officer's guild
   const existing = await getAccessRequestById(requestId);
   if (!existing) return { error: "ไม่พบคำขอ" };
-  if (existing.guildId !== officer.guildId) return { error: "ไม่มีสิทธิ์" };
+  if (officer.role !== "admin" && existing.guildId !== officer.guildId) return { error: "ไม่มีสิทธิ์" };
 
   const row = await updateAccessStatus(requestId, "rejected", officer.id);
   if (!row) return { error: "ไม่พบคำขอ" };

@@ -1,12 +1,18 @@
-import { requireOfficer } from "@/lib/auth";
+import { requireOfficer, resolveGuildId } from "@/lib/auth";
 import { listMembers } from "@/lib/db/queries/members";
 import { listHeroes } from "@/lib/db/queries/heroes";
 import { BattleSubmitClient } from "./submit-client";
 
-export default async function BattleSubmitPage() {
+export default async function BattleSubmitPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ guildId?: string }>;
+}) {
   const user = await requireOfficer();
+  const params = await searchParams;
+  const guildId = resolveGuildId(user, params);
 
-  if (!user.guildId) {
+  if (!guildId) {
     return (
       <div className="flex items-center justify-center h-60 text-text-muted">
         คุณยังไม่ได้อยู่ในกิลด์
@@ -15,9 +21,9 @@ export default async function BattleSubmitPage() {
   }
 
   const [members, heroes] = await Promise.all([
-    listMembers(user.guildId),
+    listMembers(guildId),
     listHeroes({ isActive: true }),
   ]);
 
-  return <BattleSubmitClient members={members} heroes={heroes} />;
+  return <BattleSubmitClient members={members} heroes={heroes} guildId={guildId} />;
 }

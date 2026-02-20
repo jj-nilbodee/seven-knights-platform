@@ -1,11 +1,17 @@
-import { requireOfficer } from "@/lib/auth";
+import { requireOfficer, resolveGuildId } from "@/lib/auth";
 import { listHeroes } from "@/lib/db/queries/heroes";
 import { CounterClient } from "./counter-client";
 
-export default async function CounterPage() {
+export default async function CounterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ guildId?: string }>;
+}) {
   const user = await requireOfficer();
+  const params = await searchParams;
+  const guildId = resolveGuildId(user, params);
 
-  if (!user.guildId) {
+  if (!guildId) {
     return (
       <div className="flex items-center justify-center h-60 text-text-muted">
         คุณยังไม่ได้อยู่ในกิลด์
@@ -30,7 +36,7 @@ export default async function CounterPage() {
       </div>
 
       <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-5">
-        <CounterClient heroes={heroes} />
+        <CounterClient heroes={heroes} guildId={guildId} />
       </div>
     </div>
   );

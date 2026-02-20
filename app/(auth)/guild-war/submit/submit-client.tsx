@@ -97,9 +97,11 @@ function getTodayDate() {
 export function BattleSubmitClient({
   members,
   heroes,
+  guildId,
 }: {
   members: Member[];
   heroes: HeroData[];
+  guildId: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -156,6 +158,7 @@ export function BattleSubmitClient({
         firstTurn:
           firstTurn === "yes" ? true : firstTurn === "no" ? false : null,
         videoUrl,
+        guildId,
       });
 
       if (res.error) {

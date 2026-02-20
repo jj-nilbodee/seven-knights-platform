@@ -35,19 +35,21 @@ export async function createAdventCycle(data: {
   endDate: string;
   targetDay: number;
   autoRegenerate: boolean;
+  guildId?: string;
 }) {
   const user = await requireOfficer();
-  if (!user.guildId) return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
+  const effectiveGuildId = (user.role === "admin" && data.guildId) ? data.guildId : user.guildId;
+  if (!effectiveGuildId) return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
 
   const parsed = cycleCreateSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   // Check for existing active cycle
-  const existing = await getActiveCycle(user.guildId);
+  const existing = await getActiveCycle(effectiveGuildId);
   if (existing) return { error: "มีรอบที่ยังไม่เสร็จอยู่แล้ว กรุณาจบรอบก่อนหน้าก่อน" };
 
   try {
-    const cycle = await dbCreateCycle(user.guildId, user.id, parsed.data);
+    const cycle = await dbCreateCycle(effectiveGuildId, user.id, parsed.data);
     revalidate();
     return { success: true, cycleId: cycle.id };
   } catch {
@@ -72,7 +74,7 @@ export async function updateAdventCycle(
 
   const cycle = await getCycleById(id);
   if (!cycle) return { error: "ไม่พบรอบ" };
-  if (cycle.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
+  if (user.role !== "admin" && cycle.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
 
   const parsed = cycleUpdateSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -92,7 +94,7 @@ export async function deleteAdventCycle(id: string) {
 
   const cycle = await getCycleById(id);
   if (!cycle) return { error: "ไม่พบรอบ" };
-  if (cycle.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
+  if (user.role !== "admin" && cycle.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
   if (cycle.status === "active") return { error: "ไม่สามารถลบรอบที่กำลังดำเนินอยู่ได้" };
 
   try {
@@ -111,15 +113,14 @@ export async function generatePlan(
   memberAvailability?: Record<string, string>,
 ) {
   const user = await requireOfficer();
-  if (!user.guildId) return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
 
   const cycle = await getCycleById(cycleId);
   if (!cycle) return { error: "ไม่พบรอบ" };
-  if (cycle.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
+  if (user.role !== "admin" && cycle.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
 
-  // Get all active members with profiles for this cycle
-  const guildMembers = await listMembers(user.guildId);
-  const profiles = await listProfiles(user.guildId, cycleId);
+  // Use the cycle's guildId so admin can generate plans for any guild
+  const guildMembers = await listMembers(cycle.guildId);
+  const profiles = await listProfiles(cycle.guildId, cycleId);
 
   // Build MemberDamage array
   const memberDamages: MemberDamage[] = [];
@@ -200,13 +201,15 @@ export async function createOrUpdateProfile(data: {
   memberIgn: string;
   scores: { teo: number; yeonhee: number; kyle: number; karma: number };
   cycleId?: string;
+  guildId?: string;
 }) {
   const user = await requireOfficer();
-  if (!user.guildId) return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
+  const effectiveGuildId = (user.role === "admin" && data.guildId) ? data.guildId : user.guildId;
+  if (!effectiveGuildId) return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
 
   try {
     const profile = await upsertProfile({
-      guildId: user.guildId,
+      guildId: effectiveGuildId,
       memberIgn: data.memberIgn,
       scores: data.scores,
       cycleId: data.cycleId,

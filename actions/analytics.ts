@@ -6,9 +6,11 @@ import { getCounterRecommendations } from "@/lib/db/queries/analytics";
 export async function searchCounterRecommendations(
   enemyHeroIds: string[],
   formation: string | null,
+  overrideGuildId?: string,
 ) {
   const user = await requireOfficer();
-  if (!user.guildId) {
+  const effectiveGuildId = (user.role === "admin" && overrideGuildId) ? overrideGuildId : user.guildId;
+  if (!effectiveGuildId) {
     return { error: "ไม่พบกิลด์" };
   }
 
@@ -17,7 +19,7 @@ export async function searchCounterRecommendations(
   }
 
   const result = await getCounterRecommendations(
-    user.guildId,
+    effectiveGuildId,
     enemyHeroIds,
     formation,
     90,

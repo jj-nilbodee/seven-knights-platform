@@ -16,11 +16,12 @@ import {
 
 const uuidSchema = z.string().uuid();
 
-export async function createMember(formData: FormData) {
+export async function createMember(formData: FormData, overrideGuildId?: string) {
   const user = await requireOfficer();
 
+  const effectiveGuildId = (user.role === "admin" && overrideGuildId) ? overrideGuildId : user.guildId;
   const parsed = memberCreateSchema.safeParse({
-    guildId: user.guildId,
+    guildId: effectiveGuildId,
     ign: formData.get("ign") as string,
     nickname: formData.get("nickname") as string,
   });
@@ -52,7 +53,7 @@ export async function updateMember(id: string, formData: FormData) {
   const { getMemberById } = await import("@/lib/db/queries/members");
   const existing = await getMemberById(id);
   if (!existing) return { error: "ไม่พบสมาชิก" };
-  if (existing.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
+  if (user.role !== "admin" && existing.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
 
   const raw: Record<string, unknown> = {};
   const ign = formData.get("ign") as string;
@@ -89,10 +90,11 @@ export async function updateMember(id: string, formData: FormData) {
   return { success: true };
 }
 
-export async function bulkAddMembers(input: string) {
+export async function bulkAddMembers(input: string, overrideGuildId?: string) {
   const user = await requireOfficer();
 
-  if (!user.guildId) {
+  const effectiveGuildId = (user.role === "admin" && overrideGuildId) ? overrideGuildId : user.guildId;
+  if (!effectiveGuildId) {
     return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
   }
 
@@ -107,7 +109,7 @@ export async function bulkAddMembers(input: string) {
     });
 
   const parsed = memberBulkSchema.safeParse({
-    guildId: user.guildId,
+    guildId: effectiveGuildId,
     entries,
   });
   if (!parsed.success) {
@@ -115,7 +117,7 @@ export async function bulkAddMembers(input: string) {
   }
 
   try {
-    const result = await bulkCreateMembers(user.guildId, parsed.data.entries);
+    const result = await bulkCreateMembers(effectiveGuildId, parsed.data.entries);
     revalidatePath("/roster");
     return { success: true, ...result };
   } catch {

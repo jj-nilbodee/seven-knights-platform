@@ -28,16 +28,18 @@ export async function createBattle(data: {
   enemyTeam: unknown;
   firstTurn: boolean | null;
   videoUrl: string;
+  guildId?: string;
 }) {
   const user = await requireOfficer();
 
-  if (!user.guildId) {
+  const effectiveGuildId = (user.role === "admin" && data.guildId) ? data.guildId : user.guildId;
+  if (!effectiveGuildId) {
     return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
   }
 
   const parsed = battleCreateSchema.safeParse({
     ...data,
-    guildId: user.guildId,
+    guildId: effectiveGuildId,
     submittedByUserId: user.id,
   });
 
@@ -78,7 +80,7 @@ export async function updateBattle(id: string, data: {
 
   const existing = await getBattleById(id);
   if (!existing) return { error: "ไม่พบข้อมูลการต่อสู้" };
-  if (existing.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
+  if (user.role !== "admin" && existing.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
 
   const parsed = battleUpdateSchema.safeParse(data);
   if (!parsed.success) {
@@ -107,7 +109,7 @@ export async function deleteBattle(id: string) {
 
   const existing = await getBattleById(id);
   if (!existing) return { error: "ไม่พบข้อมูลการต่อสู้" };
-  if (existing.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
+  if (user.role !== "admin" && existing.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
 
   try {
     await dbDeleteBattle(id);

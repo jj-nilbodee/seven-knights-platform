@@ -12,7 +12,7 @@ interface HeroData {
   imageUrl: string | null;
 }
 
-export function CounterClient({ heroes }: { heroes: HeroData[] }) {
+export function CounterClient({ heroes, guildId }: { heroes: HeroData[]; guildId: string }) {
   const [result, setResult] = useState<CounterRecommendationResult | null>(
     null,
   );
@@ -22,7 +22,7 @@ export function CounterClient({ heroes }: { heroes: HeroData[] }) {
   function handleSearch(heroIds: string[], formation: string | null) {
     setError(null);
     startTransition(async () => {
-      const res = await searchCounterRecommendations(heroIds, formation);
+      const res = await searchCounterRecommendations(heroIds, formation, guildId);
       if ("error" in res && res.error) {
         setError(res.error);
         setResult(null);

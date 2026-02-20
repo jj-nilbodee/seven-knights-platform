@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireUser, resolveGuildId } from "@/lib/auth";
 import {
   listCycles,
   listProfiles,
@@ -8,10 +8,16 @@ import {
 import { listMembers } from "@/lib/db/queries/members";
 import { AdventDashboardClient } from "./advent-dashboard-client";
 
-export default async function AdventExpeditionPage() {
+export default async function AdventExpeditionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ guildId?: string }>;
+}) {
   const user = await requireUser();
+  const params = await searchParams;
+  const guildId = resolveGuildId(user, params);
 
-  if (!user.guildId) {
+  if (!guildId) {
     return (
       <div className="flex items-center justify-center h-60 text-text-muted">
         คุณยังไม่ได้อยู่ในกิลด์
@@ -19,13 +25,13 @@ export default async function AdventExpeditionPage() {
     );
   }
 
-  const activeCycle = await getActiveCycle(user.guildId);
+  const activeCycle = await getActiveCycle(guildId);
 
   const [cycles, profiles, stats, members] = await Promise.all([
-    listCycles(user.guildId, 5),
-    listProfiles(user.guildId, activeCycle?.id),
-    getAdventStats(user.guildId, activeCycle?.id),
-    listMembers(user.guildId),
+    listCycles(guildId, 5),
+    listProfiles(guildId, activeCycle?.id),
+    getAdventStats(guildId, activeCycle?.id),
+    listMembers(guildId),
   ]);
 
   return (

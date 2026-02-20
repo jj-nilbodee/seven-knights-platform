@@ -1,4 +1,4 @@
-import { requireOfficer } from "@/lib/auth";
+import { requireOfficer, resolveGuildId } from "@/lib/auth";
 import { getBattleById } from "@/lib/db/queries/battles";
 import { listHeroes } from "@/lib/db/queries/heroes";
 import { redirect } from "next/navigation";
@@ -192,17 +192,18 @@ function TeamDisplay({
 export default async function BattleDetailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ id?: string; guildId?: string }>;
 }) {
   const user = await requireOfficer();
   const params = await searchParams;
+  const guildId = resolveGuildId(user, params);
   const battleId = params.id;
 
   if (!battleId) redirect("/guild-war");
 
   const battle = await getBattleById(battleId);
   if (!battle) redirect("/guild-war");
-  if (battle.guildId !== user.guildId) redirect("/guild-war");
+  if (user.role !== "admin" && battle.guildId !== guildId) redirect("/guild-war");
 
   const heroes = await listHeroes({ isActive: true });
   const heroMap = new Map(

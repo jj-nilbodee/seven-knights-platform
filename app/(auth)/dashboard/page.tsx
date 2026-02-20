@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { requireUser } from "@/lib/auth";
+import { requireUser, resolveGuildId } from "@/lib/auth";
 import {
   getDashboardKPIs,
   getTopHeroCombos,
@@ -11,10 +11,16 @@ import { KPICards } from "@/components/analytics/kpi-cards";
 import { WinRateTrendChart } from "@/components/analytics/win-rate-trend-chart";
 import { getResultBadgeClasses } from "@/lib/badge-utils";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ guildId?: string }>;
+}) {
   const user = await requireUser();
+  const params = await searchParams;
+  const guildId = resolveGuildId(user, params);
 
-  if (!user.guildId) {
+  if (!guildId) {
     return (
       <div className="space-y-6">
         <div>
@@ -33,10 +39,10 @@ export default async function DashboardPage() {
   }
 
   const [kpis, combos, recentBattles, trendData] = await Promise.all([
-    getDashboardKPIs(user.guildId, 30),
-    getTopHeroCombos(user.guildId, 30, 2, 5),
-    getRecentBattles(user.guildId, 8),
-    getWinRateTrend(user.guildId, 30),
+    getDashboardKPIs(guildId, 30),
+    getTopHeroCombos(guildId, 30, 2, 5),
+    getRecentBattles(guildId, 8),
+    getWinRateTrend(guildId, 30),
   ]);
 
   return (

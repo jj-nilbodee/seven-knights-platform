@@ -45,3 +45,17 @@ export async function requireAdmin(): Promise<AppUser> {
   if (user.role !== "admin") redirect("/dashboard");
   return user;
 }
+
+/**
+ * Resolve effective guildId: admin can override via URL param,
+ * everyone else uses their own guildId from app_metadata.
+ */
+export function resolveGuildId(
+  user: AppUser,
+  searchParams?: { guildId?: string },
+): string | null {
+  if (user.role === "admin" && searchParams?.guildId) {
+    return searchParams.guildId;
+  }
+  return user.guildId;
+}

@@ -64,9 +64,10 @@ interface CycleRow {
 interface Props {
   cycles: CycleRow[];
   userRole: UserRole;
+  guildId: string;
 }
 
-export function CyclesClient({ cycles: initialCycles, userRole }: Props) {
+export function CyclesClient({ cycles: initialCycles, userRole, guildId }: Props) {
   const isOfficer = userRole === "admin" || userRole === "officer";
   const [cycles] = useState<CycleRow[]>(initialCycles);
   const [createOpen, setCreateOpen] = useState(false);
@@ -99,6 +100,7 @@ export function CyclesClient({ cycles: initialCycles, userRole }: Props) {
       endDate: form.endDate,
       targetDay: parseInt(form.targetDay) || 9,
       autoRegenerate: form.autoRegenerate,
+      guildId,
     });
     setCreating(false);
 

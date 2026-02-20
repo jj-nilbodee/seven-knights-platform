@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   Swords,
@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { logout } from "@/actions/auth";
+import { GuildSelector } from "@/components/layout/guild-selector";
 
 const navItems = [
   { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
@@ -44,9 +45,17 @@ const adminItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const isOfficer = user?.role === "officer" || isAdmin;
+
+  // Preserve ?guildId across nav links for admin context switching
+  function buildHref(base: string) {
+    const guildId = searchParams.get("guildId");
+    if (isAdmin && guildId) return `${base}?guildId=${guildId}`;
+    return base;
+  }
 
   return (
     <aside className="flex h-full w-60 flex-col border-r border-border-dim bg-bg-surface">
@@ -56,6 +65,12 @@ export function Sidebar() {
         </Link>
       </div>
 
+      {isAdmin && (
+        <div className="border-b border-border-dim py-2">
+          <GuildSelector />
+        </div>
+      )}
+
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
         <div className="px-2 py-1">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
@@ -63,12 +78,13 @@ export function Sidebar() {
           </span>
         </div>
         {navItems.map((item) => {
+          const href = buildHref(item.href);
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={href}
               className={cn(
                 "flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors",
                 isActive
@@ -115,12 +131,13 @@ export function Sidebar() {
               </span>
             </div>
             {adminItems.map((item) => {
+              const href = buildHref(item.href);
               const isActive =
                 pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={href}
                   className={cn(
                     "flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors",
                     isActive

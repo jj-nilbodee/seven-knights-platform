@@ -87,9 +87,11 @@ function Toast({
 export function RosterClient({
   initialMembers,
   stats,
+  guildId,
 }: {
   initialMembers: Member[];
   stats: Stats;
+  guildId: string;
 }) {
   const router = useRouter();
   const [showInactive, setShowInactive] = useState(false);
@@ -136,7 +138,7 @@ export function RosterClient({
     fd.set("nickname", nickname);
 
     startAdd(async () => {
-      const result = await createMember(fd);
+      const result = await createMember(fd, guildId);
       if (result.error) {
         setToast({ message: result.error, type: "error" });
       } else {
@@ -173,7 +175,7 @@ export function RosterClient({
   async function handleBulk() {
     if (!bulkText.trim()) return;
     startBulk(async () => {
-      const result = await bulkAddMembers(bulkText);
+      const result = await bulkAddMembers(bulkText, guildId);
       if ("error" in result && result.error) {
         setToast({ message: result.error, type: "error" });
       } else if ("added" in result) {
