@@ -232,7 +232,8 @@ function GuildRow({ guild }: { guild: Guild }) {
             {/* Add officer */}
             <div className="flex gap-2">
               <Input
-                placeholder="User ID ของเจ้าหน้าที่"
+                placeholder="อีเมลของเจ้าหน้าที่"
+                type="email"
                 value={officerInput}
                 onChange={(e) => setOfficerInput(e.target.value)}
                 className="text-xs"

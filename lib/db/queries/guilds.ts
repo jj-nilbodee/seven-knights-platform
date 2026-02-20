@@ -47,6 +47,14 @@ export async function getGuildOfficers(guildId: string) {
     .where(eq(officers.guildId, guildId));
 }
 
+export async function getUserByEmail(email: string) {
+  const [user] = await db
+    .select({ id: users.id, email: users.email })
+    .from(users)
+    .where(eq(users.email, email));
+  return user ?? null;
+}
+
 export async function addOfficer(guildId: string, userId: string) {
   const [row] = await db
     .insert(officers)

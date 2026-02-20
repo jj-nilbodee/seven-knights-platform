@@ -11,6 +11,7 @@ import {
   getGuildOfficers as dbGetGuildOfficers,
   addOfficer as dbAddOfficer,
   removeOfficer as dbRemoveOfficer,
+  getUserByEmail,
 } from "@/lib/db/queries/guilds";
 
 const uuidSchema = z.string().uuid();
@@ -88,21 +89,28 @@ export async function fetchGuildOfficers(guildId: string) {
   return dbGetGuildOfficers(guildId);
 }
 
-export async function addOfficer(guildId: string, userId: string) {
+export async function addOfficer(guildId: string, email: string) {
   await requireAdmin();
 
-  if (!uuidSchema.safeParse(guildId).success || !uuidSchema.safeParse(userId).success) {
-    return { error: "ID ไม่ถูกต้อง" };
+  if (!uuidSchema.safeParse(guildId).success) {
+    return { error: "Guild ID ไม่ถูกต้อง" };
+  }
+
+  const emailParsed = z.string().email().safeParse(email);
+  if (!emailParsed.success) {
+    return { error: "อีเมลไม่ถูกต้อง" };
+  }
+
+  const user = await getUserByEmail(emailParsed.data);
+  if (!user) {
+    return { error: "ไม่พบผู้ใช้ที่ใช้อีเมลนี้" };
   }
 
   try {
-    await dbAddOfficer(guildId, userId);
+    await dbAddOfficer(guildId, user.id);
   } catch (err: unknown) {
     if (err instanceof Error && err.message.includes("unique")) {
       return { error: "ผู้ใช้นี้เป็นเจ้าหน้าที่อยู่แล้ว" };
-    }
-    if (err instanceof Error && err.message.includes("foreign key")) {
-      return { error: "ไม่พบผู้ใช้หรือกิลด์" };
     }
     return { error: "ไม่สามารถเพิ่มเจ้าหน้าที่ได้" };
   }
