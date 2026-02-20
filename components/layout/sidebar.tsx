@@ -11,7 +11,10 @@ import {
   Mountain,
   Castle,
   Shield,
-  Settings,
+  Crown,
+  UserCog,
+  Waypoints,
+  KeyRound,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,10 +36,10 @@ const publicNavItems = [
 ];
 
 const adminItems = [
-  { href: "/admin/heroes", label: "จัดการฮีโร่", icon: Settings },
-  { href: "/admin/guilds", label: "จัดการกิลด์", icon: Settings },
-  { href: "/admin/gvg-guides", label: "จัดการคู่มือ", icon: Settings },
-  { href: "/access-requests", label: "คำขอเข้าถึง", icon: Users },
+  { href: "/admin/heroes", label: "จัดการฮีโร่", icon: Crown },
+  { href: "/admin/guilds", label: "จัดการกิลด์", icon: Waypoints },
+  { href: "/admin/gvg-guides", label: "จัดการคู่มือ", icon: BookOpen },
+  { href: "/access-requests", label: "คำขอเข้าถึง", icon: KeyRound },
 ];
 
 export function Sidebar() {

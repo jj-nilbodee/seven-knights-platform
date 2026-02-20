@@ -26,3 +26,25 @@ export function getRarityBadgeClasses(rarity: string): string {
     ? `${rarityBase} bg-gold/30 text-gold border-gold/50`
     : `${rarityBase} bg-text-muted/20 text-text-muted border-text-muted/40`;
 }
+
+const statusBase =
+  "inline-flex items-center px-2 py-1 rounded-[var(--radius-sm)] text-xs font-medium border";
+
+export function getStatusBadgeClasses(status: string): string {
+  switch (status) {
+    case "active":
+      return `${statusBase} bg-green/20 text-green border-green/30`;
+    case "warning":
+      return `${statusBase} bg-gold/20 text-gold border-gold/30`;
+    case "inactive":
+      return `${statusBase} bg-text-muted/20 text-text-muted border-text-muted/30`;
+    default:
+      return `${statusBase} bg-text-muted/20 text-text-muted border-text-muted/30`;
+  }
+}
+
+export function getResultBadgeClasses(result: string): string {
+  return result === "win"
+    ? `${statusBase} bg-green/20 text-green border-green/30`
+    : `${statusBase} bg-accent/20 text-accent border-accent/30`;
+}
