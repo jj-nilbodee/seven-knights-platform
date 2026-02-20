@@ -85,7 +85,7 @@ interface Props {
     averageDamage: number;
     bossTotals: Record<string, number>;
   };
-  members: Array<{ id: string; ign: string; nickname: string }>;
+  members: Array<{ id: string; ign: string }>;
   userRole: UserRole;
 }
 

@@ -262,11 +262,6 @@ export default async function BattleDetailPage({
             </p>
             <p className="text-sm text-text-primary font-medium mt-1">
               {battle.memberIgn ?? "—"}
-              {battle.memberNickname && (
-                <span className="text-text-secondary ml-1">
-                  ({battle.memberNickname})
-                </span>
-              )}
             </p>
           </div>
           <div>

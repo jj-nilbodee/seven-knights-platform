@@ -18,7 +18,6 @@ const BOSSES = [
 interface MemberOption {
   id: string;
   ign: string;
-  nickname: string;
 }
 
 export default function PublicAdventSubmitPage() {
@@ -62,8 +61,7 @@ export default function PublicAdventSubmitPage() {
 
   const filteredMembers = members.filter(
     (m) =>
-      m.ign.toLowerCase().includes(search.toLowerCase()) ||
-      m.nickname.toLowerCase().includes(search.toLowerCase()),
+      m.ign.toLowerCase().includes(search.toLowerCase()),
   );
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -194,7 +192,7 @@ export default function PublicAdventSubmitPage() {
                 <p className="text-sm font-medium text-text-primary">
                   {selectedMember.ign}
                 </p>
-                <p className="text-xs text-text-muted">{selectedMember.nickname}</p>
+                <p className="text-xs text-text-muted">เลือกแล้ว</p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
                 เปลี่ยน
@@ -229,7 +227,6 @@ export default function PublicAdventSubmitPage() {
                       >
                         <div>
                           <p className="text-sm text-text-primary">{m.ign}</p>
-                          <p className="text-xs text-text-muted">{m.nickname}</p>
                         </div>
                       </button>
                     ))

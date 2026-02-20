@@ -246,7 +246,7 @@ export async function getAdventStats(guildId: string, cycleId?: string) {
 
 export async function getPublicMembers(guildId: string) {
   return db
-    .select({ id: members.id, ign: members.ign, nickname: members.nickname })
+    .select({ id: members.id, ign: members.ign })
     .from(members)
     .where(and(eq(members.guildId, guildId), eq(members.isActive, true)))
     .orderBy(members.ign);

@@ -33,7 +33,6 @@ type Member = {
   id: string;
   guildId: string;
   ign: string;
-  nickname: string;
   isActive: boolean | null;
   status: string | null;
   joinedAt: Date | null;
@@ -228,7 +227,7 @@ export function BattleSubmitClient({
                   <SelectContent>
                     {members.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
-                        {m.ign} ({m.nickname})
+                        {m.ign}
                       </SelectItem>
                     ))}
                   </SelectContent>

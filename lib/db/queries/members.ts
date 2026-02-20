@@ -40,7 +40,7 @@ export async function updateMember(id: string, data: MemberUpdate) {
 
 export async function bulkCreateMembers(
   guildId: string,
-  entries: { ign: string; nickname: string }[],
+  entries: { ign: string }[],
 ) {
   // Check existing IGNs for this guild
   const existing = await db
@@ -58,7 +58,6 @@ export async function bulkCreateMembers(
   const rows = newEntries.map((e) => ({
     guildId,
     ign: e.ign,
-    nickname: e.nickname,
   }));
 
   await db.insert(members).values(rows);

@@ -37,7 +37,6 @@ interface DailyPlan {
   assignments: Array<{
     memberId: string;
     memberIgn: string;
-    memberNickname: string;
     boss: string;
   }>;
   bossHpAfter: Record<string, number>;

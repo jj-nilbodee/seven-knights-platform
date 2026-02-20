@@ -115,7 +115,6 @@ export const members = pgTable(
       .notNull()
       .references(() => guilds.id),
     ign: text("ign").notNull(),
-    nickname: text("nickname").notNull(),
     isActive: boolean("is_active").default(true),
     status: text("status").default("active"), // active, warning, inactive
     joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow(),

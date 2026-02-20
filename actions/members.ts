@@ -23,7 +23,6 @@ export async function createMember(formData: FormData, overrideGuildId?: string)
   const parsed = memberCreateSchema.safeParse({
     guildId: effectiveGuildId,
     ign: formData.get("ign") as string,
-    nickname: formData.get("nickname") as string,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -57,11 +56,9 @@ export async function updateMember(id: string, formData: FormData) {
 
   const raw: Record<string, unknown> = {};
   const ign = formData.get("ign") as string;
-  const nickname = formData.get("nickname") as string;
   const status = formData.get("status") as string;
 
   if (ign) raw.ign = ign;
-  if (nickname) raw.nickname = nickname;
   if (status) raw.status = status;
 
   // Handle isActive based on status
@@ -98,15 +95,12 @@ export async function bulkAddMembers(input: string, overrideGuildId?: string) {
     return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
   }
 
-  // Parse CSV-like input: each line is "ign,nickname" or just "ign"
+  // Parse input: each line is an IGN
   const entries = input
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => {
-      const parts = line.split(",").map((p) => p.trim());
-      return { ign: parts[0], nickname: parts[1] || parts[0] };
-    });
+    .map((line) => ({ ign: line }));
 
   const parsed = memberBulkSchema.safeParse({
     guildId: effectiveGuildId,

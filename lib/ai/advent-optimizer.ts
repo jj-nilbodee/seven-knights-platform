@@ -16,14 +16,12 @@ export type BossId = (typeof BOSSES)[number];
 export interface MemberDamage {
   memberId: string;
   memberIgn: string;
-  memberNickname: string;
   scores: Record<string, number>; // bossId -> damage
 }
 
 export interface DailyMemberAssignment {
   memberId: string;
   memberIgn: string;
-  memberNickname: string;
   boss: string;
 }
 
@@ -183,7 +181,6 @@ export function optimizeDailyPlan(opts: {
         dayAssignments.push({
           memberId: member.memberId,
           memberIgn: member.memberIgn,
-          memberNickname: member.memberNickname,
           boss: bestBoss,
         });
       }

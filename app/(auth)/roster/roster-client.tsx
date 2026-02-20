@@ -41,7 +41,6 @@ type Member = {
   id: string;
   guildId: string;
   ign: string;
-  nickname: string;
   isActive: boolean | null;
   status: string | null;
   joinedAt: Date | null;
@@ -102,7 +101,6 @@ export function RosterClient({
 
   // Form state
   const [ign, setIgn] = useState("");
-  const [nickname, setNickname] = useState("");
   const [editStatus, setEditStatus] = useState("active");
   const [bulkText, setBulkText] = useState("");
 
@@ -121,21 +119,18 @@ export function RosterClient({
   function openEdit(member: Member) {
     setEditingMember(member);
     setIgn(member.ign);
-    setNickname(member.nickname);
     setEditStatus(member.status ?? "active");
     setEditOpen(true);
   }
 
   function resetAdd() {
     setIgn("");
-    setNickname("");
   }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     const fd = new FormData();
     fd.set("ign", ign);
-    fd.set("nickname", nickname);
 
     startAdd(async () => {
       const result = await createMember(fd, guildId);
@@ -156,7 +151,6 @@ export function RosterClient({
 
     const fd = new FormData();
     fd.set("ign", ign);
-    fd.set("nickname", nickname);
     fd.set("status", editStatus);
 
     startEdit(async () => {
@@ -289,9 +283,6 @@ export function RosterClient({
                     IGN
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                    ชื่อเล่น
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
                     สถานะ
                   </th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
@@ -307,9 +298,6 @@ export function RosterClient({
                   >
                     <td className="px-4 py-3 text-text-primary font-medium">
                       {member.ign}
-                    </td>
-                    <td className="px-4 py-3 text-text-secondary">
-                      {member.nickname}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -368,17 +356,6 @@ export function RosterClient({
                   disabled={isAdding}
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-text-primary">
-                  ชื่อเล่น
-                </label>
-                <Input
-                  placeholder="ถ้าไม่กรอกจะใช้ IGN"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  disabled={isAdding}
-                />
-              </div>
             </div>
             <DialogFooter>
               <Button
@@ -431,16 +408,6 @@ export function RosterClient({
                 <Input
                   value={ign}
                   onChange={(e) => setIgn(e.target.value)}
-                  disabled={isEditing}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-text-primary">
-                  ชื่อเล่น *
-                </label>
-                <Input
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
                   disabled={isEditing}
                 />
               </div>
@@ -505,13 +472,13 @@ export function RosterClient({
           <DialogHeader>
             <DialogTitle>นำเข้าสมาชิก</DialogTitle>
             <DialogDescription>
-              วางรายชื่อสมาชิก แต่ละบรรทัด: IGN,ชื่อเล่น
+              วางรายชื่อ IGN แต่ละบรรทัด
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
             <Textarea
               rows={8}
-              placeholder={"Player1,เล่น\nPlayer2,สอง\nPlayer3,สาม"}
+              placeholder={"Player1\nPlayer2\nPlayer3"}
               value={bulkText}
               onChange={(e) => setBulkText(e.target.value)}
               disabled={isBulking}
@@ -521,7 +488,7 @@ export function RosterClient({
               <span className="text-text-primary font-semibold">
                 {bulkCount}
               </span>{" "}
-              รายชื่อ &middot; ถ้าไม่ใส่ชื่อเล่น จะใช้ IGN แทน
+              รายชื่อ
             </p>
           </div>
           <DialogFooter>

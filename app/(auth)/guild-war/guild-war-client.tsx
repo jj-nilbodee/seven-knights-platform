@@ -40,7 +40,6 @@ type Battle = {
   guildId: string;
   memberId: string;
   memberIgn: string | null;
-  memberNickname: string | null;
   date: string;
   weekday: string;
   battleNumber: number;
@@ -68,7 +67,6 @@ type Member = {
   id: string;
   guildId: string;
   ign: string;
-  nickname: string;
   isActive: boolean | null;
   status: string | null;
   joinedAt: Date | null;

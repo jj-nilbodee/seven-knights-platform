@@ -131,7 +131,6 @@ export async function generatePlan(
     memberDamages.push({
       memberId: member.id,
       memberIgn: member.ign,
-      memberNickname: member.nickname,
       scores: {
         teo: scores.teo ?? 0,
         yeonhee: scores.yeonhee ?? 0,
