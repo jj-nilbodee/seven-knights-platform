@@ -170,29 +170,6 @@ export async function upsertProfile(data: {
   imageUrl?: string;
   extractionConfidence?: number;
 }) {
-  // Try update first
-  const existing = await getProfileByIgn(
-    data.guildId,
-    data.memberIgn,
-    data.cycleId,
-  );
-
-  if (existing) {
-    const [profile] = await db
-      .update(adventProfiles)
-      .set({
-        scores: data.scores,
-        memberId: data.memberId ?? existing.memberId,
-        imageUrl: data.imageUrl ?? existing.imageUrl,
-        extractionConfidence:
-          data.extractionConfidence ?? existing.extractionConfidence,
-        updatedAt: new Date(),
-      })
-      .where(eq(adventProfiles.id, existing.id))
-      .returning();
-    return profile;
-  }
-
   const [profile] = await db
     .insert(adventProfiles)
     .values({
@@ -203,6 +180,20 @@ export async function upsertProfile(data: {
       cycleId: data.cycleId,
       imageUrl: data.imageUrl,
       extractionConfidence: data.extractionConfidence,
+    })
+    .onConflictDoUpdate({
+      target: [
+        adventProfiles.guildId,
+        adventProfiles.memberIgn,
+        adventProfiles.cycleId,
+      ],
+      set: {
+        scores: data.scores,
+        memberId: sql`coalesce(${data.memberId ?? null}, ${adventProfiles.memberId})`,
+        imageUrl: sql`coalesce(${data.imageUrl ?? null}, ${adventProfiles.imageUrl})`,
+        extractionConfidence: sql`coalesce(${data.extractionConfidence ?? null}, ${adventProfiles.extractionConfidence})`,
+        updatedAt: new Date(),
+      },
     })
     .returning();
   return profile;

@@ -12,15 +12,14 @@ import {
   Castle,
   Shield,
   Crown,
-  UserCog,
   Waypoints,
   KeyRound,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth-context";
 import { logout } from "@/actions/auth";
 import { GuildSelector } from "@/components/layout/guild-selector";
+import type { AppUser } from "@/lib/auth";
 
 const navItems = [
   { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
@@ -43,12 +42,21 @@ const adminItems = [
   { href: "/access-requests", label: "คำขอเข้าถึง", icon: KeyRound },
 ];
 
-export function Sidebar() {
+interface Guild {
+  id: string;
+  name: string;
+}
+
+interface SidebarProps {
+  user: AppUser;
+  guilds: Guild[];
+}
+
+export function Sidebar({ user, guilds }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const isOfficer = user?.role === "officer" || isAdmin;
+  const isAdmin = user.role === "admin";
+  const isOfficer = user.role === "officer" || isAdmin;
 
   // Preserve ?guildId across nav links for admin context switching
   function buildHref(base: string) {
@@ -65,9 +73,9 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {isAdmin && (
+      {isAdmin && guilds.length > 0 && (
         <div className="border-b border-border-dim py-2">
-          <GuildSelector />
+          <GuildSelector guilds={guilds} />
         </div>
       )}
 
@@ -158,9 +166,9 @@ export function Sidebar() {
         <div className="flex items-center gap-3 px-2 pb-2">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-text-primary">
-              {user?.email}
+              {user.email}
             </p>
-            <p className="text-xs text-text-muted capitalize">{user?.role}</p>
+            <p className="text-xs text-text-muted capitalize">{user.role}</p>
           </div>
         </div>
         <form action={logout}>

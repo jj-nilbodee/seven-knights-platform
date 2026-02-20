@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -12,8 +13,6 @@ import {
   Loader2,
   Trash2,
   Eye,
-  CheckCircle,
-  XCircle,
   Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -73,39 +72,6 @@ type Member = {
   lastBattleAt: Date | null;
 };
 
-function Toast({
-  message,
-  type,
-  onDone,
-}: {
-  message: string;
-  type: "success" | "error";
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 4000);
-    return () => clearTimeout(t);
-  }, [onDone]);
-  return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in">
-      <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] shadow-lg border backdrop-blur-md ${
-          type === "success"
-            ? "bg-green/20 border-green/30 text-green"
-            : "bg-accent/20 border-accent/30 text-accent"
-        }`}
-      >
-        {type === "success" ? (
-          <CheckCircle className="h-5 w-5 shrink-0" />
-        ) : (
-          <XCircle className="h-5 w-5 shrink-0" />
-        )}
-        <span className="font-medium text-sm">{message}</span>
-      </div>
-    </div>
-  );
-}
-
 const weekdayLabels: Record<string, string> = {
   SAT: "เสาร์",
   MON: "จันทร์",
@@ -128,10 +94,6 @@ export function GuildWarClient({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingBattle, setDeletingBattle] = useState<Battle | null>(null);
   const [isDeleting, startDelete] = useTransition();
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   const filtered = initialBattles.filter((b) => {
     if (filterMember !== "all" && b.memberId !== filterMember) return false;
@@ -150,9 +112,9 @@ export function GuildWarClient({
     startDelete(async () => {
       const result = await deleteBattle(deletingBattle.id);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "ลบการต่อสู้สำเร็จ", type: "success" });
+        toast.success("ลบการต่อสู้สำเร็จ");
         router.refresh();
       }
       setDeleteOpen(false);
@@ -417,13 +379,6 @@ export function GuildWarClient({
         </DialogContent>
       </Dialog>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDone={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

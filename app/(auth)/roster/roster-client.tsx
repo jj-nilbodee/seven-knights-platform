@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -12,8 +13,6 @@ import {
   Eye,
   EyeOff,
   ListPlus,
-  CheckCircle,
-  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,35 +53,6 @@ type Stats = {
   inactive: number;
 };
 
-function Toast({
-  message,
-  type,
-  onDone,
-}: {
-  message: string;
-  type: "success" | "error";
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 4000);
-    return () => clearTimeout(t);
-  }, [onDone]);
-  return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in">
-      <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] shadow-lg border backdrop-blur-md ${
-          type === "success"
-            ? "bg-green/20 border-green/30 text-green"
-            : "bg-accent/20 border-accent/30 text-accent"
-        }`}
-      >
-        {type === "success" ? <CheckCircle className="h-5 w-5 shrink-0" /> : <XCircle className="h-5 w-5 shrink-0" />}
-        <span className="font-medium text-sm">{message}</span>
-      </div>
-    </div>
-  );
-}
-
 export function RosterClient({
   initialMembers,
   stats,
@@ -107,10 +77,6 @@ export function RosterClient({
   const [isAdding, startAdd] = useTransition();
   const [isEditing, startEdit] = useTransition();
   const [isBulking, startBulk] = useTransition();
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   const filtered = showInactive
     ? initialMembers
@@ -135,9 +101,9 @@ export function RosterClient({
     startAdd(async () => {
       const result = await createMember(fd, guildId);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "เพิ่มสมาชิกสำเร็จ!", type: "success" });
+        toast.success("เพิ่มสมาชิกสำเร็จ!");
         setAddOpen(false);
         resetAdd();
         router.refresh();
@@ -156,9 +122,9 @@ export function RosterClient({
     startEdit(async () => {
       const result = await updateMember(editingMember.id, fd);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "อัปเดตสมาชิกสำเร็จ!", type: "success" });
+        toast.success("อัปเดตสมาชิกสำเร็จ!");
         setEditOpen(false);
         setEditingMember(null);
         router.refresh();
@@ -171,12 +137,9 @@ export function RosterClient({
     startBulk(async () => {
       const result = await bulkAddMembers(bulkText, guildId);
       if ("error" in result && result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else if ("added" in result) {
-        setToast({
-          message: `นำเข้าสำเร็จ! เพิ่ม: ${result.added}, ข้าม: ${result.skipped}`,
-          type: "success",
-        });
+        toast.success(`นำเข้าสำเร็จ! เพิ่ม: ${result.added}, ข้าม: ${result.skipped}`);
         setBulkOpen(false);
         setBulkText("");
         router.refresh();
@@ -519,13 +482,6 @@ export function RosterClient({
         </DialogContent>
       </Dialog>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDone={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

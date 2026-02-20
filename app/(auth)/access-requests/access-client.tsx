@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
   Clock,
@@ -11,8 +12,6 @@ import {
   X,
   ShieldOff,
   Loader2,
-  CheckCircle,
-  XCircle,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { th } from "date-fns/locale";
@@ -57,35 +56,6 @@ type Stats = {
   rejected: number;
 };
 
-function Toast({
-  message,
-  type,
-  onDone,
-}: {
-  message: string;
-  type: "success" | "error";
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 4000);
-    return () => clearTimeout(t);
-  }, [onDone]);
-  return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in">
-      <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] shadow-lg border backdrop-blur-md ${
-          type === "success"
-            ? "bg-green/20 border-green/30 text-green"
-            : "bg-accent/20 border-accent/30 text-accent"
-        }`}
-      >
-        {type === "success" ? <CheckCircle className="h-5 w-5 shrink-0" /> : <XCircle className="h-5 w-5 shrink-0" />}
-        <span className="font-medium text-sm">{message}</span>
-      </div>
-    </div>
-  );
-}
-
 const statusConfig: Record<
   string,
   { label: string; classes: string }
@@ -123,10 +93,6 @@ export function AccessRequestsClient({
   const [isApproving, startApprove] = useTransition();
   const [isRejecting, startReject] = useTransition();
   const [isRevoking, startRevoke] = useTransition();
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   const filtered =
     filter === "all"
@@ -137,9 +103,9 @@ export function AccessRequestsClient({
     startApprove(async () => {
       const result = await approveAccessRequest(request.id);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: `อนุมัติ ${request.email} สำเร็จ`, type: "success" });
+        toast.success(`อนุมัติ ${request.email} สำเร็จ`);
         router.refresh();
       }
     });
@@ -150,9 +116,9 @@ export function AccessRequestsClient({
     startReject(async () => {
       const result = await rejectAccessRequest(confirmAction.request.id);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "ปฏิเสธคำขอสำเร็จ", type: "success" });
+        toast.success("ปฏิเสธคำขอสำเร็จ");
         setConfirmAction(null);
         router.refresh();
       }
@@ -164,9 +130,9 @@ export function AccessRequestsClient({
     startRevoke(async () => {
       const result = await revokeAccess(confirmAction.request.id);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "เพิกถอนสิทธิ์สำเร็จ", type: "success" });
+        toast.success("เพิกถอนสิทธิ์สำเร็จ");
         setConfirmAction(null);
         router.refresh();
       }
@@ -368,13 +334,6 @@ export function AccessRequestsClient({
         </DialogContent>
       </Dialog>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDone={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
+import { toast } from "sonner";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -10,8 +11,6 @@ import {
   Pencil,
   Trash2,
   ImageIcon,
-  CheckCircle,
-  XCircle,
   Search,
   ListPlus,
 } from "lucide-react";
@@ -83,42 +82,6 @@ const emptyForm: FormState = {
   imagePreview: "",
   existingImageUrl: "",
 };
-
-// --- Toast ---
-
-function Toast({
-  message,
-  type,
-  onDone,
-}: {
-  message: string;
-  type: "success" | "error";
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 4000);
-    return () => clearTimeout(t);
-  }, [onDone]);
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in">
-      <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] shadow-lg border backdrop-blur-md ${
-          type === "success"
-            ? "bg-green/20 border-green/30 text-green"
-            : "bg-accent/20 border-accent/30 text-accent"
-        }`}
-      >
-        {type === "success" ? (
-          <CheckCircle className="h-5 w-5 shrink-0" />
-        ) : (
-          <XCircle className="h-5 w-5 shrink-0" />
-        )}
-        <span className="font-medium text-sm">{message}</span>
-      </div>
-    </div>
-  );
-}
 
 // --- Image Upload Zone ---
 
@@ -312,11 +275,28 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
   const [filterType, setFilterType] = useState("all");
   const [filterRarity, setFilterRarity] = useState("all");
 
-  // Toast
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+
+  // --- Helpers ---
+
+  function handleImageFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("กรุณาเลือกไฟล์รูปภาพ");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("รูปต้องไม่เกิน 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm((f) => ({
+        ...f,
+        imageFile: file,
+        imagePreview: reader.result as string,
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
 
   // Clipboard paste for image
   useEffect(() => {
@@ -337,29 +317,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     };
     document.addEventListener("paste", handler);
     return () => document.removeEventListener("paste", handler);
-  }, [addOpen, editOpen]);
-
-  // --- Helpers ---
-
-  function handleImageFile(file: File) {
-    if (!file.type.startsWith("image/")) {
-      setToast({ message: "กรุณาเลือกไฟล์รูปภาพ", type: "error" });
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setToast({ message: "รูปต้องไม่เกิน 2MB", type: "error" });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setForm((f) => ({
-        ...f,
-        imageFile: file,
-        imagePreview: reader.result as string,
-      }));
-    };
-    reader.readAsDataURL(file);
-  }
+  }, [addOpen, editOpen, handleImageFile]);
 
   function resetForm() {
     setForm(emptyForm);
@@ -405,19 +363,19 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     e.preventDefault();
 
     if (!form.name.trim()) {
-      setToast({ message: "กรุณากรอกชื่อฮีโร่", type: "error" });
+      toast.error("กรุณากรอกชื่อฮีโร่");
       return;
     }
     if (!form.heroType) {
-      setToast({ message: "กรุณาเลือกประเภทฮีโร่", type: "error" });
+      toast.error("กรุณาเลือกประเภทฮีโร่");
       return;
     }
     if (!form.rarity) {
-      setToast({ message: "กรุณาเลือกความหายาก", type: "error" });
+      toast.error("กรุณาเลือกความหายาก");
       return;
     }
     if (!form.skill1Name || !form.skill2Name || !form.skill3Name) {
-      setToast({ message: "กรุณากรอกชื่อสกิลทั้ง 3", type: "error" });
+      toast.error("กรุณากรอกชื่อสกิลทั้ง 3");
       return;
     }
 
@@ -426,7 +384,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
       try {
         imageUrl = await uploadImage(form.imageFile, form.name);
       } catch {
-        setToast({ message: "อัปโหลดรูปไม่สำเร็จ", type: "error" });
+        toast.error("อัปโหลดรูปไม่สำเร็จ");
         return;
       }
     }
@@ -446,9 +404,9 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     startCreate(async () => {
       const result = await createHero(fd);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "สร้างฮีโร่สำเร็จ!", type: "success" });
+        toast.success("สร้างฮีโร่สำเร็จ!");
         setAddOpen(false);
         resetForm();
         router.refresh();
@@ -461,7 +419,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     if (!editingId) return;
 
     if (!form.name.trim()) {
-      setToast({ message: "กรุณากรอกชื่อฮีโร่", type: "error" });
+      toast.error("กรุณากรอกชื่อฮีโร่");
       return;
     }
 
@@ -470,7 +428,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
       try {
         imageUrl = await uploadImage(form.imageFile, form.name);
       } catch {
-        setToast({ message: "อัปโหลดรูปไม่สำเร็จ", type: "error" });
+        toast.error("อัปโหลดรูปไม่สำเร็จ");
         return;
       }
     }
@@ -490,9 +448,9 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     startEdit(async () => {
       const result = await updateHero(editingId, fd);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "อัปเดตฮีโร่สำเร็จ!", type: "success" });
+        toast.success("อัปเดตฮีโร่สำเร็จ!");
         setEditOpen(false);
         resetForm();
         router.refresh();
@@ -526,9 +484,9 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     startDelete(async () => {
       const result = await deleteHero(deletingHero.id);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "ลบฮีโร่สำเร็จ!", type: "success" });
+        toast.success("ลบฮีโร่สำเร็จ!");
         setDeleteOpen(false);
         setDeletingHero(null);
         router.refresh();
@@ -538,18 +496,15 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
 
   async function handleBulkAdd() {
     if (!bulkText.trim()) {
-      setToast({ message: "กรุณากรอกชื่อฮีโร่", type: "error" });
+      toast.error("กรุณากรอกชื่อฮีโร่");
       return;
     }
     startBulk(async () => {
       const result = await bulkAddHeroes(bulkText);
       if ("error" in result && result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else if ("added" in result) {
-        setToast({
-          message: `นำเข้าสำเร็จ! เพิ่ม: ${result.added}, ข้าม: ${result.skipped}`,
-          type: "success",
-        });
+        toast.success(`นำเข้าสำเร็จ! เพิ่ม: ${result.added}, ข้าม: ${result.skipped}`);
         setBulkOpen(false);
         setBulkText("");
         router.refresh();
@@ -1148,14 +1103,6 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
         </DialogContent>
       </Dialog>
 
-      {/* Toast */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDone={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

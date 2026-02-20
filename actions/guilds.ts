@@ -8,16 +8,10 @@ import {
   createGuild as dbCreateGuild,
   updateGuild as dbUpdateGuild,
   deleteGuild as dbDeleteGuild,
-  listGuilds,
 } from "@/lib/db/queries/guilds";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const uuidSchema = z.string().uuid();
-
-export async function fetchAllGuilds() {
-  await requireAdmin();
-  return listGuilds();
-}
 
 export async function createGuild(formData: FormData) {
   await requireAdmin();

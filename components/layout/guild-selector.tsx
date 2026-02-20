@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import {
   Select,
@@ -9,24 +8,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchAllGuilds } from "@/actions/guilds";
 
 interface Guild {
   id: string;
   name: string;
 }
 
-export function GuildSelector() {
+interface GuildSelectorProps {
+  guilds: Guild[];
+}
+
+export function GuildSelector({ guilds }: GuildSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [guilds, setGuilds] = useState<Guild[]>([]);
 
   const currentGuildId = searchParams.get("guildId") ?? "own";
-
-  useEffect(() => {
-    fetchAllGuilds().then(setGuilds).catch(() => {});
-  }, []);
 
   function handleChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());

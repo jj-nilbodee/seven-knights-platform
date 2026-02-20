@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Plus,
@@ -67,9 +68,9 @@ interface Props {
   guildId: string;
 }
 
-export function CyclesClient({ cycles: initialCycles, userRole, guildId }: Props) {
+export function CyclesClient({ cycles, userRole, guildId }: Props) {
+  const router = useRouter();
   const isOfficer = userRole === "admin" || userRole === "officer";
-  const [cycles] = useState<CycleRow[]>(initialCycles);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [completeId, setCompleteId] = useState<string | null>(null);
@@ -115,6 +116,7 @@ export function CyclesClient({ cycles: initialCycles, userRole, guildId }: Props
         end.setDate(end.getDate() + 13);
         return { name: "", startDate: now.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10), targetDay: "9", autoRegenerate: true };
       });
+      router.refresh();
     }
   }
 
@@ -133,6 +135,7 @@ export function CyclesClient({ cycles: initialCycles, userRole, guildId }: Props
       toast.success("จบรอบสำเร็จ");
       setCompleteId(null);
       setActualDays("");
+      router.refresh();
     }
   }
 
@@ -147,6 +150,7 @@ export function CyclesClient({ cycles: initialCycles, userRole, guildId }: Props
     } else {
       toast.success("ลบรอบสำเร็จ");
       setDeleteId(null);
+      router.refresh();
     }
   }
 
@@ -159,6 +163,7 @@ export function CyclesClient({ cycles: initialCycles, userRole, guildId }: Props
       toast.error(result.error);
     } else {
       toast.success("สร้างแผนสำเร็จ");
+      router.refresh();
     }
   }
 
@@ -171,6 +176,7 @@ export function CyclesClient({ cycles: initialCycles, userRole, guildId }: Props
       toast.error(result.error);
     } else {
       toast.success("เปิดใช้งานรอบสำเร็จ");
+      router.refresh();
     }
   }
 

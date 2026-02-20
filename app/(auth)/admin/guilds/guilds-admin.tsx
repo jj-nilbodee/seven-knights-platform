@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -10,8 +11,6 @@ import {
   Trash2,
   UserPlus,
   UserMinus,
-  CheckCircle,
-  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,40 +48,6 @@ type Member = {
   email: string;
 };
 
-function Toast({
-  message,
-  type,
-  onDone,
-}: {
-  message: string;
-  type: "success" | "error";
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 4000);
-    return () => clearTimeout(t);
-  }, [onDone]);
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in">
-      <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] shadow-lg border backdrop-blur-md ${
-          type === "success"
-            ? "bg-green/20 border-green/30 text-green"
-            : "bg-accent/20 border-accent/30 text-accent"
-        }`}
-      >
-        {type === "success" ? (
-          <CheckCircle className="h-5 w-5 shrink-0" />
-        ) : (
-          <XCircle className="h-5 w-5 shrink-0" />
-        )}
-        <span className="font-medium text-sm">{message}</span>
-      </div>
-    </div>
-  );
-}
-
 function GuildRow({ guild }: { guild: Guild }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
@@ -94,10 +59,6 @@ function GuildRow({ guild }: { guild: Guild }) {
   const [isRemoving, startRemove] = useTransition();
   const [isDeleting, startDelete] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   async function loadOfficersAndMembers() {
     setLoadingOfficers(true);
@@ -126,9 +87,9 @@ function GuildRow({ guild }: { guild: Guild }) {
     startAdd(async () => {
       const result = await addOfficer(guild.id, selectedMemberId);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "เลื่อนตำแหน่งเป็นเจ้าหน้าที่สำเร็จ", type: "success" });
+        toast.success("เลื่อนตำแหน่งเป็นเจ้าหน้าที่สำเร็จ");
         setSelectedMemberId("");
         await loadOfficersAndMembers();
         router.refresh();
@@ -140,9 +101,9 @@ function GuildRow({ guild }: { guild: Guild }) {
     startRemove(async () => {
       const result = await removeOfficer(guild.id, userId);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "ลดตำแหน่งเจ้าหน้าที่สำเร็จ", type: "success" });
+        toast.success("ลดตำแหน่งเจ้าหน้าที่สำเร็จ");
         await loadOfficersAndMembers();
         router.refresh();
       }
@@ -153,7 +114,7 @@ function GuildRow({ guild }: { guild: Guild }) {
     startDelete(async () => {
       const result = await deleteGuild(guild.id);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
         setDeleteOpen(false);
         router.refresh();
@@ -320,13 +281,6 @@ function GuildRow({ guild }: { guild: Guild }) {
         </DialogContent>
       </Dialog>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDone={() => setToast(null)}
-        />
-      )}
     </>
   );
 }
@@ -336,10 +290,6 @@ export function GuildsAdmin({ initialGuilds }: { initialGuilds: Guild[] }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [guildName, setGuildName] = useState("");
   const [isCreating, startCreate] = useTransition();
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -351,9 +301,9 @@ export function GuildsAdmin({ initialGuilds }: { initialGuilds: Guild[] }) {
     startCreate(async () => {
       const result = await createGuild(fd);
       if (result.error) {
-        setToast({ message: result.error, type: "error" });
+        toast.error(result.error);
       } else {
-        setToast({ message: "สร้างกิลด์สำเร็จ!", type: "success" });
+        toast.success("สร้างกิลด์สำเร็จ!");
         setCreateOpen(false);
         setGuildName("");
         router.refresh();
@@ -447,13 +397,6 @@ export function GuildsAdmin({ initialGuilds }: { initialGuilds: Guild[] }) {
         </DialogContent>
       </Dialog>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDone={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

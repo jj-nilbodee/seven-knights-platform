@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
   Loader2,
-  CheckCircle,
-  XCircle,
   Swords,
   Shield,
 } from "lucide-react";
@@ -38,39 +37,6 @@ type Member = {
   joinedAt: Date | null;
   lastBattleAt: Date | null;
 };
-
-function Toast({
-  message,
-  type,
-  onDone,
-}: {
-  message: string;
-  type: "success" | "error";
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 4000);
-    return () => clearTimeout(t);
-  }, [onDone]);
-  return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in">
-      <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] shadow-lg border backdrop-blur-md ${
-          type === "success"
-            ? "bg-green/20 border-green/30 text-green"
-            : "bg-accent/20 border-accent/30 text-accent"
-        }`}
-      >
-        {type === "success" ? (
-          <CheckCircle className="h-5 w-5 shrink-0" />
-        ) : (
-          <XCircle className="h-5 w-5 shrink-0" />
-        )}
-        <span className="font-medium text-sm">{message}</span>
-      </div>
-    </div>
-  );
-}
 
 function serializeTeam(state: TeamCompositionState) {
   return {
@@ -104,10 +70,6 @@ export function BattleSubmitClient({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   // Form state
   const [memberId, setMemberId] = useState("");
@@ -135,11 +97,11 @@ export function BattleSubmitClient({
     e.preventDefault();
 
     if (!memberId) {
-      setToast({ message: "กรุณาเลือกสมาชิก", type: "error" });
+      toast.error("กรุณาเลือกสมาชิก");
       return;
     }
     if (!result) {
-      setToast({ message: "กรุณาเลือกผลการต่อสู้", type: "error" });
+      toast.error("กรุณาเลือกผลการต่อสู้");
       return;
     }
 
@@ -161,9 +123,9 @@ export function BattleSubmitClient({
       });
 
       if (res.error) {
-        setToast({ message: res.error, type: "error" });
+        toast.error(res.error);
       } else {
-        setToast({ message: "บันทึกการต่อสู้สำเร็จ!", type: "success" });
+        toast.success("บันทึกการต่อสู้สำเร็จ!");
         router.push("/guild-war");
       }
     });
@@ -391,13 +353,6 @@ export function BattleSubmitClient({
         </div>
       </form>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDone={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }
