@@ -12,15 +12,12 @@ export interface HeroData {
   rarity: string;
   imageUrl: string | null;
   skill1Id: string | null;
-  skill1Name: string;
   skill1Type: string;
   skill1ImageUrl: string | null;
   skill2Id: string | null;
-  skill2Name: string;
   skill2Type: string;
   skill2ImageUrl: string | null;
   skill3Id: string | null;
-  skill3Name: string;
   skill3Type: string;
   skill3ImageUrl: string | null;
 }
@@ -39,7 +36,7 @@ export interface SkillSequenceItem {
   skillId: string;
   order: 1 | 2 | 3;
   heroName: string;
-  skillName: string;
+  skillLabel: string;
 }
 
 export interface TeamCompositionState {

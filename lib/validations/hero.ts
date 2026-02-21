@@ -17,11 +17,8 @@ export const heroCreateSchema = z.object({
   heroType: z.enum(heroTypes, { message: "เลือกประเภทฮีโร่" }),
   rarity: z.enum(rarities, { message: "เลือกความหายาก" }),
   imageUrl: z.string().default(""),
-  skill1Name: z.string().min(1, "กรอกชื่อสกิล 1").trim(),
   skill1Type: z.enum(skillTypes).default("ACTIVE"),
-  skill2Name: z.string().min(1, "กรอกชื่อสกิล 2").trim(),
   skill2Type: z.enum(skillTypes).default("ACTIVE"),
-  skill3Name: z.string().min(1, "กรอกชื่อสกิล 3").trim(),
   skill3Type: z.enum(skillTypes).default("PASSIVE"),
 });
 
@@ -30,11 +27,8 @@ export const heroUpdateSchema = z.object({
   heroType: z.enum(heroTypes).optional(),
   rarity: z.enum(rarities).optional(),
   imageUrl: z.string().optional(),
-  skill1Name: z.string().trim().optional(),
   skill1Type: z.enum(skillTypes).optional(),
-  skill2Name: z.string().trim().optional(),
   skill2Type: z.enum(skillTypes).optional(),
-  skill3Name: z.string().trim().optional(),
   skill3Type: z.enum(skillTypes).optional(),
 });
 

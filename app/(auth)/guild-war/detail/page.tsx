@@ -39,7 +39,7 @@ function TeamDisplay({
   team: TeamData;
   heroMap: Map<
     string,
-    { name: string; imageUrl: string | null; skill1Id: string | null; skill1Name: string; skill2Id: string | null; skill2Name: string }
+    { name: string; imageUrl: string | null; skill1Id: string | null; skill2Id: string | null }
   >;
   variant: "allied" | "enemy";
   label: string;
@@ -155,9 +155,9 @@ function TeamDisplay({
                 let skillName = s.skillId;
                 if (hero) {
                   if (hero.skill1Id === s.skillId)
-                    skillName = hero.skill1Name;
+                    skillName = "Skill 1";
                   else if (hero.skill2Id === s.skillId)
-                    skillName = hero.skill2Name;
+                    skillName = "Skill 2";
                 }
                 return (
                   <div key={i} className="flex items-center gap-1">
@@ -208,9 +208,7 @@ export default async function BattleDetailPage({
         name: h.name,
         imageUrl: h.imageUrl,
         skill1Id: h.skill1Id,
-        skill1Name: h.skill1Name,
         skill2Id: h.skill2Id,
-        skill2Name: h.skill2Name,
       },
     ]),
   );

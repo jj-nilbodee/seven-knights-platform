@@ -54,8 +54,8 @@ export function SkillOrderChart({ skills }: { skills: SkillOrderImpact[] }) {
   }
 
   const chartData = skills.slice(0, 15).map((s) => ({
-    name: `${s.heroName}\n${s.skillName}`,
-    label: s.skillName,
+    name: `${s.heroName}\n${s.skillLabel}`,
+    label: s.skillLabel,
     "ลำดับ 1": s.position1.winRate,
     "ลำดับ 2": s.position2.winRate,
     "ลำดับ 3": s.position3.winRate,
@@ -107,7 +107,7 @@ export function SkillOrderChart({ skills }: { skills: SkillOrderImpact[] }) {
           <tbody>
             {skills.slice(0, 20).map((s) => (
               <tr key={s.skillId} className="border-b border-border-dim/50 hover:bg-bg-elevated/50">
-                <td className="px-3 py-2 font-medium text-text-primary">{s.skillName}</td>
+                <td className="px-3 py-2 font-medium text-text-primary">{s.skillLabel}</td>
                 <td className="px-3 py-2 text-text-secondary">{s.heroName}</td>
                 <td className="px-3 py-2 text-center">
                   <span className="inline-flex items-center gap-1 text-gold text-xs font-medium">

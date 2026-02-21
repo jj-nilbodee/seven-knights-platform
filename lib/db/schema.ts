@@ -26,19 +26,16 @@ export const heroes = pgTable(
     imageUrl: text("image_url").default(""),
     isActive: boolean("is_active").default(true),
 
-    // Skills (3 per hero)
+    // Skills (3 per hero — names are always "Skill 1", "Skill 2", "Passive")
     skill1Id: uuid("skill_1_id").defaultRandom(),
-    skill1Name: text("skill_1_name").notNull().default("Skill 1"),
     skill1Type: text("skill_1_type").notNull().default("ACTIVE"),
     skill1ImageUrl: text("skill_1_image_url").default(""),
 
     skill2Id: uuid("skill_2_id").defaultRandom(),
-    skill2Name: text("skill_2_name").notNull().default("Skill 2"),
     skill2Type: text("skill_2_type").notNull().default("ACTIVE"),
     skill2ImageUrl: text("skill_2_image_url").default(""),
 
     skill3Id: uuid("skill_3_id").defaultRandom(),
-    skill3Name: text("skill_3_name").notNull().default("Passive"),
     skill3Type: text("skill_3_type").notNull().default("PASSIVE"),
     skill3ImageUrl: text("skill_3_image_url").default(""),
 

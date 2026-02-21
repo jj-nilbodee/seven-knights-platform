@@ -69,7 +69,7 @@ export interface SkillOrderImpact {
   skillId: string;
   heroId: string;
   heroName: string;
-  skillName: string;
+  skillLabel: string;
   position1: PositionStats;
   position2: PositionStats;
   position3: PositionStats;
@@ -592,25 +592,20 @@ export async function getSkillOrderImpact(
     }
   }
 
-  // Resolve hero/skill names
+  // Resolve hero names and skill ID → label mapping
   const heroMap = await getHeroNameMap();
   const heroRows = await db
     .select({
       id: heroes.id,
       skill1Id: heroes.skill1Id,
-      skill1Name: heroes.skill1Name,
       skill2Id: heroes.skill2Id,
-      skill2Name: heroes.skill2Name,
-      skill3Id: heroes.skill3Id,
-      skill3Name: heroes.skill3Name,
     })
     .from(heroes);
 
-  const skillNameMap = new Map<string, string>();
+  const skillLabelMap = new Map<string, string>();
   for (const h of heroRows) {
-    if (h.skill1Id) skillNameMap.set(h.skill1Id, h.skill1Name);
-    if (h.skill2Id) skillNameMap.set(h.skill2Id, h.skill2Name);
-    if (h.skill3Id) skillNameMap.set(h.skill3Id, h.skill3Name);
+    if (h.skill1Id) skillLabelMap.set(h.skill1Id, "Skill 1");
+    if (h.skill2Id) skillLabelMap.set(h.skill2Id, "Skill 2");
   }
 
   return Array.from(skillMap.values())
@@ -633,7 +628,7 @@ export async function getSkillOrderImpact(
         skillId: entry.skillId,
         heroId: entry.heroId,
         heroName: heroMap.get(entry.heroId) ?? entry.heroId.slice(0, 8),
-        skillName: skillNameMap.get(entry.skillId) ?? entry.skillId.slice(0, 8),
+        skillLabel: skillLabelMap.get(entry.skillId) ?? "Skill",
         position1: { wins: p1.wins, total: p1.total, winRate: calcWinRate(p1.wins, p1.total) },
         position2: { wins: p2.wins, total: p2.total, winRate: calcWinRate(p2.wins, p2.total) },
         position3: { wins: p3.wins, total: p3.total, winRate: calcWinRate(p3.wins, p3.total) },

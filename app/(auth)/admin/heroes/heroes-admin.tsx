@@ -51,21 +51,12 @@ type Hero = {
   rarity: string;
   imageUrl: string | null;
   isActive: boolean | null;
-  skill1Name: string;
-  skill1Type: string;
-  skill2Name: string;
-  skill2Type: string;
-  skill3Name: string;
-  skill3Type: string;
 };
 
 interface FormState {
   name: string;
   heroType: string;
   rarity: string;
-  skill1Name: string;
-  skill2Name: string;
-  skill3Name: string;
   imageFile: File | null;
   imagePreview: string;
   existingImageUrl: string;
@@ -75,9 +66,6 @@ const emptyForm: FormState = {
   name: "",
   heroType: "",
   rarity: "",
-  skill1Name: "",
-  skill2Name: "",
-  skill3Name: "",
   imageFile: null,
   imagePreview: "",
   existingImageUrl: "",
@@ -205,51 +193,6 @@ function ImageUploadZone({
   );
 }
 
-// --- Skill Input ---
-
-function SkillInput({
-  slot,
-  label,
-  isPassive,
-  value,
-  onChange,
-  disabled,
-}: {
-  slot: number;
-  label: string;
-  isPassive?: boolean;
-  value: string;
-  onChange: (v: string) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div
-      className={`space-y-2 p-3 rounded-[var(--radius-md)] border ${
-        isPassive
-          ? "bg-gold/5 border-gold/30"
-          : "bg-bg-elevated border-border-dim"
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span
-          className={`w-2 h-2 rounded-full ${
-            isPassive ? "bg-gold" : "bg-text-secondary"
-          }`}
-        />
-        <label className={`text-sm font-semibold ${isPassive ? "text-gold" : "text-text-primary"}`}>
-          {label}
-        </label>
-      </div>
-      <Input
-        placeholder={`ชื่อสกิล ${slot} (ภาษาไทย)`}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-      />
-    </div>
-  );
-}
-
 // --- Main Component ---
 
 export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
@@ -374,11 +317,6 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
       toast.error("กรุณาเลือกความหายาก");
       return;
     }
-    if (!form.skill1Name || !form.skill2Name || !form.skill3Name) {
-      toast.error("กรุณากรอกชื่อสกิลทั้ง 3");
-      return;
-    }
-
     let imageUrl = "";
     if (form.imageFile) {
       try {
@@ -394,11 +332,8 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     fd.set("heroType", form.heroType);
     fd.set("rarity", form.rarity);
     fd.set("imageUrl", imageUrl);
-    fd.set("skill1Name", form.skill1Name);
     fd.set("skill1Type", "ACTIVE");
-    fd.set("skill2Name", form.skill2Name);
     fd.set("skill2Type", "ACTIVE");
-    fd.set("skill3Name", form.skill3Name);
     fd.set("skill3Type", "PASSIVE");
 
     startCreate(async () => {
@@ -438,9 +373,6 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     fd.set("heroType", form.heroType);
     fd.set("rarity", form.rarity);
     fd.set("imageUrl", imageUrl);
-    if (form.skill1Name) fd.set("skill1Name", form.skill1Name);
-    if (form.skill2Name) fd.set("skill2Name", form.skill2Name);
-    if (form.skill3Name) fd.set("skill3Name", form.skill3Name);
     fd.set("skill1Type", "ACTIVE");
     fd.set("skill2Type", "ACTIVE");
     fd.set("skill3Type", "PASSIVE");
@@ -464,9 +396,6 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
       name: hero.name,
       heroType: hero.heroType,
       rarity: hero.rarity,
-      skill1Name: hero.skill1Name,
-      skill2Name: hero.skill2Name,
-      skill3Name: hero.skill3Name,
       imageFile: null,
       imagePreview: "",
       existingImageUrl: hero.imageUrl || "",
@@ -655,9 +584,9 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
                       Skills
                     </p>
                     {[
-                      { name: hero.skill1Name, type: hero.skill1Type },
-                      { name: hero.skill2Name, type: hero.skill2Type },
-                      { name: hero.skill3Name, type: hero.skill3Type },
+                      { label: "Skill 1", type: "ACTIVE" },
+                      { label: "Skill 2", type: "ACTIVE" },
+                      { label: "Passive", type: "PASSIVE" },
                     ].map((skill, i) => (
                       <div key={i} className="text-xs text-text-secondary flex items-center gap-1.5">
                         <span
@@ -667,7 +596,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
                               : "bg-text-muted"
                           }`}
                         />
-                        <span className="truncate">{skill.name}</span>
+                        <span className="truncate">{skill.label}</span>
                         {skill.type === "PASSIVE" && (
                           <span className="text-[10px] text-gold/70">
                             (Passive)
@@ -701,7 +630,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
           <DialogHeader>
             <DialogTitle>เพิ่มฮีโร่ใหม่</DialogTitle>
             <DialogDescription>
-              สร้างฮีโร่พร้อมรูปภาพและสกิล 3 ตัว (2 Active + 1 Passive)
+              สร้างฮีโร่พร้อมรูปภาพ
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate}>
@@ -776,39 +705,6 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
                 </div>
               </div>
 
-              <div className="space-y-3 pt-3 border-t border-border-dim">
-                <h3 className="text-sm font-semibold text-text-primary">
-                  สกิล (3 ตัว)
-                </h3>
-                <SkillInput
-                  slot={1}
-                  label="สกิล 1 (Active) *"
-                  value={form.skill1Name}
-                  onChange={(v) =>
-                    setForm((f) => ({ ...f, skill1Name: v }))
-                  }
-                  disabled={isCreating}
-                />
-                <SkillInput
-                  slot={2}
-                  label="สกิล 2 (Active) *"
-                  value={form.skill2Name}
-                  onChange={(v) =>
-                    setForm((f) => ({ ...f, skill2Name: v }))
-                  }
-                  disabled={isCreating}
-                />
-                <SkillInput
-                  slot={3}
-                  label="สกิล 3 (Passive) *"
-                  isPassive
-                  value={form.skill3Name}
-                  onChange={(v) =>
-                    setForm((f) => ({ ...f, skill3Name: v }))
-                  }
-                  disabled={isCreating}
-                />
-              </div>
             </div>
 
             <DialogFooter>
@@ -850,7 +746,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
           <DialogHeader>
             <DialogTitle>แก้ไขฮีโร่</DialogTitle>
             <DialogDescription>
-              อัปเดตข้อมูลฮีโร่ รูปภาพ และสกิล
+              อัปเดตข้อมูลฮีโร่และรูปภาพ
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEdit}>
@@ -925,39 +821,6 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
                 </div>
               </div>
 
-              <div className="space-y-3 pt-3 border-t border-border-dim">
-                <h3 className="text-sm font-semibold text-text-primary">
-                  สกิล (3 ตัว)
-                </h3>
-                <SkillInput
-                  slot={1}
-                  label="สกิล 1 (Active)"
-                  value={form.skill1Name}
-                  onChange={(v) =>
-                    setForm((f) => ({ ...f, skill1Name: v }))
-                  }
-                  disabled={isEditing}
-                />
-                <SkillInput
-                  slot={2}
-                  label="สกิล 2 (Active)"
-                  value={form.skill2Name}
-                  onChange={(v) =>
-                    setForm((f) => ({ ...f, skill2Name: v }))
-                  }
-                  disabled={isEditing}
-                />
-                <SkillInput
-                  slot={3}
-                  label="สกิล 3 (Passive)"
-                  isPassive
-                  value={form.skill3Name}
-                  onChange={(v) =>
-                    setForm((f) => ({ ...f, skill3Name: v }))
-                  }
-                  disabled={isEditing}
-                />
-              </div>
             </div>
 
             <DialogFooter>

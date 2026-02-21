@@ -23,11 +23,8 @@ export async function createHero(formData: FormData) {
     heroType: formData.get("heroType") as string,
     rarity: formData.get("rarity") as string,
     imageUrl: (formData.get("imageUrl") as string) || "",
-    skill1Name: formData.get("skill1Name") as string,
     skill1Type: formData.get("skill1Type") as string,
-    skill2Name: formData.get("skill2Name") as string,
     skill2Type: formData.get("skill2Type") as string,
-    skill3Name: formData.get("skill3Name") as string,
     skill3Type: formData.get("skill3Type") as string,
   };
 

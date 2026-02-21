@@ -34,26 +34,24 @@ function getActiveSkills(selectedHeroes: SelectedHero[]) {
     heroId: string;
     heroName: string;
     skillId: string;
-    skillName: string;
+    skillLabel: string;
   }> = [];
 
   for (const { hero } of selectedHeroes) {
-    // Skill 1 — ACTIVE
     if (hero.skill1Type === "ACTIVE" && hero.skill1Id) {
       skills.push({
         heroId: hero.id,
         heroName: hero.name,
         skillId: hero.skill1Id,
-        skillName: hero.skill1Name,
+        skillLabel: "Skill 1",
       });
     }
-    // Skill 2 — ACTIVE
     if (hero.skill2Type === "ACTIVE" && hero.skill2Id) {
       skills.push({
         heroId: hero.id,
         heroName: hero.name,
         skillId: hero.skill2Id,
-        skillName: hero.skill2Name,
+        skillLabel: "Skill 2",
       });
     }
   }
@@ -84,7 +82,7 @@ export function SkillSequenceSelector({
     heroId: string;
     heroName: string;
     skillId: string;
-    skillName: string;
+    skillLabel: string;
   }) => {
     if (disabled) return;
     const nextOrder = getNextOrder();
@@ -98,7 +96,7 @@ export function SkillSequenceSelector({
         skillId: skill.skillId,
         order: nextOrder,
         heroName: skill.heroName,
-        skillName: skill.skillName,
+        skillLabel: skill.skillLabel,
       },
     ]);
   };
@@ -183,7 +181,7 @@ export function SkillSequenceSelector({
                         {skill.heroName}
                       </span>
                       <span className="text-xs md:text-sm font-medium text-text-primary text-center line-clamp-1">
-                        {skill.skillName}
+                        {skill.skillLabel}
                       </span>
                     </>
                   ) : (
@@ -233,7 +231,7 @@ export function SkillSequenceSelector({
                                 ),
                           )}
                         >
-                          {skill.skillName}
+                          {skill.skillLabel}
                           {selected && (
                             <span
                               className={cn(
