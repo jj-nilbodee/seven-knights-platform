@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_Thai, Chakra_Petch } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const notoSansThai = Noto_Sans_Thai({
@@ -30,6 +31,7 @@ export default function RootLayout({
         className={`${notoSansThai.variable} ${chakraPetch.variable} font-sans antialiased`}
       >
         {children}
+        <Toaster richColors theme="dark" />
       </body>
     </html>
   );

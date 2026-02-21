@@ -1,17 +1,14 @@
 "use server";
 
-import { z } from "zod";
 import { requireUser, requireOfficer } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { uuidSchema } from "@/lib/validations/shared";
 import {
   updateAccessStatus,
   createAccessRequest,
-  getAccessRequestByUser,
   getAccessRequestById,
 } from "@/lib/db/queries/access";
-
-const uuidSchema = z.string().uuid();
 
 export async function requestAccess(guildId: string) {
   const user = await requireUser();

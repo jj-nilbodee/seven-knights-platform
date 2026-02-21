@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { requireUser, resolveGuildId } from "@/lib/auth";
+import { requireUser, resolveGuildId, NO_GUILD_MESSAGE } from "@/lib/auth";
 import {
   getDashboardKPIs,
   getTopHeroCombos,
@@ -32,7 +32,7 @@ export default async function DashboardPage({
           </p>
         </div>
         <div className="flex items-center justify-center h-60 text-text-muted">
-          คุณยังไม่ได้อยู่ในกิลด์
+          {NO_GUILD_MESSAGE}
         </div>
       </div>
     );

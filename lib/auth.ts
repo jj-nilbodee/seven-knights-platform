@@ -59,3 +59,18 @@ export function resolveGuildId(
   }
   return user.guildId;
 }
+
+/**
+ * Require the user to be an officer AND belong to a guild.
+ * Returns { user, guildId } or renders the "no guild" fallback.
+ */
+export async function requireGuild(
+  searchParams?: { guildId?: string },
+): Promise<{ user: AppUser; guildId: string } | null> {
+  const user = await requireOfficer();
+  const guildId = resolveGuildId(user, searchParams);
+  if (!guildId) return null;
+  return { user, guildId };
+}
+
+export const NO_GUILD_MESSAGE = "คุณยังไม่ได้อยู่ในกิลด์";

@@ -1,6 +1,5 @@
 "use server";
 
-import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import {
@@ -8,14 +7,13 @@ import {
   heroUpdateSchema,
   heroBulkSchema,
 } from "@/lib/validations/hero";
+import { uuidSchema } from "@/lib/validations/shared";
 import {
   createHero as dbCreateHero,
   updateHero as dbUpdateHero,
   deleteHero as dbDeleteHero,
   bulkCreateHeroes,
 } from "@/lib/db/queries/heroes";
-
-const uuidSchema = z.string().uuid();
 
 export async function createHero(formData: FormData) {
   await requireAdmin();

@@ -6,6 +6,12 @@ export const battleResults = ["win", "loss"] as const;
 export const battleTypes = ["attack", "defense"] as const;
 export const guildWarDays = ["SAT", "MON", "WED"] as const;
 
+export const weekdayLabels: Record<string, string> = {
+  SAT: "เสาร์",
+  MON: "จันทร์",
+  WED: "พุธ",
+};
+
 export const teamCompositionSchema = z.object({
   heroes: z
     .array(

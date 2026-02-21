@@ -1,6 +1,5 @@
 "use server";
 
-import { z } from "zod";
 import { requireOfficer } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import {
@@ -8,13 +7,12 @@ import {
   memberUpdateSchema,
   memberBulkSchema,
 } from "@/lib/validations/member";
+import { uuidSchema } from "@/lib/validations/shared";
 import {
   createMember as dbCreateMember,
   updateMember as dbUpdateMember,
   bulkCreateMembers,
 } from "@/lib/db/queries/members";
-
-const uuidSchema = z.string().uuid();
 
 export async function createMember(formData: FormData, overrideGuildId?: string) {
   const user = await requireOfficer();

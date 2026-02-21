@@ -72,11 +72,7 @@ type Member = {
   lastBattleAt: Date | null;
 };
 
-const weekdayLabels: Record<string, string> = {
-  SAT: "เสาร์",
-  MON: "จันทร์",
-  WED: "พุธ",
-};
+import { weekdayLabels } from "@/lib/validations/battle";
 
 export function GuildWarClient({
   initialBattles,

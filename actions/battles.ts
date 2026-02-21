@@ -1,20 +1,18 @@
 "use server";
 
-import { z } from "zod";
 import { requireOfficer } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import {
   battleCreateSchema,
   battleUpdateSchema,
 } from "@/lib/validations/battle";
+import { uuidSchema } from "@/lib/validations/shared";
 import {
   createBattle as dbCreateBattle,
   updateBattle as dbUpdateBattle,
   deleteBattle as dbDeleteBattle,
   getBattleById,
 } from "@/lib/db/queries/battles";
-
-const uuidSchema = z.string().uuid();
 
 export async function createBattle(data: {
   memberId: string;

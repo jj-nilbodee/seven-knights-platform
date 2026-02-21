@@ -1,17 +1,15 @@
 "use server";
 
-import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { guildCreateSchema, guildUpdateSchema } from "@/lib/validations/guild";
+import { uuidSchema } from "@/lib/validations/shared";
 import {
   createGuild as dbCreateGuild,
   updateGuild as dbUpdateGuild,
   deleteGuild as dbDeleteGuild,
 } from "@/lib/db/queries/guilds";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-const uuidSchema = z.string().uuid();
 
 export async function createGuild(formData: FormData) {
   await requireAdmin();
@@ -88,11 +86,9 @@ export async function fetchGuildMembers(guildId: string) {
   if (!uuidSchema.safeParse(guildId).success) return [];
 
   const admin = createAdminClient();
-  const {
-    data: { users },
-  } = await admin.auth.admin.listUsers();
+  const allUsers = await listAllUsers(admin);
 
-  return users
+  return allUsers
     .filter(
       (u) =>
         u.app_metadata?.guildId === guildId &&
@@ -110,11 +106,9 @@ export async function fetchGuildOfficers(guildId: string) {
   if (!uuidSchema.safeParse(guildId).success) return [];
 
   const admin = createAdminClient();
-  const {
-    data: { users },
-  } = await admin.auth.admin.listUsers();
+  const allUsers = await listAllUsers(admin);
 
-  return users
+  return allUsers
     .filter(
       (u) =>
         u.app_metadata?.guildId === guildId &&
@@ -124,6 +118,23 @@ export async function fetchGuildOfficers(guildId: string) {
       userId: u.id,
       email: u.email ?? "",
     }));
+}
+
+// Paginate through all Supabase users (default listUsers returns max 50)
+async function listAllUsers(admin: ReturnType<typeof createAdminClient>) {
+  const perPage = 1000;
+  let page = 1;
+  let batch;
+  const all = [] as Array<{ id: string; email?: string; app_metadata: Record<string, unknown> }>;
+
+  do {
+    const { data: { users } } = await admin.auth.admin.listUsers({ page, perPage });
+    batch = users;
+    for (const u of batch) all.push(u);
+    page++;
+  } while (batch.length >= perPage);
+
+  return all;
 }
 
 export async function addOfficer(guildId: string, userId: string) {

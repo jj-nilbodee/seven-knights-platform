@@ -72,12 +72,3 @@ export async function updateAccessStatus(
   return row ?? null;
 }
 
-export async function getAccessRequestByUser(userId: string, guildId: string) {
-  const [row] = await db
-    .select()
-    .from(memberAccess)
-    .where(
-      and(eq(memberAccess.userId, userId), eq(memberAccess.guildId, guildId)),
-    );
-  return row ?? null;
-}

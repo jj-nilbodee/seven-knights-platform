@@ -67,23 +67,6 @@ export async function listBattles(guildId: string, filters: BattleFilters = {}) 
   return rows;
 }
 
-export async function countBattles(guildId: string, filters: BattleFilters = {}) {
-  const conditions = [eq(battles.guildId, guildId)];
-
-  if (filters.memberId) conditions.push(eq(battles.memberId, filters.memberId));
-  if (filters.dateFrom) conditions.push(gte(battles.date, filters.dateFrom));
-  if (filters.dateTo) conditions.push(lte(battles.date, filters.dateTo));
-  if (filters.result) conditions.push(eq(battles.result, filters.result));
-  if (filters.weekday) conditions.push(eq(battles.weekday, filters.weekday));
-
-  const [row] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(battles)
-    .where(and(...conditions));
-
-  return row?.count ?? 0;
-}
-
 export async function getBattleById(id: string) {
   const [row] = await db
     .select({

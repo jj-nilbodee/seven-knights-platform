@@ -1,20 +1,18 @@
 "use server";
 
-import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import {
   guideCreateSchema,
   guideUpdateSchema,
 } from "@/lib/validations/guide";
+import { uuidSchema } from "@/lib/validations/shared";
 import {
   createGuide as dbCreateGuide,
   updateGuide as dbUpdateGuide,
   deleteGuide as dbDeleteGuide,
   getGuideById,
 } from "@/lib/db/queries/gvg-guides";
-
-const uuidSchema = z.string().uuid();
 
 export async function createGuide(data: {
   title: string;

@@ -17,12 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getResultBadgeClasses } from "@/lib/badge-utils";
-
-const weekdayLabels: Record<string, string> = {
-  SAT: "เสาร์",
-  MON: "จันทร์",
-  WED: "พุธ",
-};
+import { weekdayLabels } from "@/lib/validations/battle";
 
 interface TeamData {
   heroes?: Array<{ heroId: string; position: string | null }>;
