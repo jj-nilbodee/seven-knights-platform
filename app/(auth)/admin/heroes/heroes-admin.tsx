@@ -47,8 +47,8 @@ import { createClient as createBrowserClient } from "@/lib/supabase/client";
 type Hero = {
   id: string;
   name: string;
-  heroType: string;
-  rarity: string;
+  heroType: string | null;
+  rarity: string | null;
   imageUrl: string | null;
   isActive: boolean | null;
 };
@@ -394,8 +394,8 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     setEditingId(hero.id);
     setForm({
       name: hero.name,
-      heroType: hero.heroType,
-      rarity: hero.rarity,
+      heroType: hero.heroType ?? "",
+      rarity: hero.rarity ?? "",
       imageFile: null,
       imagePreview: "",
       existingImageUrl: hero.imageUrl || "",
@@ -571,12 +571,16 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
                   </div>
 
                   <div className="flex flex-wrap gap-1">
-                    <span className={getHeroTypeBadgeClasses(hero.heroType)}>
-                      {hero.heroType}
-                    </span>
-                    <span className={getRarityBadgeClasses(hero.rarity)}>
-                      {hero.rarity}
-                    </span>
+                    {hero.heroType && (
+                      <span className={getHeroTypeBadgeClasses(hero.heroType)}>
+                        {hero.heroType}
+                      </span>
+                    )}
+                    {hero.rarity && (
+                      <span className={getRarityBadgeClasses(hero.rarity)}>
+                        {hero.rarity}
+                      </span>
+                    )}
                   </div>
 
                   <div className="space-y-1 pt-1">
@@ -932,7 +936,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
                 ชื่อ
               </p>
               <p className="text-xs text-text-muted">
-                ค่าเริ่มต้น: PHYSICAL / LEGEND
+                ประเภท/ความหายากตั้งค่าทีหลังได้
               </p>
             </div>
           </div>

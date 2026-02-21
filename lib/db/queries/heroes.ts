@@ -86,11 +86,7 @@ export async function bulkCreateHeroes(names: string[]) {
     return { added: 0, skipped: unique.length };
   }
 
-  const rows = newNames.map((name) => ({
-    name,
-    heroType: "PHYSICAL" as const,
-    rarity: "LEGEND" as const,
-  }));
+  const rows = newNames.map((name) => ({ name }));
 
   await db.insert(heroes).values(rows);
 

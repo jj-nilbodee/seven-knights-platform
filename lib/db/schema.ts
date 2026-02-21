@@ -21,8 +21,8 @@ export const heroes = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull().unique(),
-    heroType: text("hero_type").notNull(), // MAGIC, PHYSICAL, UNIVERSAL, TANK, SUPPORT
-    rarity: text("rarity").notNull(), // RARE, LEGEND
+    heroType: text("hero_type"), // MAGIC, PHYSICAL, UNIVERSAL, TANK, SUPPORT
+    rarity: text("rarity"), // RARE, LEGEND
     imageUrl: text("image_url").default(""),
     isActive: boolean("is_active").default(true),
 

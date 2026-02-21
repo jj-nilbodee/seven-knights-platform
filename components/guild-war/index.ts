@@ -8,8 +8,8 @@ export { TeamComposition } from "./team-composition";
 export interface HeroData {
   id: string;
   name: string;
-  heroType: string;
-  rarity: string;
+  heroType: string | null;
+  rarity: string | null;
   imageUrl: string | null;
   skill1Id: string | null;
   skill1Type: string;
