@@ -273,9 +273,9 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     const rawExt = (file.name.split(".").pop() ?? "").toLowerCase();
     const ext = ALLOWED_EXT.has(rawExt) ? rawExt : "png";
     const safeName = heroName
-      .replace(/[^a-zA-Z0-9\u0E00-\u0E7F-]/g, "")
+      .replace(/[^a-zA-Z0-9-]/g, "")
       .slice(0, 50);
-    const path = `heroes/${Date.now()}-${safeName}.${ext}`;
+    const path = `heroes/${Date.now()}${safeName ? `-${safeName}` : ""}.${ext}`;
 
     const { error } = await supabase.storage
       .from("hero-images")
