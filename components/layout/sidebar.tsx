@@ -81,10 +81,18 @@ export function Sidebar({ user, guilds }: SidebarProps) {
             กิลด์
           </span>
         </div>
-        {navItems.map((item) => {
+        {navItems.map((item, idx) => {
           const href = buildHref(item.href);
+          // Check if a later nav item is a more specific match (child route)
+          const hasMoreSpecificMatch = navItems.some(
+            (other, j) =>
+              j !== idx &&
+              other.href.startsWith(item.href + "/") &&
+              (pathname === other.href || pathname.startsWith(other.href + "/")),
+          );
           const isActive =
-            pathname === item.href || pathname.startsWith(item.href + "/");
+            !hasMoreSpecificMatch &&
+            (pathname === item.href || pathname.startsWith(item.href + "/"));
           return (
             <Link
               key={item.href}
