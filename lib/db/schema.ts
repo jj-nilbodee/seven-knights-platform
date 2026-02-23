@@ -69,13 +69,20 @@ export const guilds = pgTable("guilds", {
 // ============================================
 // Users (maps to Supabase Auth users)
 // ============================================
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey(), // Same as auth.users.id
-  email: text("email").notNull().unique(),
-  username: text("username").notNull(),
-  displayName: text("display_name").default(""),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey(), // Same as auth.users.id
+    email: text("email").notNull().unique(),
+    username: text("username").notNull(),
+    displayName: text("display_name").default(""),
+    role: text("role").notNull().default("member"), // admin, officer, member
+    guildId: uuid("guild_id").references(() => guilds.id),
+    accessStatus: text("access_status"), // pending, approved, rejected
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [index("idx_users_guild_role").on(table.guildId, table.role)],
+);
 
 // ============================================
 // Member Access

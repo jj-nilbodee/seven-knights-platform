@@ -13,7 +13,7 @@ import { users } from "@/lib/db/schema";
 async function ensurePublicUser(id: string, email: string) {
   await db
     .insert(users)
-    .values({ id, email, username: email.split("@")[0] })
+    .values({ id, email, username: email.split("@")[0], role: "member" })
     .onConflictDoUpdate({ target: users.id, set: { email } });
 }
 

@@ -3,13 +3,14 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, UserMinus, Crown, Search } from "lucide-react";
+import { Loader2, UserMinus, Crown, Search, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   assignUserToGuild,
   removeUserFromGuild,
   promoteToAdmin,
+  updateUserDisplayName,
 } from "@/actions/guilds";
 
 type User = {
@@ -17,6 +18,7 @@ type User = {
   email: string;
   role: string;
   guildId: string | null;
+  displayName: string;
   createdAt: string | null;
 };
 
@@ -66,9 +68,34 @@ function UserActionRow({
   const [isAssigning, startAssign] = useTransition();
   const [isRemoving, startRemove] = useTransition();
   const [isPromoting, startPromote] = useTransition();
+  const [isSavingName, startSaveName] = useTransition();
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(user.displayName);
 
-  const busy = isAssigning || isRemoving || isPromoting;
+  const busy = isAssigning || isRemoving || isPromoting || isSavingName;
   const isAdmin = user.role === "admin";
+
+  function handleSaveName() {
+    if (nameValue.trim() === user.displayName) {
+      setEditingName(false);
+      return;
+    }
+    startSaveName(async () => {
+      const result = await updateUserDisplayName(user.userId, nameValue);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("บันทึกชื่อสำเร็จ");
+        setEditingName(false);
+        router.refresh();
+      }
+    });
+  }
+
+  function handleCancelEdit() {
+    setNameValue(user.displayName);
+    setEditingName(false);
+  }
 
   function handleGuildChange(guildId: string) {
     if (!guildId) return;
@@ -142,6 +169,56 @@ function UserActionRow({
         <p className="text-sm text-text-primary truncate max-w-[200px]">
           {user.email}
         </p>
+      </td>
+      <td className="px-4 py-3">
+        {editingName ? (
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveName();
+                if (e.key === "Escape") handleCancelEdit();
+              }}
+              disabled={isSavingName}
+              autoFocus
+              className="h-7 w-32 rounded-[var(--radius-sm)] border border-border-dim bg-bg-input px-2 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSaveName}
+              disabled={isSavingName}
+              className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-7 w-7 p-0"
+            >
+              {isSavingName ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Check className="h-3 w-3" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancelEdit}
+              disabled={isSavingName}
+              className="text-text-muted hover:text-text-primary hover:bg-bg-elevated h-7 w-7 p-0"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditingName(true)}
+            className="group flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+          >
+            <span className="truncate max-w-[120px]">
+              {user.displayName || <span className="italic text-text-muted">ไม่มีชื่อ</span>}
+            </span>
+            <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-text-muted" />
+          </button>
+        )}
       </td>
       <td className="px-4 py-3">
         {isAdmin ? (
@@ -235,11 +312,14 @@ export function UsersAdmin({
   const guildMap = new Map(guilds.map((g) => [g.id, g.name]));
 
   const filtered = search.trim()
-    ? users.filter(
-        (u) =>
-          u.email.toLowerCase().includes(search.toLowerCase()) ||
-          (u.guildId && guildMap.get(u.guildId)?.toLowerCase().includes(search.toLowerCase())),
-      )
+    ? users.filter((u) => {
+        const q = search.toLowerCase();
+        return (
+          u.email.toLowerCase().includes(q) ||
+          u.displayName.toLowerCase().includes(q) ||
+          (u.guildId && guildMap.get(u.guildId)?.toLowerCase().includes(q))
+        );
+      })
     : users;
 
   return (
@@ -275,6 +355,9 @@ export function UsersAdmin({
                   อีเมล
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  ชื่อที่แสดง
+                </th>
+                <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
                   ตำแหน่ง
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
@@ -301,7 +384,7 @@ export function UsersAdmin({
               ) : (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-12 text-center text-sm text-text-muted"
                   >
                     {search.trim()

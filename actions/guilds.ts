@@ -10,6 +10,17 @@ import {
   deleteGuild as dbDeleteGuild,
 } from "@/lib/db/queries/guilds";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { users as usersTable } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import {
+  getUserFromDb,
+  listGuildMembers as dbListGuildMembers,
+  listGuildOfficers as dbListGuildOfficers,
+  listAllUsersFromDb,
+  listUnassignedUsers as dbListUnassignedUsers,
+  updateUserFields,
+} from "@/lib/db/queries/users";
 
 export async function createGuild(formData: FormData) {
   await requireAdmin();
@@ -77,64 +88,19 @@ export async function deleteGuild(id: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Officer management via Supabase Auth app_metadata
+// Officer management — DB is source of truth, app_metadata is cache
 // ---------------------------------------------------------------------------
 
 export async function fetchGuildMembers(guildId: string) {
   await requireAdmin();
-
   if (!uuidSchema.safeParse(guildId).success) return [];
-
-  const admin = createAdminClient();
-  const allUsers = await listAllUsers(admin);
-
-  return allUsers
-    .filter(
-      (u) =>
-        u.app_metadata?.guildId === guildId &&
-        u.app_metadata?.role === "member",
-    )
-    .map((u) => ({
-      userId: u.id,
-      email: u.email ?? "",
-    }));
+  return dbListGuildMembers(guildId);
 }
 
 export async function fetchGuildOfficers(guildId: string) {
   await requireAdmin();
-
   if (!uuidSchema.safeParse(guildId).success) return [];
-
-  const admin = createAdminClient();
-  const allUsers = await listAllUsers(admin);
-
-  return allUsers
-    .filter(
-      (u) =>
-        u.app_metadata?.guildId === guildId &&
-        u.app_metadata?.role === "officer",
-    )
-    .map((u) => ({
-      userId: u.id,
-      email: u.email ?? "",
-    }));
-}
-
-// Paginate through all Supabase users (default listUsers returns max 50)
-async function listAllUsers(admin: ReturnType<typeof createAdminClient>) {
-  const perPage = 1000;
-  let page = 1;
-  let batch;
-  const all = [] as Array<{ id: string; email?: string; app_metadata: Record<string, unknown> }>;
-
-  do {
-    const { data: { users } } = await admin.auth.admin.listUsers({ page, perPage });
-    batch = users;
-    for (const u of batch) all.push(u);
-    page++;
-  } while (batch.length >= perPage);
-
-  return all;
+  return dbListGuildOfficers(guildId);
 }
 
 export async function addOfficer(guildId: string, userId: string) {
@@ -147,21 +113,20 @@ export async function addOfficer(guildId: string, userId: string) {
     return { error: "ID ไม่ถูกต้อง" };
   }
 
-  const admin = createAdminClient();
-
-  // Verify the user exists and belongs to this guild
-  const {
-    data: { user },
-  } = await admin.auth.admin.getUserById(userId);
+  const user = await getUserFromDb(userId);
   if (!user) return { error: "ไม่พบผู้ใช้" };
-  if (user.app_metadata?.guildId !== guildId) {
+  if (user.guildId !== guildId) {
     return { error: "ผู้ใช้ไม่ได้อยู่ในกิลด์นี้" };
   }
-  if (user.app_metadata?.role === "officer") {
+  if (user.role === "officer") {
     return { error: "ผู้ใช้นี้เป็นเจ้าหน้าที่อยู่แล้ว" };
   }
 
-  // Promote via app_metadata
+  // DB write (source of truth)
+  await updateUserFields(userId, { role: "officer" });
+
+  // Sync app_metadata (cache)
+  const admin = createAdminClient();
   await admin.auth.admin.updateUserById(userId, {
     app_metadata: { role: "officer", guildId },
   });
@@ -180,21 +145,17 @@ export async function removeOfficer(guildId: string, userId: string) {
     return { error: "ID ไม่ถูกต้อง" };
   }
 
-  const admin = createAdminClient();
-
-  // Verify the user is an officer of this guild
-  const {
-    data: { user },
-  } = await admin.auth.admin.getUserById(userId);
+  const user = await getUserFromDb(userId);
   if (!user) return { error: "ไม่พบผู้ใช้" };
-  if (
-    user.app_metadata?.guildId !== guildId ||
-    user.app_metadata?.role !== "officer"
-  ) {
+  if (user.guildId !== guildId || user.role !== "officer") {
     return { error: "ไม่พบเจ้าหน้าที่" };
   }
 
-  // Demote to member (keep guildId)
+  // DB write (source of truth)
+  await updateUserFields(userId, { role: "member" });
+
+  // Sync app_metadata (cache)
+  const admin = createAdminClient();
   await admin.auth.admin.updateUserById(userId, {
     app_metadata: { role: "member", guildId },
   });
@@ -210,31 +171,44 @@ export async function removeOfficer(guildId: string, userId: string) {
 export async function fetchAllUsers() {
   await requireAdmin();
 
-  const admin = createAdminClient();
-  const allUsers = await listAllUsers(admin);
-
-  return allUsers.map((u) => ({
-    userId: u.id,
-    email: u.email ?? "",
-    role: (u.app_metadata?.role as string) ?? "member",
-    guildId: (u.app_metadata?.guildId as string) ?? null,
-    createdAt: (u as { created_at?: string }).created_at ?? null,
+  const rows = await listAllUsersFromDb();
+  return rows.map((u) => ({
+    userId: u.userId,
+    email: u.email,
+    role: u.role,
+    guildId: u.guildId,
+    displayName: u.displayName ?? "",
+    createdAt: u.createdAt ? u.createdAt.toISOString() : null,
   }));
+}
+
+export async function updateUserDisplayName(userId: string, displayName: string) {
+  await requireAdmin();
+
+  if (!uuidSchema.safeParse(userId).success) {
+    return { error: "ID ไม่ถูกต้อง" };
+  }
+
+  const trimmed = displayName.trim();
+  if (trimmed.length > 100) {
+    return { error: "ชื่อยาวเกินไป (สูงสุด 100 ตัวอักษร)" };
+  }
+
+  await db.update(usersTable).set({ displayName: trimmed }).where(eq(usersTable.id, userId));
+
+  revalidatePath("/admin/users");
+  return { success: true };
 }
 
 export async function fetchUnassignedUsers() {
   await requireAdmin();
 
-  const admin = createAdminClient();
-  const allUsers = await listAllUsers(admin);
-
-  return allUsers
-    .filter((u) => !u.app_metadata?.guildId && u.app_metadata?.role !== "admin")
-    .map((u) => ({
-      userId: u.id,
-      email: u.email ?? "",
-      createdAt: (u as { created_at?: string }).created_at ?? null,
-    }));
+  const rows = await dbListUnassignedUsers();
+  return rows.map((u) => ({
+    userId: u.userId,
+    email: u.email,
+    createdAt: u.createdAt ? u.createdAt.toISOString() : null,
+  }));
 }
 
 export async function assignUserToGuild(
@@ -251,13 +225,14 @@ export async function assignUserToGuild(
     return { error: "ID ไม่ถูกต้อง" };
   }
 
-  const admin = createAdminClient();
-
-  const {
-    data: { user },
-  } = await admin.auth.admin.getUserById(userId);
+  const user = await getUserFromDb(userId);
   if (!user) return { error: "ไม่พบผู้ใช้" };
 
+  // DB write (source of truth)
+  await updateUserFields(userId, { role, guildId, accessStatus: "approved" });
+
+  // Sync app_metadata (cache)
+  const admin = createAdminClient();
   await admin.auth.admin.updateUserById(userId, {
     app_metadata: { role, guildId, accessStatus: "approved" },
   });
@@ -274,13 +249,14 @@ export async function removeUserFromGuild(userId: string) {
     return { error: "ID ไม่ถูกต้อง" };
   }
 
-  const admin = createAdminClient();
-
-  const {
-    data: { user },
-  } = await admin.auth.admin.getUserById(userId);
+  const user = await getUserFromDb(userId);
   if (!user) return { error: "ไม่พบผู้ใช้" };
 
+  // DB write (source of truth)
+  await updateUserFields(userId, { role: "member", guildId: null, accessStatus: null });
+
+  // Sync app_metadata (cache)
+  const admin = createAdminClient();
   await admin.auth.admin.updateUserById(userId, {
     app_metadata: { role: "member", guildId: null, accessStatus: null },
   });
@@ -297,13 +273,14 @@ export async function promoteToAdmin(userId: string) {
     return { error: "ID ไม่ถูกต้อง" };
   }
 
-  const admin = createAdminClient();
-
-  const {
-    data: { user },
-  } = await admin.auth.admin.getUserById(userId);
+  const user = await getUserFromDb(userId);
   if (!user) return { error: "ไม่พบผู้ใช้" };
 
+  // DB write (source of truth)
+  await updateUserFields(userId, { role: "admin" });
+
+  // Sync app_metadata (cache)
+  const admin = createAdminClient();
   await admin.auth.admin.updateUserById(userId, {
     app_metadata: { role: "admin" },
   });
