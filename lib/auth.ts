@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getUserFromDb } from "@/lib/db/queries/users";
 
 export type UserRole = "admin" | "officer" | "member";
 
@@ -18,13 +19,16 @@ export async function getCurrentUser(): Promise<AppUser | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const meta = user.app_metadata;
+  // Read from public.users (source of truth) instead of app_metadata (cache)
+  const dbUser = await getUserFromDb(user.id);
+  if (!dbUser) return null;
+
   return {
     id: user.id,
     email: user.email ?? "",
-    role: meta.role ?? "member",
-    guildId: meta.guildId ?? null,
-    accessStatus: meta.accessStatus ?? null,
+    role: (dbUser.role as UserRole) ?? "member",
+    guildId: dbUser.guildId ?? null,
+    accessStatus: dbUser.accessStatus ?? null,
   };
 }
 
