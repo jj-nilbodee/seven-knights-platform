@@ -207,6 +207,21 @@ export async function removeOfficer(guildId: string, userId: string) {
 // User management — assign / remove / promote
 // ---------------------------------------------------------------------------
 
+export async function fetchAllUsers() {
+  await requireAdmin();
+
+  const admin = createAdminClient();
+  const allUsers = await listAllUsers(admin);
+
+  return allUsers.map((u) => ({
+    userId: u.id,
+    email: u.email ?? "",
+    role: (u.app_metadata?.role as string) ?? "member",
+    guildId: (u.app_metadata?.guildId as string) ?? null,
+    createdAt: (u as { created_at?: string }).created_at ?? null,
+  }));
+}
+
 export async function fetchUnassignedUsers() {
   await requireAdmin();
 
@@ -248,6 +263,7 @@ export async function assignUserToGuild(
   });
 
   revalidatePath("/admin/guilds");
+  revalidatePath("/admin/users");
   return { success: true };
 }
 
@@ -270,6 +286,7 @@ export async function removeUserFromGuild(userId: string) {
   });
 
   revalidatePath("/admin/guilds");
+  revalidatePath("/admin/users");
   return { success: true };
 }
 
@@ -292,5 +309,6 @@ export async function promoteToAdmin(userId: string) {
   });
 
   revalidatePath("/admin/guilds");
+  revalidatePath("/admin/users");
   return { success: true };
 }

@@ -33,6 +33,7 @@ const publicNavItems = [
 const adminItems = [
   { href: "/admin/heroes", label: "จัดการฮีโร่", icon: Crown },
   { href: "/admin/guilds", label: "จัดการกิลด์", icon: Waypoints },
+  { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users },
   { href: "/admin/gvg-guides", label: "จัดการคู่มือ", icon: BookOpen },
 ];
 
