@@ -14,6 +14,7 @@ import {
   Zap,
   ChevronRight,
   ExternalLink,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getResultBadgeClasses } from "@/lib/badge-utils";
@@ -233,17 +234,24 @@ export default async function BattleDetailPage({
             {battle.date} — {weekdayLabels[battle.weekday] ?? battle.weekday}
           </p>
         </div>
-        <span className={getResultBadgeClasses(battle.result)}>
-          {battle.result === "win" ? (
-            <>
-              <Trophy className="h-3.5 w-3.5" /> ชนะ
-            </>
-          ) : (
-            <>
-              <XCircle className="h-3.5 w-3.5" /> แพ้
-            </>
-          )}
-        </span>
+        <div className="flex items-center gap-2">
+          <Link href={`/guild-war/edit?id=${battle.id}`}>
+            <Button variant="ghost" size="icon" className="text-text-muted hover:text-gold">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </Link>
+          <span className={getResultBadgeClasses(battle.result)}>
+            {battle.result === "win" ? (
+              <>
+                <Trophy className="h-3.5 w-3.5" /> ชนะ
+              </>
+            ) : (
+              <>
+                <XCircle className="h-3.5 w-3.5" /> แพ้
+              </>
+            )}
+          </span>
+        </div>
       </div>
 
       {/* Battle info card */}

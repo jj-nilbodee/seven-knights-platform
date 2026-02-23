@@ -13,6 +13,7 @@ import {
   Loader2,
   Trash2,
   Eye,
+  Pencil,
   Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -301,6 +302,11 @@ export function GuildWarClient({
                         <Link href={`/guild-war/detail?id=${battle.id}`}>
                           <button className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-cyan hover:bg-cyan/10 transition-colors">
                             <Eye className="h-3.5 w-3.5" />
+                          </button>
+                        </Link>
+                        <Link href={`/guild-war/edit?id=${battle.id}`}>
+                          <button className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-gold hover:bg-gold/10 transition-colors">
+                            <Pencil className="h-3.5 w-3.5" />
                           </button>
                         </Link>
                         <button

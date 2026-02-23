@@ -33,7 +33,7 @@ import type {
   Position,
 } from "@/components/guild-war/index";
 import { initialTeamState } from "@/components/guild-war/index";
-import { createBattle, getBattleContext } from "@/actions/battles";
+import { createBattle, updateBattle, getBattleContext } from "@/actions/battles";
 
 type Member = {
   id: string;
@@ -269,44 +269,151 @@ function HeroChipPicker({
   );
 }
 
+/* ── Initial Battle type for edit mode ──────────────────── */
+
+export type InitialBattle = {
+  id: string;
+  memberId: string;
+  date: string;
+  battleNumber: number;
+  battleType: string | null;
+  result: string;
+  enemyGuildName: string | null;
+  enemyPlayerName: string | null;
+  alliedTeam: unknown;
+  enemyTeam: unknown;
+  firstTurn: boolean | null;
+  videoUrl: string | null;
+};
+
+interface TeamJsonData {
+  heroes?: Array<{ heroId: string; position: string | null }>;
+  formation?: string | null;
+  skillSequence?: Array<{ heroId: string; skillId: string; order: number }>;
+  speed?: number;
+}
+
+function reconstructTeamState(
+  teamJson: unknown,
+  heroList: HeroData[],
+): TeamCompositionState {
+  const data = (teamJson ?? {}) as TeamJsonData;
+  const heroMap = new Map(heroList.map((h) => [h.id, h]));
+
+  const selectedHeroes: SelectedHero[] = (data.heroes ?? [])
+    .map((h) => {
+      const hero = heroMap.get(h.heroId);
+      if (!hero) return null;
+      return {
+        heroId: h.heroId,
+        hero,
+        position: (h.position as Position | null) ?? null,
+      };
+    })
+    .filter((h): h is SelectedHero => h !== null);
+
+  const skillSequence: SkillSequenceItem[] = (data.skillSequence ?? []).map(
+    (s) => {
+      const hero = heroMap.get(s.heroId);
+      let skillLabel = s.skillId;
+      if (hero) {
+        if (hero.skill1Id === s.skillId) skillLabel = "Skill 1";
+        else if (hero.skill2Id === s.skillId) skillLabel = "Skill 2";
+      }
+      return {
+        heroId: s.heroId,
+        skillId: s.skillId,
+        order: s.order as 1 | 2 | 3,
+        heroName: hero?.name ?? "?",
+        skillLabel,
+      };
+    },
+  );
+
+  return {
+    selectedHeroes,
+    formation: (data.formation as TeamCompositionState["formation"]) ?? null,
+    skillSequence,
+    speed: data.speed ?? "",
+  };
+}
+
 /* ── Main Form ──────────────────── */
 
 export function BattleSubmitClient({
   members,
   heroes,
   guildId,
+  initialBattle,
 }: {
   members: Member[];
   heroes: HeroData[];
   guildId: string;
+  initialBattle?: InitialBattle;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const isEditMode = !!initialBattle;
 
   // Form state
-  const [memberId, setMemberId] = useState("");
-  const [date, setDate] = useState(getTodayDate());
-  const [battleNumber, setBattleNumber] = useState("1");
-  const [battleType, setBattleType] = useState("attack");
-  const [result, setResult] = useState("");
-  const [enemyGuildName, setEnemyGuildName] = useState("");
-  const [enemyPlayerName, setEnemyPlayerName] = useState("");
-  const [firstTurn, setFirstTurn] = useState("unknown");
-  const [videoUrl, setVideoUrl] = useState("");
+  const [memberId, setMemberId] = useState(initialBattle?.memberId ?? "");
+  const [date, setDate] = useState(initialBattle?.date ?? getTodayDate());
+  const [battleNumber, setBattleNumber] = useState(
+    initialBattle ? String(initialBattle.battleNumber) : "1",
+  );
+  const [battleType, setBattleType] = useState(
+    initialBattle?.battleType ?? "attack",
+  );
+  const [result, setResult] = useState(initialBattle?.result ?? "");
+  const [enemyGuildName, setEnemyGuildName] = useState(
+    initialBattle?.enemyGuildName ?? "",
+  );
+  const [enemyPlayerName, setEnemyPlayerName] = useState(
+    initialBattle?.enemyPlayerName ?? "",
+  );
+  const [firstTurn, setFirstTurn] = useState(
+    initialBattle
+      ? initialBattle.firstTurn === true
+        ? "yes"
+        : initialBattle.firstTurn === false
+          ? "no"
+          : "unknown"
+      : "unknown",
+  );
+  const [videoUrl, setVideoUrl] = useState(initialBattle?.videoUrl ?? "");
   const [memberBattleCount, setMemberBattleCount] = useState(0);
 
   // Team composition state
-  const [alliedTeam, setAlliedTeam] =
-    useState<TeamCompositionState>(initialTeamState);
-  const [enemyTeam, setEnemyTeam] =
-    useState<TeamCompositionState>(initialTeamState);
+  const [alliedTeam, setAlliedTeam] = useState<TeamCompositionState>(
+    initialBattle
+      ? reconstructTeamState(initialBattle.alliedTeam, heroes)
+      : initialTeamState,
+  );
+  const [enemyTeam, setEnemyTeam] = useState<TeamCompositionState>(
+    initialBattle
+      ? reconstructTeamState(initialBattle.enemyTeam, heroes)
+      : initialTeamState,
+  );
 
-  // Collapsible advanced section
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  // Collapsible advanced section — open by default in edit mode if there's advanced data
+  const [advancedOpen, setAdvancedOpen] = useState(() => {
+    if (!initialBattle) return false;
+    const allied = (initialBattle.alliedTeam ?? {}) as TeamJsonData;
+    const enemy = (initialBattle.enemyTeam ?? {}) as TeamJsonData;
+    return !!(
+      allied.formation ||
+      enemy.formation ||
+      (allied.skillSequence && allied.skillSequence.length > 0) ||
+      (enemy.skillSequence && enemy.skillSequence.length > 0) ||
+      (allied.speed && allied.speed > 0) ||
+      (enemy.speed && enemy.speed > 0) ||
+      initialBattle.videoUrl
+    );
+  });
 
-  // Auto-populate battle number and enemy guild name
+  // Auto-populate battle number and enemy guild name (skip in edit mode)
   useEffect(() => {
-    if (!date) return;
+    if (isEditMode || !date) return;
 
     if (memberId) {
       getBattleContext(guildId, memberId, date).then((ctx) => {
@@ -323,7 +430,7 @@ export function BattleSubmitClient({
         }
       });
     }
-  }, [memberId, date, guildId]);
+  }, [memberId, date, guildId, isEditMode]);
 
   // Hero selection handlers that also clean up skill sequences
   const handleAlliedHeroChange = (selectedHeroes: SelectedHero[]) => {
@@ -369,13 +476,13 @@ export function BattleSubmitClient({
       toast.error("กรุณาเลือกผลการต่อสู้");
       return;
     }
-    if (memberBattleCount >= 5) {
+    if (!isEditMode && memberBattleCount >= 5) {
       toast.error("สมาชิกนี้ลงสนามครบ 5 ครั้งแล้วในวันนี้");
       return;
     }
 
     startTransition(async () => {
-      const res = await createBattle({
+      const battleData = {
         memberId,
         date,
         battleNumber: parseInt(battleNumber, 10),
@@ -388,13 +495,18 @@ export function BattleSubmitClient({
         firstTurn:
           firstTurn === "yes" ? true : firstTurn === "no" ? false : null,
         videoUrl,
-        guildId,
-      });
+      };
+
+      const res = isEditMode
+        ? await updateBattle(initialBattle.id, battleData)
+        : await createBattle({ ...battleData, guildId });
 
       if (res.error) {
         toast.error(res.error);
       } else {
-        toast.success("บันทึกการต่อสู้สำเร็จ!");
+        toast.success(
+          isEditMode ? "แก้ไขการต่อสู้สำเร็จ!" : "บันทึกการต่อสู้สำเร็จ!",
+        );
         router.push("/guild-war");
       }
     });
@@ -411,14 +523,16 @@ export function BattleSubmitClient({
         </Link>
         <div className="flex-1">
           <h1 className="font-display text-2xl font-bold text-text-primary">
-            บันทึกการต่อสู้
+            {isEditMode ? "แก้ไขการต่อสู้" : "บันทึกการต่อสู้"}
           </h1>
           <p className="text-sm text-text-secondary mt-1">
-            เพิ่มข้อมูลการต่อสู้สงครามกิลด์
+            {isEditMode
+              ? "แก้ไขข้อมูลการต่อสู้สงครามกิลด์"
+              : "เพิ่มข้อมูลการต่อสู้สงครามกิลด์"}
           </p>
         </div>
         {/* Battle # badge */}
-        {memberId && (
+        {!isEditMode && memberId && (
           <div className="flex flex-col items-center px-3 py-1.5 rounded-[var(--radius-md)] bg-accent/10 border border-accent/30">
             <span className="text-[10px] text-text-muted uppercase tracking-wider">
               ครั้งที่
@@ -449,7 +563,7 @@ export function BattleSubmitClient({
                 ))}
               </SelectContent>
             </Select>
-            {memberId && memberBattleCount > 0 && (
+            {!isEditMode && memberId && memberBattleCount > 0 && (
               <p className="text-xs text-text-muted">
                 ลงสนามแล้ว {memberBattleCount}/5 ครั้ง
                 {memberBattleCount >= 5 && (
@@ -802,14 +916,16 @@ export function BattleSubmitClient({
         <div className="flex gap-3 pt-2">
           <Button
             type="submit"
-            disabled={isPending || memberBattleCount >= 5}
+            disabled={isPending || (!isEditMode && memberBattleCount >= 5)}
             className="flex-1"
           >
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                กำลังบันทึก...
+                {isEditMode ? "กำลังบันทึก..." : "กำลังบันทึก..."}
               </>
+            ) : isEditMode ? (
+              "บันทึกการแก้ไข"
             ) : (
               "บันทึกการต่อสู้"
             )}
