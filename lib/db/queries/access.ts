@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { memberAccess, users } from "@/lib/db/schema";
+import { memberAccess, users, guilds } from "@/lib/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 export async function listAccessRequests(
@@ -26,6 +26,21 @@ export async function listAccessRequests(
     .from(memberAccess)
     .innerJoin(users, eq(memberAccess.userId, users.id))
     .where(and(...conditions))
+    .orderBy(desc(memberAccess.requestedAt));
+}
+
+export async function getAccessRequestsByUser(userId: string) {
+  return db
+    .select({
+      id: memberAccess.id,
+      guildId: memberAccess.guildId,
+      guildName: guilds.name,
+      status: memberAccess.status,
+      requestedAt: memberAccess.requestedAt,
+    })
+    .from(memberAccess)
+    .innerJoin(guilds, eq(memberAccess.guildId, guilds.id))
+    .where(eq(memberAccess.userId, userId))
     .orderBy(desc(memberAccess.requestedAt));
 }
 

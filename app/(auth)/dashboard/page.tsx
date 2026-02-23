@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { requireUser, resolveGuildId, NO_GUILD_MESSAGE } from "@/lib/auth";
+import { requireUser, resolveGuildId } from "@/lib/auth";
 import {
   getDashboardKPIs,
   getTopHeroCombos,
   getRecentBattles,
   getWinRateTrend,
 } from "@/lib/db/queries/analytics";
+import { listGuilds } from "@/lib/db/queries/guilds";
+import { getAccessRequestsByUser } from "@/lib/db/queries/access";
 import { KPICards } from "@/components/analytics/kpi-cards";
 import { WinRateTrendChart } from "@/components/analytics/win-rate-trend-chart";
+import { GuildJoinPanel } from "@/components/guild-join-panel";
 import { getResultBadgeClasses } from "@/lib/badge-utils";
 
 export default async function DashboardPage({
@@ -21,6 +24,11 @@ export default async function DashboardPage({
   const guildId = resolveGuildId(user, params);
 
   if (!guildId) {
+    const [allGuilds, existingRequests] = await Promise.all([
+      listGuilds(),
+      getAccessRequestsByUser(user.id),
+    ]);
+
     return (
       <div className="space-y-6">
         <div>
@@ -31,9 +39,14 @@ export default async function DashboardPage({
             ยินดีต้อนรับ, {user.email}
           </p>
         </div>
-        <div className="flex items-center justify-center h-60 text-text-muted">
-          {NO_GUILD_MESSAGE}
-        </div>
+        <GuildJoinPanel
+          guilds={allGuilds.map((g) => ({ id: g.id, name: g.name }))}
+          existingRequests={existingRequests.map((r) => ({
+            guildId: r.guildId,
+            status: r.status,
+            requestedAt: r.requestedAt,
+          }))}
+        />
       </div>
     );
   }
