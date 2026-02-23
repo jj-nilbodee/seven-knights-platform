@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getUserFromDb } from "@/lib/db/queries/users";
+import { listGuilds } from "@/lib/db/queries/guilds";
 
 export type UserRole = "admin" | "officer" | "member";
 
@@ -66,13 +67,23 @@ export function resolveGuildId(
 
 /**
  * Require the user to be an officer AND belong to a guild.
+ * Admins without a personal guild auto-select the first available guild.
  * Returns { user, guildId } or renders the "no guild" fallback.
  */
 export async function requireGuild(
   searchParams?: { guildId?: string },
 ): Promise<{ user: AppUser; guildId: string } | null> {
   const user = await requireOfficer();
-  const guildId = resolveGuildId(user, searchParams);
+  let guildId = resolveGuildId(user, searchParams);
+
+  // Admins without a personal guild: auto-select the first available guild
+  if (!guildId && user.role === "admin") {
+    const allGuilds = await listGuilds();
+    if (allGuilds.length > 0) {
+      guildId = allGuilds[0].id;
+    }
+  }
+
   if (!guildId) return null;
   return { user, guildId };
 }
