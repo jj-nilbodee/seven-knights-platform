@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Clock } from "lucide-react";
+import { ArrowRight, Clock, Settings } from "lucide-react";
 import { requireUser, resolveGuildId } from "@/lib/auth";
 import {
   getDashboardKPIs,
@@ -7,6 +7,7 @@ import {
   getRecentBattles,
   getWinRateTrend,
 } from "@/lib/db/queries/analytics";
+import { listGuilds } from "@/lib/db/queries/guilds";
 import { KPICards } from "@/components/analytics/kpi-cards";
 import { WinRateTrendChart } from "@/components/analytics/win-rate-trend-chart";
 import { getResultBadgeClasses } from "@/lib/badge-utils";
@@ -18,7 +19,41 @@ export default async function DashboardPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
-  const guildId = resolveGuildId(user, params);
+  let guildId = resolveGuildId(user, params);
+
+  // Admins without a personal guild: auto-select the first available guild
+  if (!guildId && user.role === "admin") {
+    const allGuilds = await listGuilds();
+    if (allGuilds.length > 0) {
+      guildId = allGuilds[0].id;
+    } else {
+      return (
+        <div className="space-y-6">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-text-primary">
+              แดชบอร์ด
+            </h1>
+            <p className="text-sm text-text-secondary mt-1">
+              ยินดีต้อนรับ, {user.email}
+            </p>
+          </div>
+          <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-8 text-center">
+            <Settings className="h-10 w-10 text-text-muted mx-auto mb-3" />
+            <p className="text-text-primary font-medium">
+              ยังไม่มีกิลด์ในระบบ
+            </p>
+            <p className="text-sm text-text-muted mt-1">
+              ไปที่{" "}
+              <Link href="/admin/guilds" className="text-accent hover:text-accent-bright">
+                จัดการกิลด์
+              </Link>{" "}
+              เพื่อสร้างกิลด์แรก
+            </p>
+          </div>
+        </div>
+      );
+    }
+  }
 
   if (!guildId) {
     return (
