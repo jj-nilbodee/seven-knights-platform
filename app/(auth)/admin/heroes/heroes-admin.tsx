@@ -281,7 +281,10 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
       .from("hero-images")
       .upload(path, file, { upsert: true });
 
-    if (error) throw new Error("อัปโหลดรูปไม่สำเร็จ");
+    if (error) {
+      console.error("Supabase storage upload error:", error.message);
+      throw new Error(`อัปโหลดรูปไม่สำเร็จ: ${error.message}`);
+    }
 
     const {
       data: { publicUrl },
@@ -321,8 +324,8 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     if (form.imageFile) {
       try {
         imageUrl = await uploadImage(form.imageFile, form.name);
-      } catch {
-        toast.error("อัปโหลดรูปไม่สำเร็จ");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "อัปโหลดรูปไม่สำเร็จ");
         return;
       }
     }
@@ -362,8 +365,8 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     if (form.imageFile) {
       try {
         imageUrl = await uploadImage(form.imageFile, form.name);
-      } catch {
-        toast.error("อัปโหลดรูปไม่สำเร็จ");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "อัปโหลดรูปไม่สำเร็จ");
         return;
       }
     }
