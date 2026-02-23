@@ -488,18 +488,6 @@ export const gvgGuideVersions = pgTable("gvg_guide_versions", {
   index("idx_guide_ver").on(table.guideId, table.version),
 ]);
 
-// ============================================
-// Attack Guidelines (defense team → counter strategies)
-// ============================================
-export const attackGuidelines = pgTable("attack_guidelines", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  defenseTeam: jsonb("defense_team").notNull(),
-  counterStrategies: jsonb("counter_strategies").notNull(),
-  isActive: boolean("is_active").default(true),
-  createdByUserId: uuid("created_by_user_id").notNull().references(() => users.id),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
 
 // ============================================
 // Advent Expedition
@@ -605,7 +593,6 @@ CREATE TRIGGER trg_heroes BEFORE UPDATE ON heroes FOR EACH ROW EXECUTE FUNCTION 
 CREATE TRIGGER trg_battles BEFORE UPDATE ON battles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_guides BEFORE UPDATE ON gvg_guides FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_guilds BEFORE UPDATE ON guilds FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER trg_guidelines BEFORE UPDATE ON attack_guidelines FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_advent BEFORE UPDATE ON advent_cycles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_advent_profiles BEFORE UPDATE ON advent_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 

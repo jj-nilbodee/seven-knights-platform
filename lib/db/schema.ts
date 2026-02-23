@@ -257,21 +257,6 @@ export const gvgGuideVersions = pgTable(
 );
 
 // ============================================
-// Attack Guidelines (defense team -> counter strategies)
-// ============================================
-export const attackGuidelines = pgTable("attack_guidelines", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  defenseTeam: jsonb("defense_team").notNull(),
-  counterStrategies: jsonb("counter_strategies").notNull(),
-  isActive: boolean("is_active").default(true),
-  createdByUserId: uuid("created_by_user_id")
-    .notNull()
-    .references(() => users.id),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-// ============================================
 // Castle Rush
 // ============================================
 export const castleRushScores = pgTable(

@@ -245,7 +245,6 @@ seven-knights-platform/
 │   │   ├── gvg-guides/
 │   │   │   ├── page.tsx                 # Hero search + guide cards
 │   │   │   └── [id]/page.tsx            # Guide detail
-│   │   ├── guidelines/page.tsx          # Public attack guidelines
 │   │   └── submit/
 │   │       └── advent-expedition/page.tsx
 │   ├── (auth)/                          # Auth required
@@ -255,7 +254,6 @@ seven-knights-platform/
 │   │   │   ├── page.tsx
 │   │   │   ├── submit/page.tsx
 │   │   │   ├── detail/page.tsx
-│   │   │   ├── guidelines/page.tsx
 │   │   │   └── analytics/
 │   │   │       ├── layout.tsx
 │   │   │       ├── page.tsx
@@ -298,7 +296,6 @@ seven-knights-platform/
 │   ├── members.ts
 │   ├── guilds.ts
 │   ├── gvg-guides.ts
-│   ├── guidelines.ts
 │   ├── advent.ts
 │   └── castle-rush.ts
 ├── components/
@@ -389,12 +386,7 @@ Build in this order. Each phase should be fully working before moving to the nex
 - [ ] Advent pages (cycles, plan, public submission)
 - [ ] Castle Rush (scores, AI extraction, history, rankings)
 
-### Phase 7: Attack Guidelines
-- [ ] Attack Guidelines: queries, actions, pages
-- [ ] Public guidelines view
-- [ ] Admin CRUD
-
-### Phase 8: Polish
+### Phase 7: Polish
 - [ ] Error handling + loading states (Suspense boundaries)
 - [ ] Mobile responsiveness
 - [ ] Thai language throughout UI

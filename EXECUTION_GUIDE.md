@@ -417,6 +417,5 @@ Write a script that uses the Supabase admin client to set a user as admin.
 - [ ] Advent expedition cycle flow works
 - [ ] Vertex AI screenshot extraction works
 - [ ] Castle Rush score submission works
-- [ ] Attack guidelines CRUD works
 - [ ] All pages mobile-responsive
 - [ ] Thai language throughout

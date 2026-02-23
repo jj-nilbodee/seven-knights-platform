@@ -9,7 +9,6 @@ import {
   Users,
   BookOpen,
   Castle,
-  Shield,
   Crown,
   Waypoints,
   KeyRound,
@@ -30,7 +29,6 @@ const navItems = [
 
 const publicNavItems = [
   { href: "/gvg-guides", label: "คู่มือ GVG", icon: BookOpen },
-  { href: "/guidelines", label: "แนวทางโจมตี", icon: Shield },
 ];
 
 const adminItems = [
