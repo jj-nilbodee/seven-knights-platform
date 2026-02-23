@@ -23,11 +23,12 @@ export function GuildSelector({ guilds }: GuildSelectorProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const currentGuildId = searchParams.get("guildId") ?? "own";
+  const defaultGuildId = guilds[0]?.id ?? "";
+  const currentGuildId = searchParams.get("guildId") ?? defaultGuildId;
 
   function handleChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === "own") {
+    if (value === defaultGuildId) {
       params.delete("guildId");
     } else {
       params.set("guildId", value);
@@ -45,10 +46,9 @@ export function GuildSelector({ guilds }: GuildSelectorProps) {
       </p>
       <Select value={currentGuildId} onValueChange={handleChange}>
         <SelectTrigger className="h-8 text-xs">
-          <SelectValue placeholder="กิลด์ของฉัน" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="own">กิลด์ของฉัน</SelectItem>
           {guilds.map((g) => (
             <SelectItem key={g.id} value={g.id}>
               {g.name}
