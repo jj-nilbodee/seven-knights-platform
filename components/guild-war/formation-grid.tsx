@@ -102,7 +102,7 @@ export function FormationGrid({
         disabled={disabled}
         className="absolute -top-1 -right-1 md:-top-2 md:-right-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-accent/80 hover:bg-accent flex items-center justify-center transition-colors disabled:opacity-50 z-10"
       >
-        <X className="w-3 h-3 md:w-4 md:h-4 text-white" />
+        <X className="w-3 h-3 md:w-4 md:h-4 text-text-inverse" />
       </button>
       <div className="w-14 h-[75px] md:w-16 md:h-[85px] lg:w-20 lg:h-[106px] rounded-[var(--radius-sm)] overflow-hidden bg-bg-surface">
         {hero.hero.imageUrl ? (

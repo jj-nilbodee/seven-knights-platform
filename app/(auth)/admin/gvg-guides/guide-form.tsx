@@ -92,7 +92,7 @@ function HeroAutocomplete({
           return (
             <div
               key={name}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius-sm)] text-sm"
               style={{
                 background: "var(--bg-elevated)",
                 border: `1px solid ${color}`,
@@ -133,7 +133,7 @@ function HeroAutocomplete({
             placeholder={`ค้นหาฮีโร่... (เหลือ ${3 - selected.length} ตัว)`}
           />
           {open && filtered.length > 0 && (
-            <div className="absolute z-30 w-full mt-1 rounded-xl overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border-default">
+            <div className="absolute z-30 w-full mt-1 rounded-[var(--radius-md)] overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border-default">
               {filtered.map((hero) => (
                 <button
                   key={hero.id}
@@ -149,10 +149,10 @@ function HeroAutocomplete({
                     <img
                       src={hero.imageUrl}
                       alt=""
-                      className="w-7 h-7 rounded-lg object-cover"
+                      className="w-7 h-7 rounded-[var(--radius-sm)] object-cover"
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs bg-bg-input text-text-muted">
+                    <div className="w-7 h-7 rounded-[var(--radius-sm)] flex items-center justify-center text-xs bg-bg-input text-text-muted">
                       ?
                     </div>
                   )}
@@ -228,7 +228,7 @@ function SkillOrderBuilder({
           type="button"
           onClick={addStep}
           disabled={selectedHeroes.length === 0}
-          className="px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-bg-elevated border border-border-default text-text-secondary"
+          className="px-2.5 py-1 rounded-[var(--radius-sm)] text-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-bg-elevated border border-border-default text-text-secondary"
         >
           + เพิ่มขั้นตอน
         </button>
@@ -245,15 +245,15 @@ function SkillOrderBuilder({
           {steps.map((step, i) => (
             <div
               key={i}
-              className="flex items-start gap-2 p-3 rounded-xl bg-bg-elevated border border-border-dim"
+              className="flex items-start gap-2 p-3 rounded-[var(--radius-md)] bg-bg-elevated border border-border-dim"
             >
               <div
-                className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1 font-display"
+                className="w-6 h-6 rounded-[var(--radius-sm)] flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1 font-display"
                 style={{
                   background:
                     i === 0 ? "var(--accent)" : "var(--bg-card)",
                   color:
-                    i === 0 ? "white" : "var(--text-secondary)",
+                    i === 0 ? "var(--text-inverse)" : "var(--text-secondary)",
                   border:
                     i === 0
                       ? "none"
@@ -270,7 +270,7 @@ function SkillOrderBuilder({
                     onChange={(e) =>
                       updateStep(i, { hero_id: e.target.value })
                     }
-                    className="flex-1 h-9 rounded-md border border-border-default bg-bg-input px-3 text-sm text-text-primary"
+                    className="flex-1 h-9 rounded-[var(--radius-sm)] border border-border-default bg-bg-input px-3 text-sm text-text-primary"
                   >
                     {selectedHeroes.map((h) => (
                       <option key={h.id} value={h.id}>
@@ -287,7 +287,7 @@ function SkillOrderBuilder({
                           | 2,
                       })
                     }
-                    className="h-9 rounded-md border border-border-default bg-bg-input px-3 text-sm text-text-primary"
+                    className="h-9 rounded-[var(--radius-sm)] border border-border-default bg-bg-input px-3 text-sm text-text-primary"
                   >
                     <option value={1}>Skill 1</option>
                     <option value={2}>Skill 2</option>
@@ -430,7 +430,7 @@ export function GuideForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-3 rounded-lg text-sm bg-accent/10 border border-accent text-accent-bright">
+        <div className="p-3 rounded-[var(--radius-sm)] text-sm bg-accent/10 border border-accent text-accent-bright">
           {error}
         </div>
       )}
@@ -451,7 +451,7 @@ export function GuideForm({
 
       {/* Defense + Attack heroes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 rounded-xl bg-bg-elevated border border-border-dim">
+        <div className="p-4 rounded-[var(--radius-md)] bg-bg-elevated border border-border-dim">
           <HeroAutocomplete
             heroes={heroes}
             selected={defenseHeroes}
@@ -465,7 +465,7 @@ export function GuideForm({
             teamColor="cyan"
           />
         </div>
-        <div className="p-4 rounded-xl bg-bg-elevated border border-border-dim">
+        <div className="p-4 rounded-[var(--radius-md)] bg-bg-elevated border border-border-dim">
           <HeroAutocomplete
             heroes={heroes}
             selected={attackHeroes}
@@ -528,7 +528,7 @@ export function GuideForm({
       </div>
 
       {/* Attack skill order */}
-      <div className="p-4 rounded-xl bg-bg-surface border border-border-dim">
+      <div className="p-4 rounded-[var(--radius-md)] bg-bg-surface border border-border-dim">
         <SkillOrderBuilder
           heroes={heroes}
           selectedHeroNames={attackHeroes}
@@ -540,7 +540,7 @@ export function GuideForm({
       </div>
 
       {/* Defense skill order */}
-      <div className="p-4 rounded-xl bg-bg-surface border border-border-dim">
+      <div className="p-4 rounded-[var(--radius-md)] bg-bg-surface border border-border-dim">
         <SkillOrderBuilder
           heroes={heroes}
           selectedHeroNames={defenseHeroes}
@@ -577,7 +577,7 @@ export function GuideForm({
               return (
                 <div
                   key={i}
-                  className="flex items-center gap-3 p-2.5 rounded-lg bg-bg-elevated border border-border-dim"
+                  className="flex items-center gap-3 p-2.5 rounded-[var(--radius-sm)] bg-bg-elevated border border-border-dim"
                 >
                   {isYoutube ? (
                     <div className="w-10 h-10 rounded flex items-center justify-center text-xs flex-shrink-0 bg-bg-input text-accent">

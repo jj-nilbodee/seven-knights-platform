@@ -14,9 +14,9 @@ import { Timer } from "lucide-react";
 import type { SpeedBracket } from "@/lib/db/queries/analytics";
 
 function getBarColor(winRate: number) {
-  if (winRate >= 60) return "#34d399";
-  if (winRate >= 40) return "#f0a830";
-  return "#e63946";
+  if (winRate >= 60) return "var(--green)";
+  if (winRate >= 40) return "var(--gold)";
+  return "var(--accent)";
 }
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payload: SpeedBracket }[] }) {
@@ -58,18 +58,18 @@ export function SpeedBracketChart({ brackets }: { brackets: SpeedBracket[] }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e2235" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-dim)" />
         <XAxis
           dataKey="label"
-          tick={{ fill: "#5a5f78", fontSize: 10 }}
+          tick={{ fill: "var(--text-muted)", fontSize: 10 }}
           tickLine={false}
-          axisLine={{ stroke: "#1e2235" }}
+          axisLine={{ stroke: "var(--border-dim)" }}
         />
         <YAxis
           domain={[0, 100]}
-          tick={{ fill: "#5a5f78", fontSize: 11 }}
+          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
           tickLine={false}
-          axisLine={{ stroke: "#1e2235" }}
+          axisLine={{ stroke: "var(--border-dim)" }}
           tickFormatter={(v) => `${v}%`}
         />
         <Tooltip content={<CustomTooltip />} />

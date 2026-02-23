@@ -31,6 +31,12 @@
   --cyan-dim: #0e7490;
   --green: #34d399;
   --green-dim: #059669;
+  --purple: #a78bfa;
+  --purple-dim: #7c3aed;
+  --silver: #94a3b8;
+  --silver-dim: #64748b;
+  --bronze: #cd7f32;
+  --bronze-dim: #8b5a1b;
 
   /* Radius */
   --radius-sm: 6px;
@@ -64,6 +70,12 @@
   --color-cyan-dim: var(--cyan-dim);
   --color-green: var(--green);
   --color-green-dim: var(--green-dim);
+  --color-purple: var(--purple);
+  --color-purple-dim: var(--purple-dim);
+  --color-silver: var(--silver);
+  --color-silver-dim: var(--silver-dim);
+  --color-bronze: var(--bronze);
+  --color-bronze-dim: var(--bronze-dim);
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -208,12 +220,12 @@ body {
 }
 
 .priority-2 {
-  background: linear-gradient(135deg, #94a3b8, #64748b);
+  background: linear-gradient(135deg, var(--silver), var(--silver-dim));
   color: var(--text-inverse);
 }
 
 .priority-3 {
-  background: linear-gradient(135deg, #cd7f32, #8b5a1b);
+  background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
   color: var(--text-inverse);
 }
 

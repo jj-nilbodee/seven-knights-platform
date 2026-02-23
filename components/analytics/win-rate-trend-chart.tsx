@@ -46,29 +46,29 @@ export function WinRateTrendChart({ data }: { data: DailyWinRate[] }) {
       <AreaChart data={data}>
         <defs>
           <linearGradient id="winRateGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
+            <stop offset="5%" stopColor="var(--cyan)" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="var(--cyan)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e2235" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-dim)" />
         <XAxis
           dataKey="date"
-          tick={{ fill: "#5a5f78", fontSize: 11 }}
+          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
           tickLine={false}
-          axisLine={{ stroke: "#1e2235" }}
+          axisLine={{ stroke: "var(--border-dim)" }}
         />
         <YAxis
           domain={[0, 100]}
-          tick={{ fill: "#5a5f78", fontSize: 11 }}
+          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
           tickLine={false}
-          axisLine={{ stroke: "#1e2235" }}
+          axisLine={{ stroke: "var(--border-dim)" }}
           tickFormatter={(v) => `${v}%`}
         />
         <Tooltip content={<CustomTooltip />} />
         <Area
           type="monotone"
           dataKey="winRate"
-          stroke="#22d3ee"
+          stroke="var(--cyan)"
           strokeWidth={2}
           fill="url(#winRateGradient)"
         />

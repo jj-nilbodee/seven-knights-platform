@@ -14,9 +14,9 @@ import { Zap, Star } from "lucide-react";
 import type { SkillOrderImpact } from "@/lib/db/queries/analytics";
 
 const POSITION_COLORS = {
-  position1: "#e63946",
-  position2: "#22d3ee",
-  position3: "#f0a830",
+  position1: "var(--accent)",
+  position2: "var(--cyan)",
+  position3: "var(--gold)",
 };
 
 interface TooltipPayloadItem {
@@ -66,26 +66,26 @@ export function SkillOrderChart({ skills }: { skills: SkillOrderImpact[] }) {
     <div className="space-y-4">
       <ResponsiveContainer width="100%" height={Math.max(300, skills.length * 35)}>
         <BarChart data={chartData} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e2235" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-dim)" horizontal={false} />
           <XAxis
             type="number"
             domain={[0, 100]}
-            tick={{ fill: "#5a5f78", fontSize: 11 }}
+            tick={{ fill: "var(--text-muted)", fontSize: 11 }}
             tickLine={false}
-            axisLine={{ stroke: "#1e2235" }}
+            axisLine={{ stroke: "var(--border-dim)" }}
             tickFormatter={(v) => `${v}%`}
           />
           <YAxis
             type="category"
             dataKey="label"
-            tick={{ fill: "#8b90a8", fontSize: 11 }}
+            tick={{ fill: "var(--text-secondary)", fontSize: 11 }}
             tickLine={false}
-            axisLine={{ stroke: "#1e2235" }}
+            axisLine={{ stroke: "var(--border-dim)" }}
             width={100}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
-            wrapperStyle={{ fontSize: 11, color: "#8b90a8" }}
+            wrapperStyle={{ fontSize: 11, color: "var(--text-secondary)" }}
           />
           <Bar dataKey="ลำดับ 1" fill={POSITION_COLORS.position1} radius={[0, 2, 2, 0]} barSize={8} />
           <Bar dataKey="ลำดับ 2" fill={POSITION_COLORS.position2} radius={[0, 2, 2, 0]} barSize={8} />

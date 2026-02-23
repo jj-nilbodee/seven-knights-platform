@@ -119,7 +119,7 @@ function ImageUploadZone({
         }`}
       >
         <Image src={src} alt="Preview" fill className="object-contain" />
-        <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+        <div className="absolute inset-0 bg-bg-void/70 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
           <input
             ref={inputRef}
             type="file"

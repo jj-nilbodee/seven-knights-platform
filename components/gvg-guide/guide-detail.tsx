@@ -210,7 +210,7 @@ export function GuideDetailView({
             <span className="patch-badge">{guide.patchVersion}</span>
             <span>อัปเดต: {updatedDate}</span>
             <span
-              className="px-2 py-0.5 rounded-md border"
+              className="px-2 py-0.5 rounded-[var(--radius-sm)] border"
               style={{
                 background: "var(--bg-elevated)",
                 borderColor: "var(--border-dim)",
@@ -269,7 +269,7 @@ export function GuideDetailView({
                 "linear-gradient(90deg, transparent, var(--border-dim))",
             }}
           />
-          <span className="font-display font-bold text-sm text-accent tracking-widest animate-pulse-glow px-3 py-1 rounded-lg">
+          <span className="font-display font-bold text-sm text-accent tracking-widest animate-pulse-glow px-3 py-1 rounded-[var(--radius-sm)]">
             VS
           </span>
           <div
@@ -389,7 +389,7 @@ export function GuideDetailView({
                 return (
                   <div
                     key={i}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                    className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)]"
                     style={{
                       background: "var(--bg-card)",
                       border: "1px solid var(--border-dim)",
@@ -496,7 +496,7 @@ export function GuideDetailView({
                   return (
                     <div
                       key={i}
-                      className="rounded-xl overflow-hidden"
+                      className="rounded-[var(--radius-lg)] overflow-hidden"
                       style={{ border: "1px solid var(--border-dim)" }}
                     >
                       <iframe
@@ -514,7 +514,7 @@ export function GuideDetailView({
                     key={i}
                     src={url}
                     alt={`Screenshot ${i + 1}`}
-                    className="w-full rounded-xl object-contain"
+                    className="w-full rounded-[var(--radius-lg)] object-contain"
                     style={{ border: "1px solid var(--border-dim)" }}
                   />
                 );
@@ -559,7 +559,7 @@ export function GuideDetailView({
             <div className="mt-3 space-y-2">
               {/* Current version */}
               <div
-                className="flex items-center gap-3 px-3 py-2 rounded-lg"
+                className="flex items-center gap-3 px-3 py-2 rounded-[var(--radius-sm)]"
                 style={{
                   background: "var(--bg-card-hover)",
                   border: "1px solid var(--accent-dim)",
@@ -589,7 +589,7 @@ export function GuideDetailView({
               {initialVersions.map((v) => (
                 <div
                   key={v.id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg"
+                  className="flex items-center gap-3 px-3 py-2 rounded-[var(--radius-sm)]"
                   style={{
                     background: "var(--bg-elevated)",
                     border: "1px solid var(--border-dim)",
@@ -656,7 +656,7 @@ export function GuideDetailView({
 
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-medium text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
             style={{
               background: "var(--bg-elevated)",
               border: "1px solid var(--border-dim)",

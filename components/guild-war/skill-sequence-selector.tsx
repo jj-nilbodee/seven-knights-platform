@@ -18,14 +18,14 @@ const variantStyles = {
     slotFilled: "bg-cyan/20 border-cyan",
     skillBtn: "hover:border-cyan/60 hover:bg-cyan/10",
     skillSelected: "bg-cyan/30 border-cyan/50",
-    orderBadge: "bg-cyan text-white",
+    orderBadge: "bg-cyan text-text-inverse",
   },
   enemy: {
     slotBg: "bg-accent/10 border-accent/30",
     slotFilled: "bg-accent/20 border-accent",
     skillBtn: "hover:border-accent/60 hover:bg-accent/10",
     skillSelected: "bg-accent/30 border-accent/50",
-    orderBadge: "bg-accent text-white",
+    orderBadge: "bg-accent text-text-inverse",
   },
 };
 
@@ -175,7 +175,7 @@ export function SkillSequenceSelector({
                         disabled={disabled}
                         className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full bg-accent/80 hover:bg-accent flex items-center justify-center transition-colors disabled:opacity-50"
                       >
-                        <X className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
+                        <X className="w-2.5 h-2.5 md:w-3 md:h-3 text-text-inverse" />
                       </button>
                       <span className="text-[10px] md:text-xs text-text-muted">
                         {skill.heroName}

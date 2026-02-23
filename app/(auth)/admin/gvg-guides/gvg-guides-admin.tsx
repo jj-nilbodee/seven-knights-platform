@@ -43,8 +43,8 @@ const STATUS_LABELS: Record<
 
 const PRIORITY_COLORS: Record<number, string> = {
   1: "var(--gold)",
-  2: "#94a3b8",
-  3: "#cd7f32",
+  2: "var(--silver)",
+  3: "var(--bronze)",
 };
 
 export function GvgGuidesAdmin({
@@ -140,7 +140,7 @@ export function GvgGuidesAdmin({
               <button
                 key={s.value}
                 onClick={() => setStatusFilter(s.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
+                className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-medium transition-all cursor-pointer border ${
                   statusFilter === s.value
                     ? "bg-bg-card-hover border-border-bright text-text-primary"
                     : "bg-bg-input border-border-dim text-text-muted"
@@ -188,7 +188,7 @@ export function GvgGuidesAdmin({
                         <div className="flex items-start gap-3">
                           {/* Priority */}
                           <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 font-display"
+                            className="w-8 h-8 rounded-[var(--radius-sm)] flex items-center justify-center font-bold text-sm flex-shrink-0 font-display"
                             style={{
                               background: "var(--bg-elevated)",
                               border: `1px solid ${PRIORITY_COLORS[guide.attackPriority] || "var(--border-default)"}`,
@@ -236,7 +236,7 @@ export function GvgGuidesAdmin({
                                   )
                                 }
                                 disabled={isUpdating}
-                                className="px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-50 bg-green/10 border border-green-dim text-green"
+                                className="px-2.5 py-1.5 rounded-[var(--radius-sm)] text-xs transition-colors cursor-pointer disabled:opacity-50 bg-green/10 border border-green-dim text-green"
                               >
                                 เผยแพร่
                               </button>
@@ -250,7 +250,7 @@ export function GvgGuidesAdmin({
                                   )
                                 }
                                 disabled={isUpdating}
-                                className="px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-50 bg-bg-elevated border border-border-default text-text-muted"
+                                className="px-2.5 py-1.5 rounded-[var(--radius-sm)] text-xs transition-colors cursor-pointer disabled:opacity-50 bg-bg-elevated border border-border-default text-text-muted"
                               >
                                 เก็บถาวร
                               </button>
@@ -261,20 +261,20 @@ export function GvgGuidesAdmin({
                                   handleStatusChange(guide, "draft")
                                 }
                                 disabled={isUpdating}
-                                className="px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-50 bg-bg-elevated border border-border-default text-text-muted"
+                                className="px-2.5 py-1.5 rounded-[var(--radius-sm)] text-xs transition-colors cursor-pointer disabled:opacity-50 bg-bg-elevated border border-border-default text-text-muted"
                               >
                                 เปิดใหม่
                               </button>
                             )}
                             <Link
                               href={`/admin/gvg-guides/${guide.id}/edit`}
-                              className="p-1.5 rounded-lg text-text-muted hover:text-cyan hover:bg-cyan/10 transition-colors"
+                              className="p-1.5 rounded-[var(--radius-sm)] text-text-muted hover:text-cyan hover:bg-cyan/10 transition-colors"
                             >
                               <Pencil className="h-4 w-4" />
                             </Link>
                             <button
                               onClick={() => setDeleteTarget(guide)}
-                              className="p-1.5 rounded-lg text-text-muted hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-[var(--radius-sm)] text-text-muted hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>

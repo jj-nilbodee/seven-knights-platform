@@ -5,16 +5,16 @@ import { UserCircle } from "lucide-react";
 import type { HeroUsageStat } from "@/lib/db/queries/analytics";
 
 const COLORS = [
-  "#22d3ee",
-  "#e63946",
-  "#f0a830",
-  "#34d399",
-  "#a78bfa",
-  "#fb923c",
-  "#60a5fa",
-  "#f472b6",
-  "#2dd4bf",
-  "#a3e635",
+  "var(--cyan)",
+  "var(--accent)",
+  "var(--gold)",
+  "var(--green)",
+  "var(--purple)",
+  "var(--bronze)",
+  "var(--silver)",
+  "var(--accent-bright)",
+  "var(--cyan-dim)",
+  "var(--green-dim)",
 ];
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payload: HeroUsageStat }[] }) {

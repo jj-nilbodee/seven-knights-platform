@@ -56,20 +56,20 @@ export function SpeedScatterChart({ data }: { data: SpeedDataPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={350}>
       <ScatterChart>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e2235" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-dim)" />
         <XAxis
           type="number"
           dataKey="alliedSpeed"
           name="ฝ่ายเรา"
           domain={[0, maxSpeed + 50]}
-          tick={{ fill: "#5a5f78", fontSize: 11 }}
+          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
           tickLine={false}
-          axisLine={{ stroke: "#1e2235" }}
+          axisLine={{ stroke: "var(--border-dim)" }}
           label={{
             value: "ความเร็วฝ่ายเรา",
             position: "insideBottom",
             offset: -5,
-            style: { fill: "#5a5f78", fontSize: 11 },
+            style: { fill: "var(--text-muted)", fontSize: 11 },
           }}
         />
         <YAxis
@@ -77,14 +77,14 @@ export function SpeedScatterChart({ data }: { data: SpeedDataPoint[] }) {
           dataKey="enemySpeed"
           name="ศัตรู"
           domain={[0, maxSpeed + 50]}
-          tick={{ fill: "#5a5f78", fontSize: 11 }}
+          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
           tickLine={false}
-          axisLine={{ stroke: "#1e2235" }}
+          axisLine={{ stroke: "var(--border-dim)" }}
           label={{
             value: "ความเร็วศัตรู",
             angle: -90,
             position: "insideLeft",
-            style: { fill: "#5a5f78", fontSize: 11 },
+            style: { fill: "var(--text-muted)", fontSize: 11 },
           }}
         />
         <Tooltip content={<CustomTooltip />} />
@@ -93,11 +93,11 @@ export function SpeedScatterChart({ data }: { data: SpeedDataPoint[] }) {
             { x: 0, y: 0 },
             { x: maxSpeed + 50, y: maxSpeed + 50 },
           ]}
-          stroke="#282d42"
+          stroke="var(--border-default)"
           strokeDasharray="5 5"
         />
-        <Scatter name="ชนะ" data={wins} fill="#34d399" opacity={0.7} />
-        <Scatter name="แพ้" data={losses} fill="#e63946" opacity={0.7} />
+        <Scatter name="ชนะ" data={wins} fill="var(--green)" opacity={0.7} />
+        <Scatter name="แพ้" data={losses} fill="var(--accent)" opacity={0.7} />
       </ScatterChart>
     </ResponsiveContainer>
   );

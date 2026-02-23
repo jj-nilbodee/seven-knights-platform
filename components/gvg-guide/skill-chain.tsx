@@ -82,14 +82,14 @@ export function SkillStepDetail({
         return (
           <div
             key={i}
-            className="flex items-start gap-3 p-3 rounded-xl transition-colors"
+            className="flex items-start gap-3 p-3 rounded-[var(--radius-md)] transition-colors"
             style={{
               background: "var(--bg-elevated)",
               border: "1px solid var(--border-dim)",
             }}
           >
             <div
-              className="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 font-display font-bold text-xs"
+              className="flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] flex-shrink-0 font-display font-bold text-xs"
               style={{
                 background:
                   i === 0
@@ -97,7 +97,7 @@ export function SkillStepDetail({
                       ? "linear-gradient(135deg, var(--accent), var(--accent-dim))"
                       : "linear-gradient(135deg, var(--cyan), var(--cyan-dim))"
                     : "var(--bg-card)",
-                color: i === 0 ? "white" : "var(--text-secondary)",
+                color: i === 0 ? "var(--text-inverse)" : "var(--text-secondary)",
                 border:
                   i === 0 ? "none" : "1px solid var(--border-default)",
               }}

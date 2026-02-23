@@ -12,7 +12,7 @@ export function getHeroTypeBadgeClasses(type: string): string {
     case "TANK":
       return `${badgeBase} bg-gold/20 text-gold border-gold-dim`;
     case "SUPPORT":
-      return `${badgeBase} bg-[#a78bfa]/20 text-[#a78bfa] border-[#a78bfa]/40`;
+      return `${badgeBase} bg-purple/20 text-purple border-purple-dim`;
     default:
       return `${badgeBase} bg-text-muted/20 text-text-muted border-text-muted/40`;
   }

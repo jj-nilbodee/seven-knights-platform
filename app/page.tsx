@@ -12,7 +12,7 @@ export default function HomePage() {
       <div className="mt-8 flex gap-4">
         <Link
           href="/login"
-          className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-accent px-6 text-sm font-medium text-white hover:bg-accent-bright transition-colors"
+          className="inline-flex h-10 items-center rounded-[var(--radius-md)] bg-accent px-6 text-sm font-medium text-text-inverse hover:bg-accent-bright transition-colors"
         >
           เข้าสู่ระบบ
         </Link>

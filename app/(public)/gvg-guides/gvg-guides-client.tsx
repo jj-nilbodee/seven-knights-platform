@@ -65,7 +65,7 @@ export function GvgGuidesClient({
             <div className="animate-fade-in-up stagger-1">
               <div className="inline-flex items-center gap-2 mb-6">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold font-display"
+                  className="w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center text-lg font-bold font-display"
                   style={{
                     background:
                       "linear-gradient(135deg, var(--accent), var(--accent-dim))",
@@ -118,7 +118,7 @@ export function GvgGuidesClient({
                   <span className="font-display font-semibold text-base text-text-primary">
                     ผลลัพธ์
                   </span>
-                  <span className="text-sm text-text-muted bg-bg-elevated px-2.5 py-0.5 rounded-md border border-border-dim">
+                  <span className="text-sm text-text-muted bg-bg-elevated px-2.5 py-0.5 rounded-[var(--radius-sm)] border border-border-dim">
                     {results.length} รายการ
                   </span>
                 </div>
@@ -164,7 +164,7 @@ export function GvgGuidesClient({
                     <span className="font-display font-semibold text-base text-text-primary">
                       คู่มือทั้งหมด
                     </span>
-                    <span className="text-sm text-text-muted bg-bg-elevated px-2.5 py-0.5 rounded-md border border-border-dim">
+                    <span className="text-sm text-text-muted bg-bg-elevated px-2.5 py-0.5 rounded-[var(--radius-sm)] border border-border-dim">
                       {allGuides.length} รายการ
                     </span>
                   </div>

@@ -14,10 +14,10 @@ import { Grid3X3 } from "lucide-react";
 import type { FormationStat } from "@/lib/db/queries/analytics";
 
 const FORMATION_COLORS: Record<string, string> = {
-  "4-1": "#e63946",
-  "3-2": "#22d3ee",
-  "1-4": "#a78bfa",
-  "2-3": "#f0a830",
+  "4-1": "var(--accent)",
+  "3-2": "var(--cyan)",
+  "1-4": "var(--purple)",
+  "2-3": "var(--gold)",
 };
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payload: FormationStat }[] }) {
@@ -54,21 +54,21 @@ export function FormationBarChart({ formations }: { formations: FormationStat[] 
   return (
     <ResponsiveContainer width="100%" height={250}>
       <BarChart data={formations} layout="vertical">
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e2235" horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-dim)" horizontal={false} />
         <XAxis
           type="number"
           domain={[0, 100]}
-          tick={{ fill: "#5a5f78", fontSize: 11 }}
+          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
           tickLine={false}
-          axisLine={{ stroke: "#1e2235" }}
+          axisLine={{ stroke: "var(--border-dim)" }}
           tickFormatter={(v) => `${v}%`}
         />
         <YAxis
           type="category"
           dataKey="formation"
-          tick={{ fill: "#e8eaf0", fontSize: 12, fontWeight: 500 }}
+          tick={{ fill: "var(--text-primary)", fontSize: 12, fontWeight: 500 }}
           tickLine={false}
-          axisLine={{ stroke: "#1e2235" }}
+          axisLine={{ stroke: "var(--border-dim)" }}
           width={50}
         />
         <Tooltip content={<CustomTooltip />} />
@@ -76,7 +76,7 @@ export function FormationBarChart({ formations }: { formations: FormationStat[] 
           {formations.map((f) => (
             <Cell
               key={f.formation}
-              fill={FORMATION_COLORS[f.formation] ?? "#5a5f78"}
+              fill={FORMATION_COLORS[f.formation] ?? "var(--text-muted)"}
             />
           ))}
         </Bar>
