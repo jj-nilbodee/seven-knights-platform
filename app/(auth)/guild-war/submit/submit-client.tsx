@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -26,7 +25,7 @@ import type {
   TeamCompositionState,
 } from "@/components/guild-war/index";
 import { initialTeamState } from "@/components/guild-war/index";
-import { createBattle } from "@/actions/battles";
+import { createBattle, getBattleContext } from "@/actions/battles";
 
 type Member = {
   id: string;
@@ -59,6 +58,51 @@ function getTodayDate() {
   return now.toISOString().split("T")[0];
 }
 
+function RadioGroup({
+  value,
+  onChange,
+  options,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string; color?: string }[];
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex gap-1.5">
+      {options.map((opt) => {
+        const isActive = value === opt.value;
+        const activeColor = opt.color ?? "accent";
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(opt.value)}
+            className={`
+              flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium
+              border transition-all cursor-pointer
+              disabled:opacity-50 disabled:cursor-not-allowed
+              ${
+                isActive
+                  ? activeColor === "green"
+                    ? "border-green bg-green/15 text-green shadow-[0_0_8px_rgba(52,211,153,0.15)]"
+                    : activeColor === "accent"
+                      ? "border-accent bg-accent/15 text-accent shadow-[0_0_8px_rgba(230,57,70,0.15)]"
+                      : "border-cyan bg-cyan/15 text-cyan shadow-[0_0_8px_rgba(34,211,238,0.15)]"
+                  : "border-border-dim bg-bg-input text-text-muted hover:text-text-secondary hover:border-border-default"
+              }
+            `}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function BattleSubmitClient({
   members,
   heroes,
@@ -81,6 +125,7 @@ export function BattleSubmitClient({
   const [enemyPlayerName, setEnemyPlayerName] = useState("");
   const [firstTurn, setFirstTurn] = useState("unknown");
   const [videoUrl, setVideoUrl] = useState("");
+  const [memberBattleCount, setMemberBattleCount] = useState(0);
 
   // Team composition state
   const [alliedTeam, setAlliedTeam] =
@@ -93,6 +138,27 @@ export function BattleSubmitClient({
     "info" | "allied" | "enemy"
   >("info");
 
+  // Auto-populate battle number and enemy guild name
+  useEffect(() => {
+    if (!date) return;
+
+    if (memberId) {
+      getBattleContext(guildId, memberId, date).then((ctx) => {
+        setMemberBattleCount(ctx.memberBattleCount);
+        setBattleNumber(String(ctx.nextBattleNumber));
+        if (ctx.enemyGuildName) {
+          setEnemyGuildName(ctx.enemyGuildName);
+        }
+      });
+    } else {
+      getBattleContext(guildId, "", date).then((ctx) => {
+        if (ctx.enemyGuildName) {
+          setEnemyGuildName(ctx.enemyGuildName);
+        }
+      });
+    }
+  }, [memberId, date, guildId]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -102,6 +168,10 @@ export function BattleSubmitClient({
     }
     if (!result) {
       toast.error("กรุณาเลือกผลการต่อสู้");
+      return;
+    }
+    if (memberBattleCount >= 5) {
+      toast.error("สมาชิกนี้ลงสนามครบ 5 ครั้งแล้วในวันนี้");
       return;
     }
 
@@ -177,11 +247,13 @@ export function BattleSubmitClient({
       <form onSubmit={handleSubmit}>
         {/* General Info Section */}
         <div className={activeSection === "info" ? "block" : "hidden"}>
-          <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-6 space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {/* Member select */}
+          <div className="space-y-6">
+            {/* Member + Date row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-text-primary">สมาชิก *</Label>
+                <label className="text-sm font-medium text-text-secondary">
+                  สมาชิก <span className="text-accent">*</span>
+                </label>
                 <Select value={memberId} onValueChange={setMemberId}>
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกสมาชิก" />
@@ -196,9 +268,10 @@ export function BattleSubmitClient({
                 </Select>
               </div>
 
-              {/* Date */}
               <div className="space-y-1.5">
-                <Label className="text-text-primary">วันที่ *</Label>
+                <label className="text-sm font-medium text-text-secondary">
+                  วันที่ <span className="text-accent">*</span>
+                </label>
                 <Input
                   type="date"
                   value={date}
@@ -209,68 +282,92 @@ export function BattleSubmitClient({
                   เฉพาะวัน เสาร์, จันทร์ หรือ พุธ
                 </p>
               </div>
+            </div>
 
-              {/* Battle number */}
+            {/* Battle number + Battle type row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-text-primary">ครั้งที่ *</Label>
+                <label className="text-sm font-medium text-text-secondary">
+                  ครั้งที่ <span className="text-accent">*</span>
+                </label>
                 <Select value={battleNumber} onValueChange={setBattleNumber}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">ครั้งที่ 1</SelectItem>
-                    <SelectItem value="2">ครั้งที่ 2</SelectItem>
-                    <SelectItem value="3">ครั้งที่ 3</SelectItem>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        ครั้งที่ {n}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {memberId && memberBattleCount > 0 && (
+                  <p className="text-xs text-text-muted">
+                    ลงสนามแล้ว {memberBattleCount}/5 ครั้ง
+                    {memberBattleCount >= 5 && (
+                      <span className="text-accent ml-1">(ครบแล้ว)</span>
+                    )}
+                  </p>
+                )}
               </div>
 
-              {/* Battle type */}
               <div className="space-y-1.5">
-                <Label className="text-text-primary">ประเภท</Label>
-                <Select value={battleType} onValueChange={setBattleType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="attack">บุก</SelectItem>
-                    <SelectItem value="defense">รับ</SelectItem>
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-medium text-text-secondary">
+                  ประเภท
+                </label>
+                <RadioGroup
+                  value={battleType}
+                  onChange={setBattleType}
+                  disabled={isPending}
+                  options={[
+                    { value: "attack", label: "บุก", color: "accent" },
+                    { value: "defense", label: "รับ", color: "cyan" },
+                  ]}
+                />
+              </div>
+            </div>
+
+            {/* Result + First turn row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-text-secondary">
+                  ผลลัพธ์ <span className="text-accent">*</span>
+                </label>
+                <RadioGroup
+                  value={result}
+                  onChange={setResult}
+                  disabled={isPending}
+                  options={[
+                    { value: "win", label: "ชนะ", color: "green" },
+                    { value: "loss", label: "แพ้", color: "accent" },
+                  ]}
+                />
               </div>
 
-              {/* Result */}
               <div className="space-y-1.5">
-                <Label className="text-text-primary">ผลลัพธ์ *</Label>
-                <Select value={result} onValueChange={setResult}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกผลลัพธ์" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="win">ชนะ</SelectItem>
-                    <SelectItem value="loss">แพ้</SelectItem>
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-medium text-text-secondary">
+                  ลงมือก่อน
+                </label>
+                <RadioGroup
+                  value={firstTurn}
+                  onChange={setFirstTurn}
+                  disabled={isPending}
+                  options={[
+                    { value: "yes", label: "ใช่", color: "green" },
+                    { value: "no", label: "ไม่ใช่", color: "accent" },
+                    { value: "unknown", label: "ไม่ทราบ", color: "cyan" },
+                  ]}
+                />
               </div>
+            </div>
 
-              {/* First turn */}
+            {/* Enemy info row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-text-primary">ลงมือก่อน</Label>
-                <Select value={firstTurn} onValueChange={setFirstTurn}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unknown">ไม่ทราบ</SelectItem>
-                    <SelectItem value="yes">ใช่</SelectItem>
-                    <SelectItem value="no">ไม่ใช่</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Enemy guild name */}
-              <div className="space-y-1.5">
-                <Label className="text-text-primary">กิลด์ศัตรู</Label>
+                <label className="text-sm font-medium text-text-secondary">
+                  กิลด์ศัตรู
+                </label>
                 <Input
                   placeholder="ชื่อกิลด์ศัตรู"
                   value={enemyGuildName}
@@ -279,9 +376,10 @@ export function BattleSubmitClient({
                 />
               </div>
 
-              {/* Enemy player name */}
               <div className="space-y-1.5">
-                <Label className="text-text-primary">ผู้เล่นศัตรู</Label>
+                <label className="text-sm font-medium text-text-secondary">
+                  ผู้เล่นศัตรู
+                </label>
                 <Input
                   placeholder="ชื่อผู้เล่นศัตรู"
                   value={enemyPlayerName}
@@ -293,7 +391,9 @@ export function BattleSubmitClient({
 
             {/* Video URL */}
             <div className="space-y-1.5">
-              <Label className="text-text-primary">ลิงก์วิดีโอ</Label>
+              <label className="text-sm font-medium text-text-secondary">
+                ลิงก์วิดีโอ
+              </label>
               <Input
                 type="url"
                 placeholder="https://..."
@@ -307,7 +407,7 @@ export function BattleSubmitClient({
 
         {/* Allied Team Section */}
         <div className={activeSection === "allied" ? "block" : "hidden"}>
-          <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-6">
+          <div className="p-4 rounded-[var(--radius-md)] bg-bg-elevated border border-border-dim">
             <TeamComposition
               heroes={heroes}
               state={alliedTeam}
@@ -321,7 +421,7 @@ export function BattleSubmitClient({
 
         {/* Enemy Team Section */}
         <div className={activeSection === "enemy" ? "block" : "hidden"}>
-          <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-6">
+          <div className="p-4 rounded-[var(--radius-md)] bg-bg-elevated border border-border-dim">
             <TeamComposition
               heroes={heroes}
               state={enemyTeam}
@@ -334,13 +434,12 @@ export function BattleSubmitClient({
         </div>
 
         {/* Submit */}
-        <div className="flex items-center justify-between pt-4">
-          <Link href="/guild-war">
-            <Button variant="outline" type="button" disabled={isPending}>
-              ยกเลิก
-            </Button>
-          </Link>
-          <Button type="submit" disabled={isPending}>
+        <div className="flex gap-3 pt-6">
+          <Button
+            type="submit"
+            disabled={isPending || memberBattleCount >= 5}
+            className="flex-1"
+          >
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -350,9 +449,13 @@ export function BattleSubmitClient({
               "บันทึกการต่อสู้"
             )}
           </Button>
+          <Link href="/guild-war">
+            <Button variant="outline" type="button" disabled={isPending}>
+              ยกเลิก
+            </Button>
+          </Link>
         </div>
       </form>
-
     </div>
   );
 }

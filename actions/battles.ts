@@ -12,6 +12,8 @@ import {
   updateBattle as dbUpdateBattle,
   deleteBattle as dbDeleteBattle,
   getBattleById,
+  getMemberBattleCountForDate,
+  getEnemyGuildNameForDate,
 } from "@/lib/db/queries/battles";
 
 export async function createBattle(data: {
@@ -116,4 +118,19 @@ export async function deleteBattle(id: string) {
   } catch {
     return { error: "ไม่สามารถลบการต่อสู้ได้" };
   }
+}
+
+export async function getBattleContext(guildId: string, memberId: string, date: string) {
+  const [memberCount, enemyGuildName] = await Promise.all([
+    memberId
+      ? getMemberBattleCountForDate(guildId, memberId, date)
+      : Promise.resolve(0),
+    getEnemyGuildNameForDate(guildId, date),
+  ]);
+
+  return {
+    memberBattleCount: memberCount,
+    nextBattleNumber: Math.min(memberCount + 1, 5),
+    enemyGuildName,
+  };
 }

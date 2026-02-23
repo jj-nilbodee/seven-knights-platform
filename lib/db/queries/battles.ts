@@ -156,6 +156,39 @@ export async function deleteBattle(id: string) {
   return battle ?? null;
 }
 
+export async function getMemberBattleCountForDate(
+  guildId: string,
+  memberId: string,
+  date: string,
+) {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(battles)
+    .where(
+      and(
+        eq(battles.guildId, guildId),
+        eq(battles.memberId, memberId),
+        eq(battles.date, date),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
+export async function getEnemyGuildNameForDate(guildId: string, date: string) {
+  const [row] = await db
+    .select({ enemyGuildName: battles.enemyGuildName })
+    .from(battles)
+    .where(
+      and(
+        eq(battles.guildId, guildId),
+        eq(battles.date, date),
+        sql`${battles.enemyGuildName} IS NOT NULL AND ${battles.enemyGuildName} != ''`,
+      ),
+    )
+    .limit(1);
+  return row?.enemyGuildName ?? "";
+}
+
 export async function getBattleStats(guildId: string) {
   const [row] = await db
     .select({
