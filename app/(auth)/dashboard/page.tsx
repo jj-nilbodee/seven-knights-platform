@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 import { requireUser, resolveGuildId } from "@/lib/auth";
 import {
   getDashboardKPIs,
@@ -7,11 +7,8 @@ import {
   getRecentBattles,
   getWinRateTrend,
 } from "@/lib/db/queries/analytics";
-import { listGuilds } from "@/lib/db/queries/guilds";
-import { getAccessRequestsByUser } from "@/lib/db/queries/access";
 import { KPICards } from "@/components/analytics/kpi-cards";
 import { WinRateTrendChart } from "@/components/analytics/win-rate-trend-chart";
-import { GuildJoinPanel } from "@/components/guild-join-panel";
 import { getResultBadgeClasses } from "@/lib/badge-utils";
 
 export default async function DashboardPage({
@@ -24,11 +21,6 @@ export default async function DashboardPage({
   const guildId = resolveGuildId(user, params);
 
   if (!guildId) {
-    const [allGuilds, existingRequests] = await Promise.all([
-      listGuilds(),
-      getAccessRequestsByUser(user.id),
-    ]);
-
     return (
       <div className="space-y-6">
         <div>
@@ -39,14 +31,15 @@ export default async function DashboardPage({
             ยินดีต้อนรับ, {user.email}
           </p>
         </div>
-        <GuildJoinPanel
-          guilds={allGuilds.map((g) => ({ id: g.id, name: g.name }))}
-          existingRequests={existingRequests.map((r) => ({
-            guildId: r.guildId,
-            status: r.status,
-            requestedAt: r.requestedAt,
-          }))}
-        />
+        <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-8 text-center">
+          <Clock className="h-10 w-10 text-gold mx-auto mb-3" />
+          <p className="text-text-primary font-medium">
+            รอแอดมินกำหนดกิลด์
+          </p>
+          <p className="text-sm text-text-muted mt-1">
+            กรุณาติดต่อแอดมินเพื่อขอเข้าร่วมกิลด์
+          </p>
+        </div>
       </div>
     );
   }

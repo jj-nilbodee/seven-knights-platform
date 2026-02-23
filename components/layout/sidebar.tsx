@@ -11,7 +11,6 @@ import {
   Castle,
   Crown,
   Waypoints,
-  KeyRound,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,7 +34,6 @@ const adminItems = [
   { href: "/admin/heroes", label: "จัดการฮีโร่", icon: Crown },
   { href: "/admin/guilds", label: "จัดการกิลด์", icon: Waypoints },
   { href: "/admin/gvg-guides", label: "จัดการคู่มือ", icon: BookOpen },
-  { href: "/access-requests", label: "คำขอเข้าถึง", icon: KeyRound },
 ];
 
 interface Guild {

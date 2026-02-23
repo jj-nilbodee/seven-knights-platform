@@ -11,6 +11,7 @@ import {
   Trash2,
   UserPlus,
   UserMinus,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,9 @@ import {
   removeOfficer,
   fetchGuildOfficers,
   fetchGuildMembers,
+  assignUserToGuild,
+  removeUserFromGuild,
+  promoteToAdmin,
 } from "@/actions/guilds";
 
 type Guild = {
@@ -47,6 +51,114 @@ type Member = {
   userId: string;
   email: string;
 };
+
+type UnassignedUser = {
+  userId: string;
+  email: string;
+  createdAt: string | null;
+};
+
+function UserRow({
+  user,
+  guilds,
+}: {
+  user: UnassignedUser;
+  guilds: Guild[];
+}) {
+  const router = useRouter();
+  const [selectedGuild, setSelectedGuild] = useState("");
+  const [selectedRole, setSelectedRole] = useState<"member" | "officer">("member");
+  const [isAssigning, startAssign] = useTransition();
+  const [isPromoting, startPromote] = useTransition();
+
+  function handleAssign() {
+    if (!selectedGuild) return;
+    startAssign(async () => {
+      const result = await assignUserToGuild(user.userId, selectedGuild, selectedRole);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("กำหนดกิลด์สำเร็จ");
+        router.refresh();
+      }
+    });
+  }
+
+  function handlePromote() {
+    startPromote(async () => {
+      const result = await promoteToAdmin(user.userId);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("เลื่อนเป็นแอดมินสำเร็จ");
+        router.refresh();
+      }
+    });
+  }
+
+  const busy = isAssigning || isPromoting;
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-[var(--radius-sm)] bg-bg-surface border border-border-dim">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-text-primary truncate">{user.email}</p>
+        <p className="text-xs text-text-muted">
+          {user.createdAt
+            ? new Date(user.createdAt).toLocaleDateString("th-TH")
+            : ""}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={selectedGuild}
+          onChange={(e) => setSelectedGuild(e.target.value)}
+          disabled={busy}
+          className="h-8 rounded-[var(--radius-sm)] border border-border-dim bg-bg-input px-2 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+        >
+          <option value="">เลือกกิลด์...</option>
+          {guilds.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={selectedRole}
+          onChange={(e) => setSelectedRole(e.target.value as "member" | "officer")}
+          disabled={busy}
+          className="h-8 rounded-[var(--radius-sm)] border border-border-dim bg-bg-input px-2 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+        >
+          <option value="member">สมาชิก</option>
+          <option value="officer">เจ้าหน้าที่</option>
+        </select>
+        <Button
+          size="sm"
+          onClick={handleAssign}
+          disabled={busy || !selectedGuild}
+        >
+          {isAssigning ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <UserPlus className="h-3.5 w-3.5" />
+          )}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handlePromote}
+          disabled={busy}
+          title="เลื่อนเป็นแอดมิน"
+        >
+          {isPromoting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Crown className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 function GuildRow({ guild }: { guild: Guild }) {
   const router = useRouter();
@@ -285,7 +397,13 @@ function GuildRow({ guild }: { guild: Guild }) {
   );
 }
 
-export function GuildsAdmin({ initialGuilds }: { initialGuilds: Guild[] }) {
+export function GuildsAdmin({
+  initialGuilds,
+  unassignedUsers,
+}: {
+  initialGuilds: Guild[];
+  unassignedUsers: UnassignedUser[];
+}) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [guildName, setGuildName] = useState("");
@@ -328,6 +446,25 @@ export function GuildsAdmin({ initialGuilds }: { initialGuilds: Guild[] }) {
           สร้างกิลด์
         </Button>
       </div>
+
+      {/* Unassigned users */}
+      {unassignedUsers.length > 0 && (
+        <div className="space-y-3">
+          <div>
+            <h2 className="font-display text-lg font-semibold text-text-primary">
+              ผู้ใช้ใหม่
+            </h2>
+            <p className="text-xs text-text-muted mt-0.5">
+              ผู้ใช้ที่ยังไม่ได้กำหนดกิลด์ — เลือกกิลด์และตำแหน่งแล้วกดกำหนด
+            </p>
+          </div>
+          <div className="space-y-2">
+            {unassignedUsers.map((u) => (
+              <UserRow key={u.userId} user={u} guilds={initialGuilds} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Guild list */}
       <div className="space-y-3">

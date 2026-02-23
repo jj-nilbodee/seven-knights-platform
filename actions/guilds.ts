@@ -202,3 +202,95 @@ export async function removeOfficer(guildId: string, userId: string) {
   revalidatePath("/admin/guilds");
   return { success: true };
 }
+
+// ---------------------------------------------------------------------------
+// User management — assign / remove / promote
+// ---------------------------------------------------------------------------
+
+export async function fetchUnassignedUsers() {
+  await requireAdmin();
+
+  const admin = createAdminClient();
+  const allUsers = await listAllUsers(admin);
+
+  return allUsers
+    .filter((u) => !u.app_metadata?.guildId && u.app_metadata?.role !== "admin")
+    .map((u) => ({
+      userId: u.id,
+      email: u.email ?? "",
+      createdAt: (u as { created_at?: string }).created_at ?? null,
+    }));
+}
+
+export async function assignUserToGuild(
+  userId: string,
+  guildId: string,
+  role: "member" | "officer",
+) {
+  await requireAdmin();
+
+  if (
+    !uuidSchema.safeParse(userId).success ||
+    !uuidSchema.safeParse(guildId).success
+  ) {
+    return { error: "ID ไม่ถูกต้อง" };
+  }
+
+  const admin = createAdminClient();
+
+  const {
+    data: { user },
+  } = await admin.auth.admin.getUserById(userId);
+  if (!user) return { error: "ไม่พบผู้ใช้" };
+
+  await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { role, guildId, accessStatus: "approved" },
+  });
+
+  revalidatePath("/admin/guilds");
+  return { success: true };
+}
+
+export async function removeUserFromGuild(userId: string) {
+  await requireAdmin();
+
+  if (!uuidSchema.safeParse(userId).success) {
+    return { error: "ID ไม่ถูกต้อง" };
+  }
+
+  const admin = createAdminClient();
+
+  const {
+    data: { user },
+  } = await admin.auth.admin.getUserById(userId);
+  if (!user) return { error: "ไม่พบผู้ใช้" };
+
+  await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { role: "member", guildId: null, accessStatus: null },
+  });
+
+  revalidatePath("/admin/guilds");
+  return { success: true };
+}
+
+export async function promoteToAdmin(userId: string) {
+  await requireAdmin();
+
+  if (!uuidSchema.safeParse(userId).success) {
+    return { error: "ID ไม่ถูกต้อง" };
+  }
+
+  const admin = createAdminClient();
+
+  const {
+    data: { user },
+  } = await admin.auth.admin.getUserById(userId);
+  if (!user) return { error: "ไม่พบผู้ใช้" };
+
+  await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { role: "admin" },
+  });
+
+  revalidatePath("/admin/guilds");
+  return { success: true };
+}
