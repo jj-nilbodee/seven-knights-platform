@@ -13,7 +13,6 @@ import {
   Gauge,
   Zap,
   ChevronRight,
-  ExternalLink,
   Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -314,21 +313,6 @@ export default async function BattleDetailPage({
             </p>
           </div>
         </div>
-        {battle.videoUrl && (
-          <div>
-            <p className="text-xs text-text-muted uppercase tracking-wider mb-1">
-              วิดีโอ
-            </p>
-            <a
-              href={battle.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-cyan hover:underline"
-            >
-              ดูวิดีโอ <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        )}
       </div>
 
       {/* Team compositions */}

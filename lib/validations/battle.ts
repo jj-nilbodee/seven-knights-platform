@@ -69,7 +69,6 @@ export const battleCreateSchema = z
     alliedTeam: teamCompositionSchema,
     enemyTeam: teamCompositionSchema,
     firstTurn: z.boolean().nullable().default(null),
-    videoUrl: z.string().url().optional().or(z.literal("")),
     submittedByUserId: z.string().uuid(),
   })
   .transform((data) => ({
@@ -92,7 +91,6 @@ export const battleUpdateSchema = z.object({
   alliedTeam: teamCompositionSchema.optional(),
   enemyTeam: teamCompositionSchema.optional(),
   firstTurn: z.boolean().nullable().optional(),
-  videoUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export type TeamComposition = z.infer<typeof teamCompositionSchema>;

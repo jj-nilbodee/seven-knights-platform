@@ -54,7 +54,6 @@ export default async function BattleEditPage({
         alliedTeam: battle.alliedTeam,
         enemyTeam: battle.enemyTeam,
         firstTurn: battle.firstTurn,
-        videoUrl: battle.videoUrl,
       }}
     />
   );

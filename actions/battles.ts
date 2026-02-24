@@ -28,7 +28,6 @@ export async function createBattle(data: {
   alliedTeam: unknown;
   enemyTeam: unknown;
   firstTurn: boolean | null;
-  videoUrl: string;
   guildId?: string;
 }) {
   const user = await requireOfficer();
@@ -71,7 +70,6 @@ export async function updateBattle(id: string, data: {
   alliedTeam?: unknown;
   enemyTeam?: unknown;
   firstTurn?: boolean | null;
-  videoUrl?: string;
 }) {
   const user = await requireOfficer();
 

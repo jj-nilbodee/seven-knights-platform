@@ -50,7 +50,6 @@ type Battle = {
   alliedTeam: unknown;
   enemyTeam: unknown;
   firstTurn: boolean | null;
-  videoUrl: string | null;
   submittedByUserId: string;
   createdAt: Date | null;
   updatedAt: Date | null;

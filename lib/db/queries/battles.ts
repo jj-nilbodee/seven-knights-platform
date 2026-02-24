@@ -52,7 +52,6 @@ export async function listBattles(guildId: string, filters: BattleFilters = {}) 
       alliedTeam: battles.alliedTeam,
       enemyTeam: battles.enemyTeam,
       firstTurn: battles.firstTurn,
-      videoUrl: battles.videoUrl,
       submittedByUserId: battles.submittedByUserId,
       createdAt: battles.createdAt,
       updatedAt: battles.updatedAt,
@@ -84,7 +83,6 @@ export async function getBattleById(id: string) {
       alliedTeam: battles.alliedTeam,
       enemyTeam: battles.enemyTeam,
       firstTurn: battles.firstTurn,
-      videoUrl: battles.videoUrl,
       submittedByUserId: battles.submittedByUserId,
       createdAt: battles.createdAt,
       updatedAt: battles.updatedAt,
@@ -112,7 +110,6 @@ export async function createBattle(data: BattleCreate) {
       alliedTeam: data.alliedTeam,
       enemyTeam: data.enemyTeam,
       firstTurn: data.firstTurn,
-      videoUrl: data.videoUrl || null,
       submittedByUserId: data.submittedByUserId,
     })
     .returning();
@@ -136,7 +133,6 @@ export async function updateBattle(id: string, data: BattleUpdate) {
   if (data.alliedTeam !== undefined) values.alliedTeam = data.alliedTeam;
   if (data.enemyTeam !== undefined) values.enemyTeam = data.enemyTeam;
   if (data.firstTurn !== undefined) values.firstTurn = data.firstTurn;
-  if (data.videoUrl !== undefined) values.videoUrl = data.videoUrl || null;
 
   const [battle] = await db
     .update(battles)

@@ -9,7 +9,6 @@ import {
   Loader2,
   Search,
   X,
-  ChevronDown,
   Shield,
   Swords,
 } from "lucide-react";
@@ -538,7 +537,6 @@ export type InitialBattle = {
   alliedTeam: unknown;
   enemyTeam: unknown;
   firstTurn: boolean | null;
-  videoUrl: string | null;
 };
 
 interface TeamJsonData {
@@ -644,7 +642,7 @@ export function BattleSubmitClient({
           : "unknown"
       : "unknown",
   );
-  const [videoUrl, setVideoUrl] = useState(initialBattle?.videoUrl ?? "");
+
   const [memberBattleCount, setMemberBattleCount] = useState(0);
   const [enemyPlayerSuggestions, setEnemyPlayerSuggestions] = useState<string[]>([]);
 
@@ -659,18 +657,6 @@ export function BattleSubmitClient({
       ? reconstructTeamState(initialBattle.enemyTeam, heroes)
       : initialTeamState,
   );
-
-  // Collapsible advanced section — open by default in edit mode if there's advanced data
-  const [advancedOpen, setAdvancedOpen] = useState(() => {
-    if (!initialBattle) return false;
-    const allied = (initialBattle.alliedTeam ?? {}) as TeamJsonData;
-    const enemy = (initialBattle.enemyTeam ?? {}) as TeamJsonData;
-    return !!(
-      (allied.skillSequence && allied.skillSequence.length > 0) ||
-      (enemy.skillSequence && enemy.skillSequence.length > 0) ||
-      initialBattle.videoUrl
-    );
-  });
 
   // Auto-populate battle number and enemy guild name (skip in edit mode)
   useEffect(() => {
@@ -757,7 +743,6 @@ export function BattleSubmitClient({
         enemyTeam: serializeTeam(enemyTeam),
         firstTurn:
           firstTurn === "yes" ? true : firstTurn === "no" ? false : null,
-        videoUrl,
       };
 
       const res = isEditMode
@@ -816,6 +801,7 @@ export function BattleSubmitClient({
         }}
         className="space-y-5"
       >
+        <fieldset disabled={isPending} className="contents">
         {/* Row 1: Member + Date */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -826,7 +812,6 @@ export function BattleSubmitClient({
               members={members}
               value={memberId}
               onChange={setMemberId}
-              disabled={isPending}
             />
             {!isEditMode && memberId && memberBattleCount > 0 && (
               <p className="text-xs text-text-muted">
@@ -846,7 +831,6 @@ export function BattleSubmitClient({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              disabled={isPending}
             />
           </div>
         </div>
@@ -860,7 +844,6 @@ export function BattleSubmitClient({
             <RadioGroup
               value={result}
               onChange={setResult}
-              disabled={isPending}
               options={[
                 { value: "win", label: "ชนะ", color: "green" },
                 { value: "loss", label: "แพ้", color: "accent" },
@@ -875,7 +858,6 @@ export function BattleSubmitClient({
             <RadioGroup
               value={firstTurn}
               onChange={setFirstTurn}
-              disabled={isPending}
               options={[
                 { value: "yes", label: "ใช่", color: "green" },
                 { value: "no", label: "ไม่", color: "accent" },
@@ -903,7 +885,6 @@ export function BattleSubmitClient({
               }
               min={0}
               className="h-9"
-              disabled={isPending}
             />
           </div>
 
@@ -914,7 +895,6 @@ export function BattleSubmitClient({
             <RadioGroup
               value={battleType}
               onChange={setBattleType}
-              disabled={isPending}
               options={[
                 { value: "attack", label: "บุก", color: "accent" },
                 { value: "defense", label: "รับ", color: "cyan" },
@@ -933,7 +913,6 @@ export function BattleSubmitClient({
               placeholder="ชื่อกิลด์ศัตรู"
               value={enemyGuildName}
               onValueChange={setEnemyGuildName}
-              disabled={isPending}
             />
           </div>
 
@@ -945,7 +924,6 @@ export function BattleSubmitClient({
               value={enemyPlayerName}
               onChange={setEnemyPlayerName}
               suggestions={enemyPlayerSuggestions}
-              disabled={isPending}
             />
           </div>
         </div>
@@ -958,7 +936,6 @@ export function BattleSubmitClient({
               selectedHeroes={alliedTeam.selectedHeroes}
               onSelectionChange={handleAlliedHeroChange}
               variant="allied"
-              disabled={isPending}
               suggestions={heroCooccurrence}
             />
           </div>
@@ -969,102 +946,52 @@ export function BattleSubmitClient({
               selectedHeroes={enemyTeam.selectedHeroes}
               onSelectionChange={handleEnemyHeroChange}
               variant="enemy"
-              disabled={isPending}
               suggestions={heroCooccurrence}
             />
           </div>
         </div>
 
-        {/* Collapsible advanced section */}
-        <div className="border border-border-dim rounded-[var(--radius-md)] overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setAdvancedOpen(!advancedOpen)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-bg-elevated hover:bg-bg-card-hover transition-colors cursor-pointer"
-          >
-            <span className="text-sm font-medium text-text-secondary">
-              รายละเอียดเพิ่มเติม
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 text-text-muted transition-transform ${advancedOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-
-          {advancedOpen && (
-            <div className="px-4 pb-4 pt-2 space-y-4 border-t border-border-dim">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Allied advanced */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-cyan" />
-                    <span className="text-sm font-medium text-cyan">
-                      ทีมฝ่ายเรา
-                    </span>
-                  </div>
-
-                  {/* Skill Sequence */}
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                      ลำดับสกิล
-                    </label>
-                    <SkillSequenceSelector
-                      selectedHeroes={alliedTeam.selectedHeroes}
-                      skillSequence={alliedTeam.skillSequence}
-                      onSequenceChange={(sequence: SkillSequenceItem[]) =>
-                        setAlliedTeam({ ...alliedTeam, skillSequence: sequence })
-                      }
-                      variant="allied"
-                      disabled={isPending}
-                      historicalSequences={skillSequenceHistory?.[getCompositeKey(alliedTeam.selectedHeroes)]}
-                    />
-                  </div>
-                </div>
-
-                {/* Enemy advanced */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Swords className="w-4 h-4 text-accent" />
-                    <span className="text-sm font-medium text-accent">
-                      ทีมศัตรู
-                    </span>
-                  </div>
-
-                  {/* Skill Sequence */}
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                      ลำดับสกิล
-                    </label>
-                    <SkillSequenceSelector
-                      selectedHeroes={enemyTeam.selectedHeroes}
-                      skillSequence={enemyTeam.skillSequence}
-                      onSequenceChange={(sequence: SkillSequenceItem[]) =>
-                        setEnemyTeam({ ...enemyTeam, skillSequence: sequence })
-                      }
-                      variant="enemy"
-                      disabled={isPending}
-                      historicalSequences={skillSequenceHistory?.[getCompositeKey(enemyTeam.selectedHeroes)]}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Video URL — full width below columns */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                  ลิงก์วิดีโอ
-                </label>
-                <Input
-                  type="url"
-                  placeholder="https://..."
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  disabled={isPending}
-                  className="h-9"
-                />
-              </div>
+        {/* Skill sequences */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Shield className="w-3.5 h-3.5 text-cyan" />
+              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                ลำดับสกิลฝ่ายเรา
+              </label>
             </div>
-          )}
+            <SkillSequenceSelector
+              selectedHeroes={alliedTeam.selectedHeroes}
+              skillSequence={alliedTeam.skillSequence}
+              onSequenceChange={(sequence: SkillSequenceItem[]) =>
+                setAlliedTeam({ ...alliedTeam, skillSequence: sequence })
+              }
+              variant="allied"
+              historicalSequences={skillSequenceHistory?.[getCompositeKey(alliedTeam.selectedHeroes)]}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Swords className="w-3.5 h-3.5 text-accent" />
+              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                ลำดับสกิลศัตรู
+              </label>
+            </div>
+            <SkillSequenceSelector
+              selectedHeroes={enemyTeam.selectedHeroes}
+              skillSequence={enemyTeam.skillSequence}
+              onSequenceChange={(sequence: SkillSequenceItem[]) =>
+                setEnemyTeam({ ...enemyTeam, skillSequence: sequence })
+              }
+              variant="enemy"
+              historicalSequences={skillSequenceHistory?.[getCompositeKey(enemyTeam.selectedHeroes)]}
+            />
+          </div>
         </div>
+
+
+        </fieldset>
 
         {/* Submit */}
         <div className="flex gap-3 pt-2">
