@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -16,6 +16,9 @@ import {
   Eye,
   Pencil,
   Filter,
+  X,
+  Search,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,6 +78,144 @@ type Member = {
 
 import { weekdayLabels } from "@/lib/validations/battle";
 
+/* ── Member Multi-Select ──────────────────── */
+
+function MemberMultiSelect({
+  members,
+  selectedIds,
+  onChange,
+}: {
+  members: Member[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const selectedSet = new Set(selectedIds);
+  const memberMap = new Map(members.map((m) => [m.id, m]));
+
+  const filtered = members.filter(
+    (m) => m.ign.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function toggle(id: string) {
+    const next = selectedSet.has(id)
+      ? selectedIds.filter((i) => i !== id)
+      : [...selectedIds, id];
+    onChange(next);
+  }
+
+  function clear() {
+    onChange([]);
+  }
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-border-default bg-bg-input text-sm text-text-primary hover:border-border-bright transition-colors cursor-pointer min-w-[180px]"
+      >
+        {selectedIds.length === 0 ? (
+          <span className="text-text-muted">ทุกคน</span>
+        ) : (
+          <span className="flex items-center gap-1 flex-wrap">
+            {selectedIds.slice(0, 2).map((id) => (
+              <span
+                key={id}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent/10 text-accent text-xs"
+              >
+                {memberMap.get(id)?.ign ?? id}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); toggle(id); }}
+                  className="hover:text-accent-bright cursor-pointer"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+            ))}
+            {selectedIds.length > 2 && (
+              <span className="text-xs text-text-muted">+{selectedIds.length - 2}</span>
+            )}
+          </span>
+        )}
+        <ChevronDown className="h-3.5 w-3.5 text-text-muted ml-auto shrink-0" />
+      </button>
+
+      {open && (
+        <div className="absolute z-30 w-64 mt-1 rounded-md bg-bg-card border border-border-default shadow-lg overflow-hidden">
+          <div className="p-2 border-b border-border-dim">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="ค้นหาสมาชิก..."
+                className="w-full h-7 pl-7 pr-2 rounded-[var(--radius-sm)] bg-bg-input border border-border-dim text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
+                autoFocus
+              />
+            </div>
+          </div>
+          {selectedIds.length > 0 && (
+            <button
+              type="button"
+              onClick={clear}
+              className="w-full px-3 py-1.5 text-xs text-text-muted hover:text-accent hover:bg-bg-card-hover text-left cursor-pointer"
+            >
+              ล้างตัวกรอง
+            </button>
+          )}
+          <div className="max-h-48 overflow-y-auto">
+            {filtered.map((m) => {
+              const isSelected = selectedSet.has(m.id);
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => toggle(m.id)}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left transition-colors cursor-pointer ${
+                    isSelected
+                      ? "bg-accent/10 text-accent"
+                      : "text-text-primary hover:bg-bg-card-hover"
+                  }`}
+                >
+                  <div className={`w-3.5 h-3.5 rounded-[3px] border flex items-center justify-center shrink-0 ${
+                    isSelected ? "border-accent bg-accent" : "border-border-default"
+                  }`}>
+                    {isSelected && (
+                      <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  {m.ign}
+                </button>
+              );
+            })}
+            {filtered.length === 0 && (
+              <div className="px-3 py-2 text-xs text-text-muted">ไม่พบสมาชิก</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function GuildWarClient({
   initialBattles,
   stats,
@@ -102,6 +243,10 @@ export function GuildWarClient({
     }
     router.push(`${pathname}?${params.toString()}`);
   }
+
+  const selectedMemberIds = filters.member === "all"
+    ? []
+    : filters.member.split(",").filter(Boolean);
 
   // Data is already filtered server-side
   const filtered = initialBattles;
@@ -204,19 +349,11 @@ export function GuildWarClient({
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <Filter className="h-4 w-4 text-text-muted" />
-        <Select value={filters.member} onValueChange={(v) => setFilter("member", v)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="สมาชิก" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">ทุกคน</SelectItem>
-            {members.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.ign}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MemberMultiSelect
+          members={members}
+          selectedIds={selectedMemberIds}
+          onChange={(ids) => setFilter("member", ids.length === 0 ? "all" : ids.join(","))}
+        />
 
         <Select value={filters.result} onValueChange={(v) => setFilter("result", v)}>
           <SelectTrigger className="w-[140px]">

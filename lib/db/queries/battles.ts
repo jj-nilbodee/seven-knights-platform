@@ -1,11 +1,12 @@
 import { db } from "@/lib/db";
 import { battles, members } from "@/lib/db/schema";
-import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte, sql, inArray } from "drizzle-orm";
 import type { BattleCreate, BattleUpdate } from "@/lib/validations/battle";
 import { getWeekdayFromDate } from "@/lib/validations/battle";
 
 export interface BattleFilters {
   memberId?: string;
+  memberIds?: string[];
   dateFrom?: string;
   dateTo?: string;
   result?: "win" | "loss";
@@ -17,7 +18,9 @@ export interface BattleFilters {
 export async function listBattles(guildId: string, filters: BattleFilters = {}) {
   const conditions = [eq(battles.guildId, guildId)];
 
-  if (filters.memberId) {
+  if (filters.memberIds && filters.memberIds.length > 0) {
+    conditions.push(inArray(battles.memberId, filters.memberIds));
+  } else if (filters.memberId) {
     conditions.push(eq(battles.memberId, filters.memberId));
   }
   if (filters.dateFrom) {

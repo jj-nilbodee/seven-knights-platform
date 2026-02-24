@@ -25,14 +25,17 @@ export default async function GuildWarPage({
   const { guildId } = guild;
 
   const filters: {
-    memberId?: string;
+    memberIds?: string[];
     result?: "win" | "loss";
     weekday?: "SAT" | "MON" | "WED";
     limit?: number;
   } = { limit: 200 };
 
   if (params.member && params.member !== "all") {
-    filters.memberId = params.member;
+    const ids = params.member.split(",").filter(Boolean);
+    if (ids.length > 0) {
+      filters.memberIds = ids;
+    }
   }
   if (params.result === "win" || params.result === "loss") {
     filters.result = params.result;
