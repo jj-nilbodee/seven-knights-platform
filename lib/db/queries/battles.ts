@@ -7,6 +7,7 @@ import { getWeekdayFromDate } from "@/lib/validations/battle";
 export interface BattleFilters {
   memberId?: string;
   memberIds?: string[];
+  date?: string;
   dateFrom?: string;
   dateTo?: string;
   result?: "win" | "loss";
@@ -22,6 +23,9 @@ export async function listBattles(guildId: string, filters: BattleFilters = {}) 
     conditions.push(inArray(battles.memberId, filters.memberIds));
   } else if (filters.memberId) {
     conditions.push(eq(battles.memberId, filters.memberId));
+  }
+  if (filters.date) {
+    conditions.push(eq(battles.date, filters.date));
   }
   if (filters.dateFrom) {
     conditions.push(gte(battles.date, filters.dateFrom));
@@ -305,4 +309,14 @@ export async function getBattleStats(guildId: string) {
     losses: row?.losses ?? 0,
     winRate: row && row.total > 0 ? Math.round((row.wins / row.total) * 100) : 0,
   };
+}
+
+export async function getLatestBattleDate(guildId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ date: battles.date })
+    .from(battles)
+    .where(eq(battles.guildId, guildId))
+    .orderBy(desc(battles.date))
+    .limit(1);
+  return row?.date ?? null;
 }

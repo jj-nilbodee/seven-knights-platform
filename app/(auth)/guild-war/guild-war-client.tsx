@@ -225,7 +225,7 @@ export function GuildWarClient({
   initialBattles: Battle[];
   stats: Stats;
   members: Member[];
-  filters: { member: string; result: string; day: string };
+  filters: { member: string; result: string; day: string; date: string };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -349,6 +349,26 @@ export function GuildWarClient({
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <Filter className="h-4 w-4 text-text-muted" />
+
+        <div className="flex items-center gap-1.5">
+          <input
+            type="date"
+            value={filters.date === "all" ? "" : filters.date}
+            onChange={(e) => setFilter("date", e.target.value || "all")}
+            className="h-9 px-3 rounded-md border border-border-default bg-bg-input text-sm text-text-primary transition-colors focus-visible:outline-none focus-visible:border-accent"
+          />
+          {filters.date !== "all" && (
+            <button
+              type="button"
+              onClick={() => setFilter("date", "all")}
+              className="p-1 text-text-muted hover:text-accent transition-colors cursor-pointer"
+              title="แสดงทุกวัน"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
         <MemberMultiSelect
           members={members}
           selectedIds={selectedMemberIds}
