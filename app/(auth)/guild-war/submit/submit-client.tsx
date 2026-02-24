@@ -668,8 +668,6 @@ export function BattleSubmitClient({
     return !!(
       (allied.skillSequence && allied.skillSequence.length > 0) ||
       (enemy.skillSequence && enemy.skillSequence.length > 0) ||
-      (allied.speed && allied.speed > 0) ||
-      (enemy.speed && enemy.speed > 0) ||
       initialBattle.videoUrl
     );
   });
@@ -853,8 +851,8 @@ export function BattleSubmitClient({
           </div>
         </div>
 
-        {/* Row 2: Result + First Turn + Battle Type */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Row 2: Result + First Turn + Speed + Battle Type */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-text-secondary">
               ผลลัพธ์ <span className="text-accent">*</span>
@@ -883,6 +881,29 @@ export function BattleSubmitClient({
                 { value: "no", label: "ไม่", color: "accent" },
                 { value: "unknown", label: "?", color: "cyan" },
               ]}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-text-secondary">
+              ความเร็ว
+            </label>
+            <Input
+              type="number"
+              placeholder="ความเร็วทีม"
+              value={alliedTeam.speed}
+              onChange={(e) =>
+                setAlliedTeam({
+                  ...alliedTeam,
+                  speed:
+                    e.target.value === ""
+                      ? ""
+                      : parseInt(e.target.value, 10),
+                })
+              }
+              min={0}
+              className="h-9"
+              disabled={isPending}
             />
           </div>
 
@@ -997,30 +1018,6 @@ export function BattleSubmitClient({
                       historicalSequences={skillSequenceHistory?.[getCompositeKey(alliedTeam.selectedHeroes)]}
                     />
                   </div>
-
-                  {/* Speed */}
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                      ความเร็ว
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="ความเร็วทีม"
-                      value={alliedTeam.speed}
-                      onChange={(e) =>
-                        setAlliedTeam({
-                          ...alliedTeam,
-                          speed:
-                            e.target.value === ""
-                              ? ""
-                              : parseInt(e.target.value, 10),
-                        })
-                      }
-                      min={0}
-                      className="h-9"
-                      disabled={isPending}
-                    />
-                  </div>
                 </div>
 
                 {/* Enemy advanced */}
@@ -1046,30 +1043,6 @@ export function BattleSubmitClient({
                       variant="enemy"
                       disabled={isPending}
                       historicalSequences={skillSequenceHistory?.[getCompositeKey(enemyTeam.selectedHeroes)]}
-                    />
-                  </div>
-
-                  {/* Speed */}
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                      ความเร็ว
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="ความเร็วทีม"
-                      value={enemyTeam.speed}
-                      onChange={(e) =>
-                        setEnemyTeam({
-                          ...enemyTeam,
-                          speed:
-                            e.target.value === ""
-                              ? ""
-                              : parseInt(e.target.value, 10),
-                        })
-                      }
-                      min={0}
-                      className="h-9"
-                      disabled={isPending}
                     />
                   </div>
                 </div>
