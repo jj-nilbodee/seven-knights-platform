@@ -90,6 +90,7 @@ export async function quickSubmitBattles(data: {
       for (const [memberId, memberBattles] of byMember) {
         const existingRows = existingByMember.get(memberId) ?? [];
         const matched = new Set<string>(); // track which existing rows are already matched
+        let totalCount = existingRows.length; // track total including newly inserted
 
         for (const b of memberBattles) {
           // Try to match an existing battle with the same result that lacks detail
@@ -115,15 +116,15 @@ export async function quickSubmitBattles(data: {
               })
               .where(eq(battles.id, match.id));
             updated++;
-          } else if (existingRows.length < 5) {
+          } else if (totalCount < 5) {
             // No matching skeleton — insert as new if under limit
-            const nextNumber = existingRows.length + 1;
+            totalCount++;
             await tx.insert(battles).values({
               guildId: effectiveGuildId,
               memberId,
               date,
               weekday,
-              battleNumber: nextNumber,
+              battleNumber: totalCount,
               battleType: b.battleType,
               result: b.result,
               enemyGuildName,
@@ -134,13 +135,6 @@ export async function quickSubmitBattles(data: {
               enemyTeam: EMPTY_TEAM,
               firstTurn: null,
               submittedByUserId: user.id,
-            });
-            // Add to existingRows so the count stays accurate
-            existingRows.push({
-              id: "",
-              battleNumber: nextNumber,
-              result: b.result,
-              enemyPlayerName: b.enemyPlayerName || null,
             });
             inserted++;
           }
