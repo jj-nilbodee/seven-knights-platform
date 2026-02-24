@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { fuzzyMatchMembers } from "@/lib/fuzzy-match";
 import { quickSubmitBattles } from "@/actions/quick-submit";
+import { getBattleContext } from "@/actions/battles";
 import type {
   ExtractionResult,
   MemberSummary,
@@ -80,6 +81,16 @@ export function QuickSubmitClient({
   // Form state
   const [date, setDate] = useState(getLatestGuildWarDate());
   const [enemyGuildName, setEnemyGuildName] = useState("");
+
+  // Auto-populate enemy guild name from existing battles
+  useEffect(() => {
+    if (!date) return;
+    getBattleContext(guildId, "", date).then((ctx) => {
+      if (ctx.enemyGuildName) {
+        setEnemyGuildName(ctx.enemyGuildName);
+      }
+    });
+  }, [date, guildId]);
 
   // Upload state
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
