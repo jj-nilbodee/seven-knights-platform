@@ -8,16 +8,10 @@ import {
   TrendingDown,
   Minus,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, winRateColor } from "@/lib/utils";
 import type { MemberPerformance } from "@/lib/db/queries/analytics";
 
 type SortField = "ign" | "winRate" | "totalBattles" | "attackWinRate" | "defenseWinRate";
-
-function winRateColor(rate: number) {
-  if (rate >= 60) return "text-green";
-  if (rate >= 40) return "text-gold";
-  return "text-accent";
-}
 
 function TrendIcon({ trend }: { trend: MemberPerformance["recentTrend"] }) {
   if (trend === "improving")
@@ -90,9 +84,6 @@ export function MemberPerformanceTable({
               </th>
             ))}
             <th className="px-3 py-2 text-center text-xs font-medium text-text-muted uppercase tracking-wider">
-              จัดทัพ
-            </th>
-            <th className="px-3 py-2 text-center text-xs font-medium text-text-muted uppercase tracking-wider">
               แนวโน้ม
             </th>
           </tr>
@@ -137,9 +128,6 @@ export function MemberPerformanceTable({
                 ) : (
                   <span className="text-text-muted">—</span>
                 )}
-              </td>
-              <td className="px-3 py-2.5 text-center text-text-secondary text-xs">
-                {m.favoriteFormation ?? "—"}
               </td>
               <td className="px-3 py-2.5 text-center">
                 <TrendIcon trend={m.recentTrend} />

@@ -21,7 +21,6 @@ import { weekdayLabels } from "@/lib/validations/battle";
 
 interface TeamData {
   heroes?: Array<{ heroId: string; position: string | null }>;
-  formation?: string | null;
   skillSequence?: Array<{
     heroId: string;
     skillId: string;
@@ -50,7 +49,6 @@ function TeamDisplay({
       : { border: "border-accent/30", bg: "bg-accent/10", text: "text-accent" };
 
   const heroes = team.heroes ?? [];
-  const formation = team.formation ?? null;
   const skillSequence = team.skillSequence ?? [];
   const speed = team.speed ?? 0;
 
@@ -113,18 +111,8 @@ function TeamDisplay({
         </div>
       </div>
 
-      {/* Formation & Speed */}
+      {/* Speed */}
       <div className="flex flex-wrap gap-4">
-        {formation && (
-          <div>
-            <p className="text-xs text-text-muted uppercase tracking-wider mb-1">
-              จัดทัพ
-            </p>
-            <span className="text-sm text-text-primary font-medium">
-              {formation}
-            </span>
-          </div>
-        )}
         {speed > 0 && (
           <div className="flex items-center gap-1">
             <Gauge className="w-3.5 h-3.5 text-text-muted" />

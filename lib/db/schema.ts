@@ -188,8 +188,7 @@ export const battleHeroPairs = pgTable(
     result: text("result").notNull(),
     alliedHeroId: text("allied_hero_id").notNull(),
     enemyHeroId: text("enemy_hero_id").notNull(),
-    alliedFormation: text("allied_formation"),
-    enemyFormation: text("enemy_formation"),
+
     alliedSpeed: integer("allied_speed"),
     enemySpeed: integer("enemy_speed"),
     firstTurn: boolean("first_turn"),

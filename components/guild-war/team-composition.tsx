@@ -8,8 +8,6 @@ import type {
   SkillSequenceItem,
 } from "./index";
 import { HeroSelector } from "./hero-selector";
-import { FormationSelector } from "./formation-selector";
-import { FormationGrid } from "./formation-grid";
 import { SkillSequenceSelector } from "./skill-sequence-selector";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,19 +46,6 @@ export function TeamComposition({
       ...state,
       selectedHeroes,
       skillSequence: reorderedSequence,
-    });
-  };
-
-  const handleFormationChange = (formation: typeof state.formation) => {
-    const resetHeroes = state.selectedHeroes.map((h) => ({
-      ...h,
-      position: null,
-    }));
-
-    onChange({
-      ...state,
-      formation,
-      selectedHeroes: resetHeroes,
     });
   };
 
@@ -113,36 +98,6 @@ export function TeamComposition({
           />
         )}
       </div>
-
-      {/* Formation Selection */}
-      <div className="space-y-3">
-        <Label className="text-text-primary font-medium block text-center">
-          จัดทัพ
-        </Label>
-        <FormationSelector
-          value={state.formation}
-          onChange={handleFormationChange}
-          maxHeroes={maxHeroes}
-          variant={variant}
-          disabled={disabled}
-        />
-      </div>
-
-      {/* Formation Grid */}
-      {state.formation && state.selectedHeroes.length > 0 && (
-        <div className="space-y-3">
-          <Label className="text-text-primary font-medium block text-center">
-            ตำแหน่งฮีโร่
-          </Label>
-          <FormationGrid
-            formation={state.formation}
-            heroes={state.selectedHeroes}
-            onPositionChange={handlePositionChange}
-            variant={variant}
-            disabled={disabled}
-          />
-        </div>
-      )}
 
       {/* Skill Sequence */}
       <div className="space-y-3">

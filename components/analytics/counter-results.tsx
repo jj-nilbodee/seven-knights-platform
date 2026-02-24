@@ -1,18 +1,12 @@
 "use client";
 
 import { Shield, CheckCircle, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, winRateColor } from "@/lib/utils";
 import type {
   CounterRecommendationResult,
   CounterComposition,
   EnemyComposition,
 } from "@/lib/db/queries/analytics";
-
-function winRateColor(rate: number) {
-  if (rate >= 60) return "text-green";
-  if (rate >= 40) return "text-gold";
-  return "text-accent";
-}
 
 function CounterCard({ counter }: { counter: CounterComposition }) {
   return (
@@ -26,11 +20,6 @@ function CounterCard({ counter }: { counter: CounterComposition }) {
             {name}
           </span>
         ))}
-        {counter.formation && (
-          <span className="inline-block rounded-[var(--radius-sm)] bg-gold/10 border border-gold/20 px-2 py-0.5 text-xs text-gold">
-            {counter.formation}
-          </span>
-        )}
       </div>
       <div className="flex items-center gap-3 mt-2">
         <div className="h-1.5 flex-1 rounded-full bg-bg-input overflow-hidden">

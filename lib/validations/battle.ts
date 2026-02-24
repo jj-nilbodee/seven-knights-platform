@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-export const formations = ["4-1", "3-2", "1-4", "2-3"] as const;
 export const positions = ["front", "back"] as const;
 export const battleResults = ["win", "loss"] as const;
 export const battleTypes = ["attack", "defense"] as const;
@@ -22,7 +21,7 @@ export const teamCompositionSchema = z.object({
       }),
     )
     .max(5),
-  formation: z.enum(formations).nullable(),
+
   skillSequence: z
     .array(
       z.object({
@@ -51,6 +50,19 @@ function getWeekdayFromDate(dateStr: string): "SAT" | "MON" | "WED" {
 }
 
 export { getWeekdayFromDate };
+
+/**
+ * Get the most recent guild war date (SAT, MON, or WED) relative to today.
+ */
+export function getLatestGuildWarDate() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  // daysBack[day] = how many days to subtract to reach the latest eligible day (including today)
+  const daysBack = [1, 0, 1, 0, 1, 1, 0]; // Sun→Sat, Mon→Mon, Tue→Mon, Wed→Wed, Thu→Wed, Fri→Wed, Sat→Sat
+  const target = new Date(now);
+  target.setDate(target.getDate() - daysBack[day]);
+  return target.toISOString().split("T")[0];
+}
 
 export const battleCreateSchema = z
   .object({

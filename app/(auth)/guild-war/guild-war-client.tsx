@@ -275,7 +275,7 @@ export function GuildWarClient({
     if (!deletingBattle) return;
     startDelete(async () => {
       const result = await deleteBattle(deletingBattle.id);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("ลบการต่อสู้สำเร็จ");
@@ -520,7 +520,6 @@ export function GuildWarClient({
 
 interface TeamData {
   heroes?: Array<{ heroId: string; position: string | null }>;
-  formation?: string | null;
   skillSequence?: Array<{ heroId: string; skillId: string; order: number }>;
   speed?: number;
 }

@@ -201,9 +201,6 @@ export default async function DashboardPage({
                     ศัตรู
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-muted">
-                    จัดทัพ
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-text-muted">
                     ผล
                   </th>
                 </tr>
@@ -222,9 +219,6 @@ export default async function DashboardPage({
                     </td>
                     <td className="px-3 py-2 text-text-secondary">
                       {b.enemyGuildName || "—"}
-                    </td>
-                    <td className="px-3 py-2 text-text-muted text-xs">
-                      {b.alliedFormation ?? "—"}
                     </td>
                     <td className="px-3 py-2">
                       <span className={getResultBadgeClasses(b.result)}>

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Users,
-  Grid3X3,
   Zap,
   Timer,
   Shield,
@@ -18,7 +17,6 @@ import { cn } from "@/lib/utils";
 const tabs = [
   { href: "/guild-war/analytics", label: "ภาพรวม", icon: BarChart3, exact: true },
   { href: "/guild-war/analytics/matchups", label: "แมตช์อัพ", icon: Users },
-  { href: "/guild-war/analytics/formations", label: "จัดทัพ", icon: Grid3X3 },
   { href: "/guild-war/analytics/skills", label: "ลำดับสกิล", icon: Zap },
   { href: "/guild-war/analytics/speed", label: "ความเร็ว", icon: Timer },
   { href: "/guild-war/analytics/counter", label: "เคาน์เตอร์", icon: Shield },

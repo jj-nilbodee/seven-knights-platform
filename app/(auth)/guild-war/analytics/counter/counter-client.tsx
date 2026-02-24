@@ -19,10 +19,10 @@ export function CounterClient({ heroes, guildId }: { heroes: HeroData[]; guildId
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleSearch(heroIds: string[], formation: string | null) {
+  function handleSearch(heroIds: string[]) {
     setError(null);
     startTransition(async () => {
-      const res = await searchCounterRecommendations(heroIds, formation, guildId);
+      const res = await searchCounterRecommendations(heroIds, guildId);
       if ("error" in res && res.error) {
         setError(res.error);
         setResult(null);

@@ -30,7 +30,6 @@ export interface RecentBattle {
   result: string;
   enemyGuildName: string | null;
   memberIgn: string | null;
-  alliedFormation: string | null;
 }
 
 export interface DailyWinRate {
@@ -74,22 +73,6 @@ export interface SkillOrderImpact {
   position3: PositionStats;
   bestPosition: number;
   totalUses: number;
-}
-
-export interface FormationMatchup {
-  wins: number;
-  losses: number;
-  total: number;
-  winRate: number;
-}
-
-export interface FormationStat {
-  formation: string;
-  wins: number;
-  losses: number;
-  total: number;
-  winRate: number;
-  vsEnemyFormations: Record<string, FormationMatchup>;
 }
 
 export interface SpeedBracket {
@@ -143,14 +126,12 @@ export interface MemberPerformance {
   attackWinRate: number;
   defenseBattles: number;
   defenseWinRate: number;
-  favoriteFormation: string | null;
   recentTrend: "improving" | "stable" | "declining";
 }
 
 export interface CounterComposition {
   heroIds: string[];
   heroNames: string[];
-  formation: string | null;
   wins: number;
   total: number;
   winRate: number;
@@ -160,7 +141,6 @@ export interface EnemyComposition {
   compositionId: string;
   heroIds: string[];
   heroNames: string[];
-  formation: string | null;
   seenCount: number;
   winAgainst: number;
   lossAgainst: number;
@@ -332,7 +312,6 @@ export async function getRecentBattles(
       result: battles.result,
       enemyGuildName: battles.enemyGuildName,
       memberIgn: members.ign,
-      alliedTeam: battles.alliedTeam,
     })
     .from(battles)
     .leftJoin(members, eq(battles.memberId, members.id))
@@ -340,17 +319,13 @@ export async function getRecentBattles(
     .orderBy(desc(battles.date), desc(battles.createdAt))
     .limit(limit);
 
-  return rows.map((r) => {
-    const team = r.alliedTeam as { formation?: string } | null;
-    return {
-      id: r.id,
-      date: r.date,
-      result: r.result,
-      enemyGuildName: r.enemyGuildName,
-      memberIgn: r.memberIgn,
-      alliedFormation: team?.formation ?? null,
-    };
-  });
+  return rows.map((r) => ({
+    id: r.id,
+    date: r.date,
+    result: r.result,
+    enemyGuildName: r.enemyGuildName,
+    memberIgn: r.memberIgn,
+  }));
 }
 
 // ============================================
@@ -460,81 +435,7 @@ export async function getHeroMatchups(
 }
 
 // ============================================
-// 7. Formation Stats
-// ============================================
-
-export async function getFormationStats(
-  guildId: string,
-  days: number = 30,
-): Promise<FormationStat[]> {
-  const cutoff = getDateCutoff(days);
-
-  const rows = await db.execute<{
-    allied_formation: string | null;
-    enemy_formation: string | null;
-    result: string;
-    cnt: string;
-  }>(sql`
-    SELECT
-      ${battles.alliedTeam}->>'formation' AS allied_formation,
-      ${battles.enemyTeam}->>'formation' AS enemy_formation,
-      ${battles.result} AS result,
-      count(*)::text AS cnt
-    FROM ${battles}
-    WHERE ${battles.guildId} = ${guildId} AND ${battles.date} >= ${cutoff}
-    GROUP BY allied_formation, enemy_formation, ${battles.result}
-  `);
-
-  const formations = ["4-1", "3-2", "1-4", "2-3"];
-  const statMap = new Map<string, FormationStat>();
-
-  for (const f of formations) {
-    statMap.set(f, {
-      formation: f,
-      wins: 0,
-      losses: 0,
-      total: 0,
-      winRate: 0,
-      vsEnemyFormations: {},
-    });
-  }
-
-  for (const row of rows) {
-    const af = row.allied_formation;
-    if (!af || !formations.includes(af)) continue;
-
-    const stat = statMap.get(af)!;
-    const cnt = Number(row.cnt);
-
-    if (row.result === "win") stat.wins += cnt;
-    else stat.losses += cnt;
-    stat.total += cnt;
-
-    const ef = row.enemy_formation;
-    if (ef && formations.includes(ef)) {
-      if (!stat.vsEnemyFormations[ef]) {
-        stat.vsEnemyFormations[ef] = { wins: 0, losses: 0, total: 0, winRate: 0 };
-      }
-      const vs = stat.vsEnemyFormations[ef];
-      if (row.result === "win") vs.wins += cnt;
-      else vs.losses += cnt;
-      vs.total += cnt;
-    }
-  }
-
-  // Calculate win rates
-  for (const stat of statMap.values()) {
-    stat.winRate = calcWinRate(stat.wins, stat.total);
-    for (const vs of Object.values(stat.vsEnemyFormations)) {
-      vs.winRate = calcWinRate(vs.wins, vs.total);
-    }
-  }
-
-  return Array.from(statMap.values());
-}
-
-// ============================================
-// 8. Skill Order Impact
+// 7. Skill Order Impact
 // ============================================
 
 export async function getSkillOrderImpact(
@@ -794,7 +695,6 @@ export async function getMemberPerformance(
     attack_wins: string;
     defense_total: string;
     defense_wins: string;
-    fav_formation: string | null;
   }>(sql`
     SELECT
       m.id AS member_id,
@@ -804,15 +704,7 @@ export async function getMemberPerformance(
       count(b.id) filter (where b.battle_type = 'attack')::text AS attack_total,
       count(b.id) filter (where b.battle_type = 'attack' AND b.result = 'win')::text AS attack_wins,
       count(b.id) filter (where b.battle_type = 'defense')::text AS defense_total,
-      count(b.id) filter (where b.battle_type = 'defense' AND b.result = 'win')::text AS defense_wins,
-      (
-        SELECT b2.allied_team->>'formation'
-        FROM battles b2
-        WHERE b2.member_id = m.id AND b2.guild_id = ${guildId} AND b2.date >= ${cutoff}
-        GROUP BY b2.allied_team->>'formation'
-        ORDER BY count(*) DESC
-        LIMIT 1
-      ) AS fav_formation
+      count(b.id) filter (where b.battle_type = 'defense' AND b.result = 'win')::text AS defense_wins
     FROM members m
     LEFT JOIN battles b ON b.member_id = m.id AND b.guild_id = ${guildId} AND b.date >= ${cutoff}
     WHERE m.guild_id = ${guildId} AND m.is_active = true
@@ -873,7 +765,6 @@ export async function getMemberPerformance(
       attackWinRate: calcWinRate(attackWins, attackTotal),
       defenseBattles: defenseTotal,
       defenseWinRate: calcWinRate(defenseWins, defenseTotal),
-      favoriteFormation: r.fav_formation,
       recentTrend: trend,
     };
   });
@@ -886,7 +777,6 @@ export async function getMemberPerformance(
 export async function getCounterRecommendations(
   guildId: string,
   enemyHeroIds: string[],
-  enemyFormation: string | null,
   days: number = 90,
 ): Promise<CounterRecommendationResult> {
   const cutoff = getDateCutoff(days);
@@ -907,21 +797,19 @@ export async function getCounterRecommendations(
   let exactMatch: EnemyComposition | null = null;
   const similarMap = new Map<string, {
     heroIds: string[];
-    formation: string | null;
     wins: number;
     losses: number;
     overlap: number;
   }>();
   const counterMap = new Map<string, {
     heroIds: string[];
-    formation: string | null;
     wins: number;
     total: number;
   }>();
 
   for (const row of rows) {
-    const enemy = row.enemyTeam as { heroes?: { heroId: string }[]; formation?: string };
-    const allied = row.alliedTeam as { heroes?: { heroId: string }[]; formation?: string };
+    const enemy = row.enemyTeam as { heroes?: { heroId: string }[] };
+    const allied = row.alliedTeam as { heroes?: { heroId: string }[] };
     const eHeroIds = (enemy.heroes ?? []).map((h) => h.heroId);
     if (eHeroIds.length === 0) continue;
 
@@ -936,7 +824,6 @@ export async function getCounterRecommendations(
           compositionId: eKey,
           heroIds: [...eHeroIds].sort(),
           heroNames: [],
-          formation: enemy.formation ?? null,
           seenCount: 0,
           winAgainst: 0,
           lossAgainst: 0,
@@ -951,7 +838,6 @@ export async function getCounterRecommendations(
       if (!similarMap.has(eKey)) {
         similarMap.set(eKey, {
           heroIds: [...eHeroIds].sort(),
-          formation: enemy.formation ?? null,
           wins: 0,
           losses: 0,
           overlap,
@@ -966,11 +852,10 @@ export async function getCounterRecommendations(
     if (isWin && (isExact || overlap >= 3)) {
       const aHeroIds = (allied.heroes ?? []).map((h) => h.heroId);
       if (aHeroIds.length > 0) {
-        const counterKey = compositionId(aHeroIds) + "|" + (allied.formation ?? "");
+        const counterKey = compositionId(aHeroIds);
         if (!counterMap.has(counterKey)) {
           counterMap.set(counterKey, {
             heroIds: [...aHeroIds].sort(),
-            formation: allied.formation ?? null,
             wins: 0,
             total: 0,
           });
@@ -995,7 +880,6 @@ export async function getCounterRecommendations(
       compositionId: compositionId(s.heroIds),
       heroIds: s.heroIds,
       heroNames: s.heroIds.map((id) => heroMap.get(id) ?? id.slice(0, 8)),
-      formation: s.formation,
       seenCount: s.wins + s.losses,
       winAgainst: s.wins,
       lossAgainst: s.losses,
@@ -1011,7 +895,6 @@ export async function getCounterRecommendations(
     .map((c) => ({
       heroIds: c.heroIds,
       heroNames: c.heroIds.map((id) => heroMap.get(id) ?? id.slice(0, 8)),
-      formation: c.formation,
       wins: c.wins,
       total: c.total,
       winRate: calcWinRate(c.wins, c.total),

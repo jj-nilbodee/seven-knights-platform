@@ -7,10 +7,10 @@ import { battles } from "@/lib/db/schema";
 import { quickSubmitSchema } from "@/lib/validations/quick-submit";
 import { getWeekdayFromDate } from "@/lib/validations/battle";
 import { eq, and, inArray } from "drizzle-orm";
+import { ensureGuildContext, parseOrError } from "@/lib/action-helpers";
 
 const EMPTY_TEAM = {
   heroes: [],
-  formation: null,
   skillSequence: [],
   speed: 0,
 };
@@ -30,18 +30,11 @@ export async function quickSubmitBattles(data: {
 }) {
   const user = await requireOfficer();
 
-  const effectiveGuildId =
-    user.role === "admin" && data.guildId
-      ? data.guildId
-      : user.guildId;
-  if (!effectiveGuildId) {
-    return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
-  }
+  const guild = ensureGuildContext(user, data.guildId);
+  if ("error" in guild) return guild;
 
-  const parsed = quickSubmitSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  const parsed = parseOrError(quickSubmitSchema, data);
+  if ("error" in parsed) return parsed;
 
   const { date, enemyGuildName, battles: battleList } = parsed.data;
   const weekday = getWeekdayFromDate(date);
@@ -68,7 +61,7 @@ export async function quickSubmitBattles(data: {
         .from(battles)
         .where(
           and(
-            eq(battles.guildId, effectiveGuildId),
+            eq(battles.guildId, guild.guildId),
             eq(battles.date, date),
             inArray(battles.memberId, memberIds),
           ),
@@ -122,7 +115,7 @@ export async function quickSubmitBattles(data: {
         } else if (rowCount < 5) {
           rowCount++;
           inserts.push({
-            guildId: effectiveGuildId,
+            guildId: guild.guildId,
             memberId,
             date,
             weekday,

@@ -13,25 +13,16 @@ interface HeroData {
   imageUrl: string | null;
 }
 
-const FORMATIONS = [
-  { value: "", label: "ไม่ระบุ" },
-  { value: "4-1", label: "4-1" },
-  { value: "3-2", label: "3-2" },
-  { value: "1-4", label: "1-4" },
-  { value: "2-3", label: "2-3" },
-];
-
 export function EnemyTeamBuilder({
   heroes,
   onSearch,
   loading,
 }: {
   heroes: HeroData[];
-  onSearch: (heroIds: string[], formation: string | null) => void;
+  onSearch: (heroIds: string[]) => void;
   loading: boolean;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [formation, setFormation] = useState("");
   const [search, setSearch] = useState("");
 
   const filtered = heroes.filter(
@@ -52,12 +43,11 @@ export function EnemyTeamBuilder({
 
   function handleSearch() {
     if (selectedIds.length === 0) return;
-    onSearch(selectedIds, formation || null);
+    onSearch(selectedIds);
   }
 
   function handleClear() {
     setSelectedIds([]);
-    setFormation("");
     setSearch("");
   }
 
@@ -85,24 +75,6 @@ export function EnemyTeamBuilder({
           })}
         </div>
       )}
-
-      {/* Formation selector */}
-      <div className="flex gap-2 flex-wrap">
-        {FORMATIONS.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFormation(f.value)}
-            className={cn(
-              "rounded-[var(--radius-sm)] border px-2.5 py-1 text-xs transition-colors cursor-pointer",
-              formation === f.value
-                ? "border-accent/40 bg-accent/10 text-accent font-medium"
-                : "border-border-default text-text-secondary hover:border-border-bright",
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
 
       {/* Search + Hero grid */}
       <div className="relative">

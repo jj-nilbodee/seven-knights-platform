@@ -23,6 +23,7 @@ import type {
 } from "@/components/guild-war/index";
 import { initialTeamState } from "@/components/guild-war/index";
 import { createBattle, updateBattle, getBattleContext } from "@/actions/battles";
+import { getLatestGuildWarDate } from "@/lib/validations/battle";
 
 type Member = {
   id: string;
@@ -40,7 +41,6 @@ function serializeTeam(state: TeamCompositionState) {
       heroId: h.heroId,
       position: h.position,
     })),
-    formation: null,
     skillSequence: state.skillSequence.map((s) => ({
       heroId: s.heroId,
       skillId: s.skillId,
@@ -48,17 +48,6 @@ function serializeTeam(state: TeamCompositionState) {
     })),
     speed: typeof state.speed === "number" ? state.speed : 0,
   };
-}
-
-function getLatestGuildWarDate() {
-  const now = new Date();
-  const day = now.getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
-  // Guild war days: Monday(1), Wednesday(3), Saturday(6)
-  // daysBack[day] = how many days to subtract to reach the latest eligible day (including today)
-  const daysBack = [1, 0, 1, 0, 1, 1, 0]; // Sun→Sat, Mon→Mon, Tue→Mon, Wed→Wed, Thu→Wed, Fri→Wed, Sat→Sat
-  const target = new Date(now);
-  target.setDate(target.getDate() - daysBack[day]);
-  return target.toISOString().split("T")[0];
 }
 
 function RadioGroup({
@@ -583,7 +572,6 @@ function reconstructTeamState(
 
   return {
     selectedHeroes,
-    formation: null,
     skillSequence,
     speed: data.speed ?? "",
   };
@@ -751,7 +739,7 @@ export function BattleSubmitClient({
         ? await updateBattle(initialBattle.id, battleData)
         : await createBattle({ ...battleData, guildId });
 
-      if (res.error) {
+      if ("error" in res) {
         toast.error(res.error);
       } else {
         toast.success(
