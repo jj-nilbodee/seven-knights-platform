@@ -531,27 +531,21 @@ export function RosterClient({
         onEdit={setEditingMember}
       />
 
-      {addOpen && (
-        <AddMemberDialog
-          open={addOpen}
-          onOpenChange={setAddOpen}
-          guildId={guildId}
-        />
-      )}
-      {editingMember && (
-        <EditMemberDialog
-          key={editingMember.id}
-          member={editingMember}
-          onClose={() => setEditingMember(null)}
-        />
-      )}
-      {bulkOpen && (
-        <BulkImportDialog
-          open={bulkOpen}
-          onOpenChange={setBulkOpen}
-          guildId={guildId}
-        />
-      )}
+      <AddMemberDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        guildId={guildId}
+      />
+      <EditMemberDialog
+        key={editingMember?.id}
+        member={editingMember}
+        onClose={() => setEditingMember(null)}
+      />
+      <BulkImportDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        guildId={guildId}
+      />
     </div>
   );
 }
