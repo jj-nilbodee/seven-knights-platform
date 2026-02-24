@@ -916,10 +916,10 @@ export function BattleSubmitClient({
           </button>
 
           {advancedOpen && (
-            <div className="px-4 pb-4 pt-2 space-y-6 border-t border-border-dim">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="px-4 pb-4 pt-2 space-y-4 border-t border-border-dim">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Allied advanced */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-cyan" />
                     <span className="text-sm font-medium text-cyan">
@@ -928,7 +928,7 @@ export function BattleSubmitClient({
                   </div>
 
                   {/* Skill Sequence */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
                       ลำดับสกิล
                     </label>
@@ -944,7 +944,7 @@ export function BattleSubmitClient({
                   </div>
 
                   {/* Speed */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
                       ความเร็ว
                     </label>
@@ -969,7 +969,7 @@ export function BattleSubmitClient({
                 </div>
 
                 {/* Enemy advanced */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Swords className="w-4 h-4 text-accent" />
                     <span className="text-sm font-medium text-accent">
@@ -978,7 +978,7 @@ export function BattleSubmitClient({
                   </div>
 
                   {/* Skill Sequence */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
                       ลำดับสกิล
                     </label>
@@ -994,7 +994,7 @@ export function BattleSubmitClient({
                   </div>
 
                   {/* Speed */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
                       ความเร็ว
                     </label>
