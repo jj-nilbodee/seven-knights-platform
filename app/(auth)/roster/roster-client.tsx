@@ -53,47 +53,27 @@ type Stats = {
   inactive: number;
 };
 
-export function RosterClient({
-  initialMembers,
-  stats,
+/* ── Add Member Dialog ──────────────────── */
+
+function AddMemberDialog({
+  open,
+  onOpenChange,
   guildId,
 }: {
-  initialMembers: Member[];
-  stats: Stats;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   guildId: string;
 }) {
   const router = useRouter();
-  const [showInactive, setShowInactive] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<Member | null>(null);
-
-  // Form state
   const [ign, setIgn] = useState("");
-  const [editStatus, setEditStatus] = useState("active");
-  const [bulkText, setBulkText] = useState("");
-
   const [isAdding, startAdd] = useTransition();
-  const [isEditing, startEdit] = useTransition();
-  const [isBulking, startBulk] = useTransition();
 
-  const filtered = showInactive
-    ? initialMembers
-    : initialMembers.filter((m) => m.status !== "inactive" && m.isActive !== false);
-
-  function openEdit(member: Member) {
-    setEditingMember(member);
-    setIgn(member.ign);
-    setEditStatus(member.status ?? "active");
-    setEditOpen(true);
-  }
-
-  function resetAdd() {
+  function handleClose() {
+    onOpenChange(false);
     setIgn("");
   }
 
-  async function handleAdd(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const fd = new FormData();
     fd.set("ign", ign);
@@ -104,32 +84,189 @@ export function RosterClient({
         toast.error(result.error);
       } else {
         toast.success("เพิ่มสมาชิกสำเร็จ!");
-        setAddOpen(false);
-        resetAdd();
+        handleClose();
         router.refresh();
       }
     });
   }
 
-  async function handleEdit(e: React.FormEvent) {
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+        else onOpenChange(v);
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>เพิ่มสมาชิก</DialogTitle>
+          <DialogDescription>เพิ่มสมาชิกใหม่เข้ากิลด์</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-text-primary">
+                IGN *
+              </label>
+              <Input
+                placeholder="ชื่อในเกม"
+                value={ign}
+                onChange={(e) => setIgn(e.target.value)}
+                disabled={isAdding}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isAdding}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={isAdding || !ign.trim()}>
+              {isAdding ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  กำลังเพิ่ม...
+                </>
+              ) : (
+                "เพิ่มสมาชิก"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ── Edit Member Dialog ──────────────────── */
+
+function EditMemberDialog({
+  member,
+  onClose,
+}: {
+  member: Member | null;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [ign, setIgn] = useState(member?.ign ?? "");
+  const [editStatus, setEditStatus] = useState(member?.status ?? "active");
+  const [isEditing, startEdit] = useTransition();
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!editingMember) return;
+    if (!member) return;
 
     const fd = new FormData();
     fd.set("ign", ign);
     fd.set("status", editStatus);
 
     startEdit(async () => {
-      const result = await updateMember(editingMember.id, fd);
+      const result = await updateMember(member.id, fd);
       if (result.error) {
         toast.error(result.error);
       } else {
         toast.success("อัปเดตสมาชิกสำเร็จ!");
-        setEditOpen(false);
-        setEditingMember(null);
+        onClose();
         router.refresh();
       }
     });
+  }
+
+  return (
+    <Dialog open={!!member} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>แก้ไขสมาชิก</DialogTitle>
+          <DialogDescription>อัปเดตข้อมูลและสถานะสมาชิก</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-text-primary">
+                IGN *
+              </label>
+              <Input
+                value={ign}
+                onChange={(e) => setIgn(e.target.value)}
+                disabled={isEditing}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-text-primary">
+                สถานะ
+              </label>
+              <Select
+                value={editStatus}
+                onValueChange={setEditStatus}
+                disabled={isEditing}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {memberStatuses.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isEditing}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={isEditing}>
+              {isEditing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  กำลังบันทึก...
+                </>
+              ) : (
+                "บันทึก"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ── Bulk Import Dialog ──────────────────── */
+
+function BulkImportDialog({
+  open,
+  onOpenChange,
+  guildId,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  guildId: string;
+}) {
+  const router = useRouter();
+  const [bulkText, setBulkText] = useState("");
+  const [isBulking, startBulk] = useTransition();
+
+  const bulkCount = bulkText
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean).length;
+
+  function handleClose() {
+    onOpenChange(false);
+    setBulkText("");
   }
 
   async function handleBulk() {
@@ -139,18 +276,87 @@ export function RosterClient({
       if ("error" in result && result.error) {
         toast.error(result.error);
       } else if ("added" in result) {
-        toast.success(`นำเข้าสำเร็จ! เพิ่ม: ${result.added}, ข้าม: ${result.skipped}`);
-        setBulkOpen(false);
-        setBulkText("");
+        toast.success(
+          `นำเข้าสำเร็จ! เพิ่ม: ${result.added}, ข้าม: ${result.skipped}`,
+        );
+        handleClose();
         router.refresh();
       }
     });
   }
 
-  const bulkCount = bulkText
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean).length;
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+        else onOpenChange(v);
+      }}
+    >
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>นำเข้าสมาชิก</DialogTitle>
+          <DialogDescription>วางรายชื่อ IGN แต่ละบรรทัด</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-4">
+          <Textarea
+            rows={8}
+            placeholder={"Player1\nPlayer2\nPlayer3"}
+            value={bulkText}
+            onChange={(e) => setBulkText(e.target.value)}
+            disabled={isBulking}
+          />
+          <p className="text-xs text-text-muted">
+            ตรวจพบ{" "}
+            <span className="text-text-primary font-semibold">
+              {bulkCount}
+            </span>{" "}
+            รายชื่อ
+          </p>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={handleClose}
+            disabled={isBulking}
+          >
+            ยกเลิก
+          </Button>
+          <Button onClick={handleBulk} disabled={isBulking || bulkCount === 0}>
+            {isBulking ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                กำลังนำเข้า...
+              </>
+            ) : (
+              `นำเข้า ${bulkCount} สมาชิก`
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ── Main Roster ──────────────────── */
+
+export function RosterClient({
+  initialMembers,
+  stats,
+  guildId,
+}: {
+  initialMembers: Member[];
+  stats: Stats;
+  guildId: string;
+}) {
+  const [showInactive, setShowInactive] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+
+  const filtered = showInactive
+    ? initialMembers
+    : initialMembers.filter((m) => m.status !== "inactive" && m.isActive !== false);
 
   return (
     <div className="space-y-6">
@@ -273,7 +479,7 @@ export function RosterClient({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => openEdit(member)}
+                        onClick={() => setEditingMember(member)}
                         className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-cyan hover:bg-cyan/10 transition-colors"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -291,197 +497,21 @@ export function RosterClient({
         )}
       </div>
 
-      {/* Add member dialog */}
-      <Dialog
+      <AddMemberDialog
         open={addOpen}
-        onOpenChange={(open) => {
-          setAddOpen(open);
-          if (!open) resetAdd();
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>เพิ่มสมาชิก</DialogTitle>
-            <DialogDescription>
-              เพิ่มสมาชิกใหม่เข้ากิลด์
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleAdd}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-text-primary">
-                  IGN *
-                </label>
-                <Input
-                  placeholder="ชื่อในเกม"
-                  value={ign}
-                  onChange={(e) => setIgn(e.target.value)}
-                  disabled={isAdding}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setAddOpen(false);
-                  resetAdd();
-                }}
-                disabled={isAdding}
-              >
-                ยกเลิก
-              </Button>
-              <Button type="submit" disabled={isAdding || !ign.trim()}>
-                {isAdding ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    กำลังเพิ่ม...
-                  </>
-                ) : (
-                  "เพิ่มสมาชิก"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit member dialog */}
-      <Dialog
-        open={editOpen}
-        onOpenChange={(open) => {
-          setEditOpen(open);
-          if (!open) setEditingMember(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>แก้ไขสมาชิก</DialogTitle>
-            <DialogDescription>
-              อัปเดตข้อมูลและสถานะสมาชิก
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEdit}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-text-primary">
-                  IGN *
-                </label>
-                <Input
-                  value={ign}
-                  onChange={(e) => setIgn(e.target.value)}
-                  disabled={isEditing}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-text-primary">
-                  สถานะ
-                </label>
-                <Select
-                  value={editStatus}
-                  onValueChange={setEditStatus}
-                  disabled={isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {memberStatuses.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setEditOpen(false);
-                  setEditingMember(null);
-                }}
-                disabled={isEditing}
-              >
-                ยกเลิก
-              </Button>
-              <Button type="submit" disabled={isEditing}>
-                {isEditing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    กำลังบันทึก...
-                  </>
-                ) : (
-                  "บันทึก"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Bulk import dialog */}
-      <Dialog
+        onOpenChange={setAddOpen}
+        guildId={guildId}
+      />
+      <EditMemberDialog
+        key={editingMember?.id}
+        member={editingMember}
+        onClose={() => setEditingMember(null)}
+      />
+      <BulkImportDialog
         open={bulkOpen}
-        onOpenChange={(open) => {
-          setBulkOpen(open);
-          if (!open) setBulkText("");
-        }}
-      >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>นำเข้าสมาชิก</DialogTitle>
-            <DialogDescription>
-              วางรายชื่อ IGN แต่ละบรรทัด
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-4">
-            <Textarea
-              rows={8}
-              placeholder={"Player1\nPlayer2\nPlayer3"}
-              value={bulkText}
-              onChange={(e) => setBulkText(e.target.value)}
-              disabled={isBulking}
-            />
-            <p className="text-xs text-text-muted">
-              ตรวจพบ{" "}
-              <span className="text-text-primary font-semibold">
-                {bulkCount}
-              </span>{" "}
-              รายชื่อ
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setBulkOpen(false);
-                setBulkText("");
-              }}
-              disabled={isBulking}
-            >
-              ยกเลิก
-            </Button>
-            <Button
-              onClick={handleBulk}
-              disabled={isBulking || bulkCount === 0}
-            >
-              {isBulking ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  กำลังนำเข้า...
-                </>
-              ) : (
-                `นำเข้า ${bulkCount} สมาชิก`
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+        onOpenChange={setBulkOpen}
+        guildId={guildId}
+      />
     </div>
   );
 }
