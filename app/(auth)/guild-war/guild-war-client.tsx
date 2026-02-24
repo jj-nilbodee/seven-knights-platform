@@ -8,17 +8,21 @@ import {
   Plus,
   Camera,
   Swords,
+  Shield,
   Trophy,
   XCircle as XCircleIcon,
   Percent,
   Loader2,
   Trash2,
-  Eye,
   Pencil,
   Filter,
   X,
   Search,
   ChevronDown,
+  ChevronRight,
+  Zap,
+  Gauge,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -216,15 +220,25 @@ function MemberMultiSelect({
   );
 }
 
+type HeroInfo = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  skill1Id: string | null;
+  skill2Id: string | null;
+};
+
 export function GuildWarClient({
   initialBattles,
   stats,
   members,
+  heroes,
   filters,
 }: {
   initialBattles: Battle[];
   stats: Stats;
   members: Member[];
+  heroes: HeroInfo[];
   filters: { member: string; result: string; day: string; date: string };
 }) {
   const router = useRouter();
@@ -233,6 +247,9 @@ export function GuildWarClient({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingBattle, setDeletingBattle] = useState<Battle | null>(null);
   const [isDeleting, startDelete] = useTransition();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const heroMap = new Map(heroes.map((h) => [h.id, h]));
 
   function setFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -439,58 +456,20 @@ export function GuildWarClient({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((battle) => (
-                  <tr
-                    key={battle.id}
-                    className="border-b border-border-dim last:border-b-0 hover:bg-bg-elevated transition-colors"
-                  >
-                    <td className="px-4 py-3 text-text-primary font-medium">
-                      {battle.date}
-                    </td>
-                    <td className="px-4 py-3 text-text-secondary">
-                      {battle.memberIgn ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-text-secondary text-center">
-                      {battle.battleNumber}
-                    </td>
-                    <td className="px-4 py-3 text-text-secondary">
-                      {battle.enemyGuildName || "—"}
-                      {battle.enemyPlayerName && (
-                        <span className="text-text-muted ml-1">
-                          ({battle.enemyPlayerName})
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={getResultBadgeClasses(battle.result)}>
-                        {battle.result === "win" ? "ชนะ" : "แพ้"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-text-muted text-center">
-                      {weekdayLabels[battle.weekday] ?? battle.weekday}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Link href={`/guild-war/detail?id=${battle.id}`}>
-                          <button className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-cyan hover:bg-cyan/10 transition-colors">
-                            <Eye className="h-3.5 w-3.5" />
-                          </button>
-                        </Link>
-                        <Link href={`/guild-war/edit?id=${battle.id}`}>
-                          <button className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-gold hover:bg-gold/10 transition-colors">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                        </Link>
-                        <button
-                          onClick={() => confirmDelete(battle)}
-                          className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((battle) => {
+                  const isExpanded = expandedId === battle.id;
+                  return (
+                    <BattleRow
+                      key={battle.id}
+                      battle={battle}
+                      isExpanded={isExpanded}
+                      heroMap={heroMap}
+                      onToggle={() => setExpandedId(isExpanded ? null : battle.id)}
+                      onEdit={() => router.push(`/guild-war/edit?id=${battle.id}`)}
+                      onDelete={() => confirmDelete(battle)}
+                    />
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -554,5 +533,209 @@ export function GuildWarClient({
       </Dialog>
 
     </div>
+  );
+}
+
+/* ── Battle Row with Expandable Detail ──────────────────── */
+
+interface TeamData {
+  heroes?: Array<{ heroId: string; position: string | null }>;
+  formation?: string | null;
+  skillSequence?: Array<{ heroId: string; skillId: string; order: number }>;
+  speed?: number;
+}
+
+function InlineTeam({
+  team,
+  heroMap,
+  variant,
+  label,
+}: {
+  team: TeamData;
+  heroMap: Map<string, HeroInfo>;
+  variant: "allied" | "enemy";
+  label: string;
+}) {
+  const colors =
+    variant === "allied"
+      ? { border: "border-cyan/30", bg: "bg-cyan/5", text: "text-cyan" }
+      : { border: "border-accent/30", bg: "bg-accent/5", text: "text-accent" };
+
+  const heroes = team.heroes ?? [];
+  const skillSequence = team.skillSequence ?? [];
+  const speed = team.speed ?? 0;
+
+  if (heroes.length === 0 && skillSequence.length === 0) {
+    return (
+      <div className={`rounded-[var(--radius-sm)] border ${colors.border} ${colors.bg} p-3`}>
+        <div className="flex items-center gap-1.5 mb-1">
+          {variant === "allied" ? <Shield className={`h-3.5 w-3.5 ${colors.text}`} /> : <Swords className={`h-3.5 w-3.5 ${colors.text}`} />}
+          <span className={`text-xs font-medium ${colors.text}`}>{label}</span>
+        </div>
+        <p className="text-xs text-text-muted">ไม่มีข้อมูล</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`rounded-[var(--radius-sm)] border ${colors.border} ${colors.bg} p-3 space-y-2`}>
+      <div className="flex items-center gap-1.5">
+        {variant === "allied" ? <Shield className={`h-3.5 w-3.5 ${colors.text}`} /> : <Swords className={`h-3.5 w-3.5 ${colors.text}`} />}
+        <span className={`text-xs font-medium ${colors.text}`}>{label}</span>
+        {speed > 0 && (
+          <span className="flex items-center gap-0.5 text-xs text-text-muted ml-auto">
+            <Gauge className="h-3 w-3" /> {speed}
+          </span>
+        )}
+      </div>
+
+      {/* Heroes */}
+      <div className="flex flex-wrap gap-1.5">
+        {heroes.map((h, i) => {
+          const hero = heroMap.get(h.heroId);
+          return (
+            <div key={i} className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-bg-card/60 border border-border-dim">
+              {hero?.imageUrl ? (
+                <img src={hero.imageUrl} alt="" className="w-5 h-5 rounded-full object-cover object-top" />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-bg-surface flex items-center justify-center">
+                  <User className="w-3 h-3 text-text-muted" />
+                </div>
+              )}
+              <span className="text-xs text-text-primary">{hero?.name ?? "?"}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Skill sequence */}
+      {skillSequence.length > 0 && (
+        <div className="flex items-center gap-1 flex-wrap">
+          <Zap className="h-3 w-3 text-gold shrink-0" />
+          {skillSequence
+            .sort((a, b) => a.order - b.order)
+            .map((s, i) => {
+              const hero = heroMap.get(s.heroId);
+              let skillName = s.skillId;
+              if (hero) {
+                if (hero.skill1Id === s.skillId) skillName = "S1";
+                else if (hero.skill2Id === s.skillId) skillName = "S2";
+              }
+              return (
+                <span key={i} className="flex items-center gap-0.5">
+                  {i > 0 && <ChevronRight className="w-2.5 h-2.5 text-text-muted" />}
+                  <span className={`px-1.5 py-0.5 rounded text-[11px] border ${colors.border} ${colors.bg}`}>
+                    <span className="text-text-muted">{hero?.name ?? "?"}</span>{" "}
+                    <span className="font-medium text-text-primary">{skillName}</span>
+                  </span>
+                </span>
+              );
+            })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BattleRow({
+  battle,
+  isExpanded,
+  heroMap,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  battle: Battle;
+  isExpanded: boolean;
+  heroMap: Map<string, HeroInfo>;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const alliedTeam = (battle.alliedTeam ?? {}) as TeamData;
+  const enemyTeam = (battle.enemyTeam ?? {}) as TeamData;
+  const hasTeamData = (alliedTeam.heroes?.length ?? 0) > 0 || (enemyTeam.heroes?.length ?? 0) > 0;
+
+  return (
+    <>
+      <tr
+        onClick={onToggle}
+        className={`border-b border-border-dim hover:bg-bg-elevated transition-colors cursor-pointer ${isExpanded ? "bg-bg-elevated" : ""}`}
+      >
+        <td className="px-4 py-3 text-text-primary font-medium">
+          {battle.date}
+        </td>
+        <td className="px-4 py-3 text-text-secondary">
+          {battle.memberIgn ?? "—"}
+        </td>
+        <td className="px-4 py-3 text-text-secondary text-center">
+          {battle.battleNumber}
+        </td>
+        <td className="px-4 py-3 text-text-secondary">
+          {battle.enemyGuildName || "—"}
+          {battle.enemyPlayerName && (
+            <span className="text-text-muted ml-1">
+              ({battle.enemyPlayerName})
+            </span>
+          )}
+        </td>
+        <td className="px-4 py-3 text-center">
+          <span className={getResultBadgeClasses(battle.result)}>
+            {battle.result === "win" ? "ชนะ" : "แพ้"}
+          </span>
+        </td>
+        <td className="px-4 py-3 text-text-muted text-center">
+          {weekdayLabels[battle.weekday] ?? battle.weekday}
+        </td>
+        <td className="px-4 py-3 text-right">
+          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+            <Link href={`/guild-war/edit?id=${battle.id}`}>
+              <button className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-gold hover:bg-gold/10 transition-colors">
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </Link>
+            <button
+              onClick={onDelete}
+              className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      {isExpanded && (
+        <tr>
+          <td colSpan={7} className="px-4 py-3 bg-bg-surface/50 border-b border-border-dim">
+            <div className="space-y-3">
+              {/* Battle meta */}
+              <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs">
+                <span className="text-text-muted">
+                  ประเภท: <span className="text-text-primary font-medium">{battle.battleType === "attack" ? "บุก" : "รับ"}</span>
+                </span>
+                <span className="text-text-muted">
+                  ลงมือก่อน: <span className="text-text-primary font-medium">
+                    {battle.firstTurn === true ? "ใช่" : battle.firstTurn === false ? "ไม่ใช่" : "ไม่ทราบ"}
+                  </span>
+                </span>
+              </div>
+
+              {/* Teams */}
+              {hasTeamData ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <InlineTeam team={alliedTeam} heroMap={heroMap} variant="allied" label="ทีมฝ่ายเรา" />
+                  <InlineTeam team={enemyTeam} heroMap={heroMap} variant="enemy" label="ทีมศัตรู" />
+                </div>
+              ) : (
+                <p className="text-xs text-text-muted">
+                  ยังไม่มีข้อมูลทีม —{" "}
+                  <button onClick={onEdit} className="text-gold hover:underline cursor-pointer">แก้ไขเพื่อเพิ่มข้อมูล</button>
+                </p>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

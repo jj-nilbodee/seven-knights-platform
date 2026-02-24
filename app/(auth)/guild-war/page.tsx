@@ -5,6 +5,7 @@ import {
   getLatestBattleDate,
 } from "@/lib/db/queries/battles";
 import { listMembers } from "@/lib/db/queries/members";
+import { listHeroes } from "@/lib/db/queries/heroes";
 import { GuildWarClient } from "./guild-war-client";
 
 export default async function GuildWarPage({
@@ -60,10 +61,11 @@ export default async function GuildWarPage({
     filters.weekday = params.day;
   }
 
-  const [battles, stats, members] = await Promise.all([
+  const [battles, stats, members, heroes] = await Promise.all([
     listBattles(guildId, filters),
     getBattleStats(guildId),
     listMembers(guildId),
+    listHeroes({ isActive: true }),
   ]);
 
   return (
@@ -71,6 +73,13 @@ export default async function GuildWarPage({
       initialBattles={battles}
       stats={stats}
       members={members}
+      heroes={heroes.map((h) => ({
+        id: h.id,
+        name: h.name,
+        imageUrl: h.imageUrl,
+        skill1Id: h.skill1Id,
+        skill2Id: h.skill2Id,
+      }))}
       filters={{
         member: params.member ?? "all",
         result: params.result ?? "all",
