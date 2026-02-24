@@ -15,13 +15,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FormationSelector } from "@/components/guild-war/formation-selector";
 import { FormationGrid } from "@/components/guild-war/formation-grid";
 import { SkillSequenceSelector } from "@/components/guild-war/skill-sequence-selector";
@@ -113,6 +106,125 @@ function RadioGroup({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/* ── Member Combobox ──────────────────── */
+
+function MemberCombobox({
+  members,
+  value,
+  onChange,
+  disabled,
+}: {
+  members: Member[];
+  value: string;
+  onChange: (memberId: string) => void;
+  disabled?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selectedMember = members.find((m) => m.id === value);
+
+  const filtered = members.filter((m) =>
+    m.ign.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const handleSelect = (member: Member) => {
+    onChange(member.id);
+    setQuery("");
+    setOpen(false);
+  };
+
+  const handleClear = () => {
+    onChange("");
+    setQuery("");
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+        {value && !open ? (
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true);
+              setQuery("");
+              setTimeout(() => inputRef.current?.focus(), 0);
+            }}
+            disabled={disabled}
+            className="w-full flex items-center h-9 pl-8 pr-8 rounded-md border border-border-default bg-bg-input text-sm text-text-primary text-left cursor-pointer hover:border-border-bright disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {selectedMember?.ign}
+          </button>
+        ) : (
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            placeholder="พิมพ์ชื่อสมาชิก..."
+            disabled={disabled}
+            className="flex w-full rounded-md border border-border-default bg-bg-input pl-8 pr-8 h-9 py-2 text-sm text-text-primary placeholder:text-text-muted transition-colors focus-visible:outline-none focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_rgba(230,57,70,0.15)] disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        )}
+        {value && (
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={disabled}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-accent transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      {open && filtered.length > 0 && (
+        <div className="absolute z-30 w-full mt-1 rounded-md overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border-default shadow-lg">
+          {filtered.map((member) => (
+            <button
+              key={member.id}
+              type="button"
+              onClick={() => handleSelect(member)}
+              className={`w-full flex items-center px-3 py-2 text-sm text-left transition-colors cursor-pointer ${
+                member.id === value
+                  ? "bg-accent/10 text-accent"
+                  : "text-text-primary hover:bg-bg-card-hover"
+              }`}
+            >
+              {member.ign}
+            </button>
+          ))}
+        </div>
+      )}
+      {open && query && filtered.length === 0 && (
+        <div className="absolute z-30 w-full mt-1 rounded-md overflow-hidden bg-bg-card border border-border-default shadow-lg">
+          <div className="px-3 py-2 text-sm text-text-muted">ไม่พบสมาชิก</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -557,18 +669,12 @@ export function BattleSubmitClient({
             <label className="text-sm font-medium text-text-secondary">
               สมาชิก <span className="text-accent">*</span>
             </label>
-            <Select value={memberId} onValueChange={setMemberId}>
-              <SelectTrigger>
-                <SelectValue placeholder="เลือกสมาชิก" />
-              </SelectTrigger>
-              <SelectContent>
-                {members.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.ign}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MemberCombobox
+              members={members}
+              value={memberId}
+              onChange={setMemberId}
+              disabled={isPending}
+            />
             {!isEditMode && memberId && memberBattleCount > 0 && (
               <p className="text-xs text-text-muted">
                 ลงสนามแล้ว {memberBattleCount}/5 ครั้ง
