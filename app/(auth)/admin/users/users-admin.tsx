@@ -82,7 +82,7 @@ function UserActionRow({
     }
     startSaveName(async () => {
       const result = await updateUserDisplayName(user.userId, nameValue);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("บันทึกชื่อสำเร็จ");
@@ -106,7 +106,7 @@ function UserActionRow({
         guildId,
         role as "member" | "officer",
       );
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("กำหนดกิลด์สำเร็จ");
@@ -121,7 +121,7 @@ function UserActionRow({
     if (newRole === "admin") {
       startPromote(async () => {
         const result = await promoteToAdmin(user.userId);
-        if (result.error) {
+        if ("error" in result) {
           toast.error(result.error);
         } else {
           toast.success("เลื่อนเป็นแอดมินสำเร็จ");
@@ -142,7 +142,7 @@ function UserActionRow({
         user.guildId!,
         newRole as "member" | "officer",
       );
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("เปลี่ยนตำแหน่งสำเร็จ");
@@ -154,7 +154,7 @@ function UserActionRow({
   function handleRemoveFromGuild() {
     startRemove(async () => {
       const result = await removeUserFromGuild(user.userId);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("นำออกจากกิลด์สำเร็จ");

@@ -6,7 +6,6 @@ import {
   battleCreateSchema,
   battleUpdateSchema,
 } from "@/lib/validations/battle";
-import { uuidSchema } from "@/lib/validations/shared";
 import {
   createBattle as dbCreateBattle,
   updateBattle as dbUpdateBattle,
@@ -16,6 +15,7 @@ import {
   getEnemyGuildNameForDate,
   getEnemyPlayerNamesForDate,
 } from "@/lib/db/queries/battles";
+import { validateUUID, parseOrError, ensureGuildContext } from "@/lib/action-helpers";
 
 export async function createBattle(data: {
   memberId: string;
@@ -33,20 +33,15 @@ export async function createBattle(data: {
 }) {
   const user = await requireOfficer();
 
-  const effectiveGuildId = (user.role === "admin" && data.guildId) ? data.guildId : user.guildId;
-  if (!effectiveGuildId) {
-    return { error: "คุณยังไม่ได้อยู่ในกิลด์" };
-  }
+  const guild = ensureGuildContext(user, data.guildId);
+  if ("error" in guild) return guild;
 
-  const parsed = battleCreateSchema.safeParse({
+  const parsed = parseOrError(battleCreateSchema, {
     ...data,
-    guildId: effectiveGuildId,
+    guildId: guild.guildId,
     submittedByUserId: user.id,
   });
-
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if ("error" in parsed) return parsed;
 
   try {
     const battle = await dbCreateBattle(parsed.data);
@@ -72,18 +67,15 @@ export async function updateBattle(id: string, data: {
 }) {
   const user = await requireOfficer();
 
-  if (!uuidSchema.safeParse(id).success) {
-    return { error: "ID ไม่ถูกต้อง" };
-  }
+  const invalid = validateUUID(id);
+  if (invalid) return invalid;
 
   const existing = await getBattleById(id);
   if (!existing) return { error: "ไม่พบข้อมูลการต่อสู้" };
   if (user.role !== "admin" && existing.guildId !== user.guildId) return { error: "ไม่มีสิทธิ์" };
 
-  const parsed = battleUpdateSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  const parsed = parseOrError(battleUpdateSchema, data);
+  if ("error" in parsed) return parsed;
 
   try {
     const battle = await dbUpdateBattle(id, parsed.data);
@@ -98,9 +90,8 @@ export async function updateBattle(id: string, data: {
 export async function deleteBattle(id: string) {
   const user = await requireOfficer();
 
-  if (!uuidSchema.safeParse(id).success) {
-    return { error: "ID ไม่ถูกต้อง" };
-  }
+  const invalid = validateUUID(id);
+  if (invalid) return invalid;
 
   const existing = await getBattleById(id);
   if (!existing) return { error: "ไม่พบข้อมูลการต่อสู้" };

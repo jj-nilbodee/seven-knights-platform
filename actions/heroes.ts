@@ -7,13 +7,13 @@ import {
   heroUpdateSchema,
   heroBulkSchema,
 } from "@/lib/validations/hero";
-import { uuidSchema } from "@/lib/validations/shared";
 import {
   createHero as dbCreateHero,
   updateHero as dbUpdateHero,
   deleteHero as dbDeleteHero,
   bulkCreateHeroes,
 } from "@/lib/db/queries/heroes";
+import { validateUUID, parseOrError, handleDbError } from "@/lib/action-helpers";
 
 export async function createHero(formData: FormData) {
   await requireAdmin();
@@ -28,21 +28,13 @@ export async function createHero(formData: FormData) {
     skill3Type: formData.get("skill3Type") as string,
   };
 
-  const parsed = heroCreateSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  const parsed = parseOrError(heroCreateSchema, raw);
+  if ("error" in parsed) return parsed;
 
   try {
     await dbCreateHero(parsed.data);
   } catch (err: unknown) {
-    if (
-      err instanceof Error &&
-      err.message.includes("unique constraint")
-    ) {
-      return { error: "ฮีโร่ชื่อนี้มีอยู่แล้ว" };
-    }
-    return { error: "ไม่สามารถสร้างฮีโร่ได้" };
+    return handleDbError(err, { unique: "ฮีโร่ชื่อนี้มีอยู่แล้ว", generic: "ไม่สามารถสร้างฮีโร่ได้" });
   }
 
   revalidatePath("/admin/heroes");
@@ -52,9 +44,8 @@ export async function createHero(formData: FormData) {
 export async function updateHero(id: string, formData: FormData) {
   await requireAdmin();
 
-  if (!uuidSchema.safeParse(id).success) {
-    return { error: "ID ไม่ถูกต้อง" };
-  }
+  const invalid = validateUUID(id);
+  if (invalid) return invalid;
 
   const raw: Record<string, string> = {};
   for (const [key, value] of formData.entries()) {
@@ -68,22 +59,14 @@ export async function updateHero(id: string, formData: FormData) {
     raw.imageUrl = imageUrlValue;
   }
 
-  const parsed = heroUpdateSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  const parsed = parseOrError(heroUpdateSchema, raw);
+  if ("error" in parsed) return parsed;
 
   try {
     const hero = await dbUpdateHero(id, parsed.data);
     if (!hero) return { error: "ไม่พบฮีโร่" };
   } catch (err: unknown) {
-    if (
-      err instanceof Error &&
-      err.message.includes("unique constraint")
-    ) {
-      return { error: "ฮีโร่ชื่อนี้มีอยู่แล้ว" };
-    }
-    return { error: "ไม่สามารถอัปเดตฮีโร่ได้" };
+    return handleDbError(err, { unique: "ฮีโร่ชื่อนี้มีอยู่แล้ว", generic: "ไม่สามารถอัปเดตฮีโร่ได้" });
   }
 
   revalidatePath("/admin/heroes");
@@ -93,9 +76,8 @@ export async function updateHero(id: string, formData: FormData) {
 export async function deleteHero(id: string) {
   await requireAdmin();
 
-  if (!uuidSchema.safeParse(id).success) {
-    return { error: "ID ไม่ถูกต้อง" };
-  }
+  const invalid = validateUUID(id);
+  if (invalid) return invalid;
 
   const hero = await dbDeleteHero(id);
   if (!hero) return { error: "ไม่พบฮีโร่" };
@@ -112,10 +94,8 @@ export async function bulkAddHeroes(input: string) {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  const parsed = heroBulkSchema.safeParse({ names });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  const parsed = parseOrError(heroBulkSchema, { names });
+  if ("error" in parsed) return parsed;
 
   try {
     const result = await bulkCreateHeroes(parsed.data.names);

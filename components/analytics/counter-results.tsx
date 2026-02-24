@@ -1,6 +1,7 @@
 "use client";
 
 import { Shield, CheckCircle, AlertTriangle } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn, winRateColor } from "@/lib/utils";
 import type {
   CounterRecommendationResult,
@@ -93,15 +94,7 @@ export function CounterResults({
 
   if (!hasData) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Shield className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">
-          ไม่พบข้อมูลเคาน์เตอร์
-        </p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกการต่อสู้เพิ่มเติมเพื่อให้ระบบแนะนำได้
-        </p>
-      </div>
+      <EmptyState icon={Shield} message="ไม่พบข้อมูลเคาน์เตอร์" detail="บันทึกการต่อสู้เพิ่มเติมเพื่อให้ระบบแนะนำได้" />
     );
   }
 

@@ -6,13 +6,13 @@ import {
   guideCreateSchema,
   guideUpdateSchema,
 } from "@/lib/validations/guide";
-import { uuidSchema } from "@/lib/validations/shared";
 import {
   createGuide as dbCreateGuide,
   updateGuide as dbUpdateGuide,
   deleteGuide as dbDeleteGuide,
   getGuideById,
 } from "@/lib/db/queries/gvg-guides";
+import { validateUUID, parseOrError } from "@/lib/action-helpers";
 
 export async function createGuide(data: {
   title: string;
@@ -28,10 +28,8 @@ export async function createGuide(data: {
 }) {
   const user = await requireAdmin();
 
-  const parsed = guideCreateSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  const parsed = parseOrError(guideCreateSchema, data);
+  if ("error" in parsed) return parsed;
 
   try {
     const guide = await dbCreateGuide({
@@ -63,17 +61,14 @@ export async function updateGvgGuide(
 ) {
   await requireAdmin();
 
-  if (!uuidSchema.safeParse(id).success) {
-    return { error: "ID ไม่ถูกต้อง" };
-  }
+  const invalid = validateUUID(id);
+  if (invalid) return invalid;
 
   const existing = await getGuideById(id);
   if (!existing) return { error: "ไม่พบคู่มือ" };
 
-  const parsed = guideUpdateSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  const parsed = parseOrError(guideUpdateSchema, data);
+  if ("error" in parsed) return parsed;
 
   try {
     const guide = await dbUpdateGuide(id, parsed.data);
@@ -90,9 +85,8 @@ export async function updateGvgGuide(
 export async function deleteGvgGuide(id: string) {
   await requireAdmin();
 
-  if (!uuidSchema.safeParse(id).success) {
-    return { error: "ID ไม่ถูกต้อง" };
-  }
+  const invalid = validateUUID(id);
+  if (invalid) return invalid;
 
   const existing = await getGuideById(id);
   if (!existing) return { error: "ไม่พบคู่มือ" };

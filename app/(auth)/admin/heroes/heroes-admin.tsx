@@ -341,7 +341,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
 
     startCreate(async () => {
       const result = await createHero(fd);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("สร้างฮีโร่สำเร็จ!");
@@ -382,7 +382,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
 
     startEdit(async () => {
       const result = await updateHero(editingId, fd);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("อัปเดตฮีโร่สำเร็จ!");
@@ -415,7 +415,7 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
     if (!deletingHero) return;
     startDelete(async () => {
       const result = await deleteHero(deletingHero.id);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("ลบฮีโร่สำเร็จ!");

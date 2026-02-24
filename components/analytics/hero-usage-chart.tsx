@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { UserCircle } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { HeroUsageStat } from "@/lib/db/queries/analytics";
 
 const COLORS = [
@@ -33,13 +34,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
 export function HeroUsageChart({ data }: { data: HeroUsageStat[] }) {
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <UserCircle className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">ยังไม่มีข้อมูลการใช้ฮีโร่</p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ
-        </p>
-      </div>
+      <EmptyState icon={UserCircle} message="ยังไม่มีข้อมูลการใช้ฮีโร่" detail="บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ" />
     );
   }
 

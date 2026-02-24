@@ -80,7 +80,7 @@ function AddMemberDialog({
 
     startAdd(async () => {
       const result = await createMember(fd, guildId);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("เพิ่มสมาชิกสำเร็จ!");
@@ -167,7 +167,7 @@ function EditMemberDialog({
 
     startEdit(async () => {
       const result = await updateMember(member.id, fd);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("อัปเดตสมาชิกสำเร็จ!");

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { SkillStep } from "@/lib/validations/guide";
+import { HeroPortrait } from "@/components/ui/hero-portrait";
 import { SkillChain } from "./skill-chain";
 
 interface Hero {
@@ -20,57 +21,6 @@ interface Guide {
   strategyNotes: string | null;
   patchVersion: string;
   updatedAt: Date | null;
-}
-
-function HeroPortrait({
-  hero,
-  size = 56,
-  className = "",
-}: {
-  hero: Hero | undefined;
-  size?: number;
-  className?: string;
-}) {
-  if (!hero) {
-    return (
-      <div
-        className={`hero-portrait ${className}`}
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size * 0.25,
-          fontSize: size * 0.4,
-        }}
-      >
-        ?
-      </div>
-    );
-  }
-  return hero.imageUrl ? (
-    <img
-      src={hero.imageUrl}
-      alt={hero.name}
-      className={`hero-portrait ${className}`}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.25,
-        objectFit: "cover",
-      }}
-    />
-  ) : (
-    <div
-      className={`hero-portrait ${className}`}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.25,
-        fontSize: size * 0.4,
-      }}
-    >
-      {hero.name[0]}
-    </div>
-  );
 }
 
 export function GuideCard({

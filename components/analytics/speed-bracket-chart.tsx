@@ -11,6 +11,7 @@ import {
   Cell,
 } from "recharts";
 import { Timer } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { SpeedBracket } from "@/lib/db/queries/analytics";
 
 function getBarColor(winRate: number) {
@@ -40,13 +41,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
 export function SpeedBracketChart({ brackets }: { brackets: SpeedBracket[] }) {
   if (brackets.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Timer className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">ยังไม่มีข้อมูลความเร็ว</p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ
-        </p>
-      </div>
+      <EmptyState icon={Timer} message="ยังไม่มีข้อมูลความเร็ว" detail="บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ" />
     );
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Zap, TrendingUp, Minus } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { FirstTurnAnalysis } from "@/lib/db/queries/analytics";
 
 export function FirstTurnCard({ analysis }: { analysis: FirstTurnAnalysis }) {
@@ -8,13 +9,7 @@ export function FirstTurnCard({ analysis }: { analysis: FirstTurnAnalysis }) {
 
   if (!hasData) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Zap className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">ยังไม่มีข้อมูลลำดับตา</p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกข้อมูล &quot;ลงมือก่อน&quot; เพื่อดูสถิติ
-        </p>
-      </div>
+      <EmptyState icon={Zap} message="ยังไม่มีข้อมูลลำดับตา" detail='บันทึกข้อมูล "ลงมือก่อน" เพื่อดูสถิติ' />
     );
   }
 

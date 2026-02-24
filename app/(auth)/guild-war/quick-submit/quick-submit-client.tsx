@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { fuzzyMatchMembers } from "@/lib/fuzzy-match";
 import { quickSubmitBattles } from "@/actions/quick-submit";
+import { getLatestGuildWarDate } from "@/lib/validations/battle";
 import type {
   ExtractionResult,
   MemberSummary,
@@ -52,15 +53,6 @@ type ReviewMember = {
   losses: number;
   battleDetails: BattleDetail[];
 };
-
-function getLatestGuildWarDate() {
-  const now = new Date();
-  const day = now.getDay();
-  const daysBack = [1, 0, 1, 0, 1, 1, 0];
-  const target = new Date(now);
-  target.setDate(target.getDate() - daysBack[day]);
-  return target.toISOString().split("T")[0];
-}
 
 function generateId() {
   return Math.random().toString(36).slice(2, 10);
@@ -432,7 +424,7 @@ export function QuickSubmitClient({
         battles: battleRecords,
       });
 
-      if (res.error) {
+      if ("error" in res) {
         toast.error(res.error);
       } else {
         const parts: string[] = [];

@@ -2,16 +2,11 @@
 
 import { useState } from "react";
 import { Users, ArrowUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn, winRateColor } from "@/lib/utils";
 import type { HeroMatchup } from "@/lib/db/queries/analytics";
 
 type SortField = "winRate" | "total" | "alliedHeroName" | "enemyHeroName";
-
-function winRateColor(rate: number) {
-  if (rate >= 60) return "text-green";
-  if (rate >= 40) return "text-gold";
-  return "text-accent";
-}
 
 function winRateBarColor(rate: number) {
   if (rate >= 60) return "bg-green/30";
@@ -25,13 +20,7 @@ export function MatchupTable({ matchups }: { matchups: HeroMatchup[] }) {
 
   if (matchups.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Users className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">ยังไม่มีข้อมูลแมตช์อัพ</p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ
-        </p>
-      </div>
+      <EmptyState icon={Users} message="ยังไม่มีข้อมูลแมตช์อัพ" detail="บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ" />
     );
   }
 

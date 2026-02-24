@@ -75,7 +75,7 @@ function UserRow({
     if (!selectedGuild) return;
     startAssign(async () => {
       const result = await assignUserToGuild(user.userId, selectedGuild, selectedRole);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("กำหนดกิลด์สำเร็จ");
@@ -87,7 +87,7 @@ function UserRow({
   function handlePromote() {
     startPromote(async () => {
       const result = await promoteToAdmin(user.userId);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("เลื่อนเป็นแอดมินสำเร็จ");
@@ -198,7 +198,7 @@ function GuildRow({ guild }: { guild: Guild }) {
     if (!selectedMemberId) return;
     startAdd(async () => {
       const result = await addOfficer(guild.id, selectedMemberId);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("เลื่อนตำแหน่งเป็นเจ้าหน้าที่สำเร็จ");
@@ -212,7 +212,7 @@ function GuildRow({ guild }: { guild: Guild }) {
   function handleRemoveOfficer(userId: string) {
     startRemove(async () => {
       const result = await removeOfficer(guild.id, userId);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("ลดตำแหน่งเจ้าหน้าที่สำเร็จ");
@@ -225,7 +225,7 @@ function GuildRow({ guild }: { guild: Guild }) {
   function handleDelete() {
     startDelete(async () => {
       const result = await deleteGuild(guild.id);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         setDeleteOpen(false);
@@ -418,7 +418,7 @@ export function GuildsAdmin({
 
     startCreate(async () => {
       const result = await createGuild(fd);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("สร้างกิลด์สำเร็จ!");

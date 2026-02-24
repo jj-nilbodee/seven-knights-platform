@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import { Zap, Star } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { SkillOrderImpact } from "@/lib/db/queries/analytics";
 
 const POSITION_COLORS = {
@@ -43,13 +44,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 export function SkillOrderChart({ skills }: { skills: SkillOrderImpact[] }) {
   if (skills.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Zap className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">ยังไม่มีข้อมูลลำดับสกิล</p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ
-        </p>
-      </div>
+      <EmptyState icon={Zap} message="ยังไม่มีข้อมูลลำดับสกิล" detail="บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ" />
     );
   }
 

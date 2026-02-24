@@ -8,6 +8,7 @@ import {
   TrendingDown,
   Minus,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn, winRateColor } from "@/lib/utils";
 import type { MemberPerformance } from "@/lib/db/queries/analytics";
 
@@ -31,13 +32,7 @@ export function MemberPerformanceTable({
 
   if (members.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Trophy className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">ยังไม่มีข้อมูลสมาชิก</p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ
-        </p>
-      </div>
+      <EmptyState icon={Trophy} message="ยังไม่มีข้อมูลสมาชิก" detail="บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ" />
     );
   }
 

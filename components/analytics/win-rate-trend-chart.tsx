@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { TrendingUp } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { DailyWinRate } from "@/lib/db/queries/analytics";
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payload: DailyWinRate }[] }) {
@@ -31,13 +32,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
 export function WinRateTrendChart({ data }: { data: DailyWinRate[] }) {
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <TrendingUp className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">ยังไม่มีข้อมูลอัตราชนะ</p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ
-        </p>
-      </div>
+      <EmptyState icon={TrendingUp} message="ยังไม่มีข้อมูลอัตราชนะ" detail="บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ" />
     );
   }
 

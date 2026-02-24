@@ -11,6 +11,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Crosshair } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { SpeedDataPoint } from "@/lib/db/queries/analytics";
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payload: SpeedDataPoint }[] }) {
@@ -35,15 +36,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
 export function SpeedScatterChart({ data }: { data: SpeedDataPoint[] }) {
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Crosshair className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">
-          ยังไม่มีข้อมูลเปรียบเทียบความเร็ว
-        </p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ
-        </p>
-      </div>
+      <EmptyState icon={Crosshair} message="ยังไม่มีข้อมูลเปรียบเทียบความเร็ว" detail="บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ" />
     );
   }
 

@@ -2,16 +2,11 @@
 
 import { useState } from "react";
 import { Swords, ArrowUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn, winRateColor } from "@/lib/utils";
 import type { EnemyGuildSummary } from "@/lib/db/queries/analytics";
 
 type SortField = "guildName" | "totalBattles" | "winRate" | "lastEncountered";
-
-function winRateColor(rate: number) {
-  if (rate >= 60) return "text-green";
-  if (rate >= 40) return "text-gold";
-  return "text-accent";
-}
 
 export function EnemyGuildTable({ guilds }: { guilds: EnemyGuildSummary[] }) {
   const [sortField, setSortField] = useState<SortField>("totalBattles");
@@ -19,13 +14,7 @@ export function EnemyGuildTable({ guilds }: { guilds: EnemyGuildSummary[] }) {
 
   if (guilds.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Swords className="h-10 w-10 text-text-muted mb-3 opacity-50" />
-        <p className="text-sm text-text-muted">ยังไม่มีข้อมูลกิลด์ศัตรู</p>
-        <p className="text-xs text-text-muted mt-1">
-          บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ
-        </p>
-      </div>
+      <EmptyState icon={Swords} message="ยังไม่มีข้อมูลกิลด์ศัตรู" detail="บันทึกการต่อสู้เพิ่มเติมเพื่อดูสถิติ" />
     );
   }
 
