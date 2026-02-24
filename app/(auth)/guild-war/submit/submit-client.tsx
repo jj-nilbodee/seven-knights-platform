@@ -15,15 +15,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FormationSelector } from "@/components/guild-war/formation-selector";
-import { FormationGrid } from "@/components/guild-war/formation-grid";
 import { SkillSequenceSelector } from "@/components/guild-war/skill-sequence-selector";
 import type {
   HeroData,
   SelectedHero,
   TeamCompositionState,
   SkillSequenceItem,
-  Position,
 } from "@/components/guild-war/index";
 import { initialTeamState } from "@/components/guild-war/index";
 import { createBattle, updateBattle, getBattleContext } from "@/actions/battles";
@@ -44,7 +41,7 @@ function serializeTeam(state: TeamCompositionState) {
       heroId: h.heroId,
       position: h.position,
     })),
-    formation: state.formation,
+    formation: null,
     skillSequence: state.skillSequence.map((s) => ({
       heroId: s.heroId,
       skillId: s.skillId,
@@ -406,7 +403,6 @@ export type InitialBattle = {
 
 interface TeamJsonData {
   heroes?: Array<{ heroId: string; position: string | null }>;
-  formation?: string | null;
   skillSequence?: Array<{ heroId: string; skillId: string; order: number }>;
   speed?: number;
 }
@@ -425,7 +421,7 @@ function reconstructTeamState(
       return {
         heroId: h.heroId,
         hero,
-        position: (h.position as Position | null) ?? null,
+        position: (h.position as "front" | "back" | null) ?? null,
       };
     })
     .filter((h): h is SelectedHero => h !== null);
@@ -450,7 +446,7 @@ function reconstructTeamState(
 
   return {
     selectedHeroes,
-    formation: (data.formation as TeamCompositionState["formation"]) ?? null,
+    formation: null,
     skillSequence,
     speed: data.speed ?? "",
   };
@@ -519,8 +515,6 @@ export function BattleSubmitClient({
     const allied = (initialBattle.alliedTeam ?? {}) as TeamJsonData;
     const enemy = (initialBattle.enemyTeam ?? {}) as TeamJsonData;
     return !!(
-      allied.formation ||
-      enemy.formation ||
       (allied.skillSequence && allied.skillSequence.length > 0) ||
       (enemy.skillSequence && enemy.skillSequence.length > 0) ||
       (allied.speed && allied.speed > 0) ||
@@ -824,51 +818,6 @@ export function BattleSubmitClient({
                     </span>
                   </div>
 
-                  {/* Formation */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                      จัดทัพ
-                    </label>
-                    <FormationSelector
-                      value={alliedTeam.formation}
-                      onChange={(formation) => {
-                        const resetHeroes = alliedTeam.selectedHeroes.map(
-                          (h) => ({ ...h, position: null }),
-                        );
-                        setAlliedTeam({
-                          ...alliedTeam,
-                          formation,
-                          selectedHeroes: resetHeroes,
-                        });
-                      }}
-                      variant="allied"
-                      disabled={isPending}
-                    />
-                  </div>
-
-                  {/* Formation Grid */}
-                  {alliedTeam.formation &&
-                    alliedTeam.selectedHeroes.length > 0 && (
-                      <FormationGrid
-                        formation={alliedTeam.formation}
-                        heroes={alliedTeam.selectedHeroes}
-                        onPositionChange={(
-                          heroId: string,
-                          position: Position | null,
-                        ) => {
-                          const updated = alliedTeam.selectedHeroes.map((h) =>
-                            h.heroId === heroId ? { ...h, position } : h,
-                          );
-                          setAlliedTeam({
-                            ...alliedTeam,
-                            selectedHeroes: updated,
-                          });
-                        }}
-                        variant="allied"
-                        disabled={isPending}
-                      />
-                    )}
-
                   {/* Skill Sequence */}
                   <div className="space-y-2">
                     <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
@@ -918,51 +867,6 @@ export function BattleSubmitClient({
                       ทีมศัตรู
                     </span>
                   </div>
-
-                  {/* Formation */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                      จัดทัพ
-                    </label>
-                    <FormationSelector
-                      value={enemyTeam.formation}
-                      onChange={(formation) => {
-                        const resetHeroes = enemyTeam.selectedHeroes.map(
-                          (h) => ({ ...h, position: null }),
-                        );
-                        setEnemyTeam({
-                          ...enemyTeam,
-                          formation,
-                          selectedHeroes: resetHeroes,
-                        });
-                      }}
-                      variant="enemy"
-                      disabled={isPending}
-                    />
-                  </div>
-
-                  {/* Formation Grid */}
-                  {enemyTeam.formation &&
-                    enemyTeam.selectedHeroes.length > 0 && (
-                      <FormationGrid
-                        formation={enemyTeam.formation}
-                        heroes={enemyTeam.selectedHeroes}
-                        onPositionChange={(
-                          heroId: string,
-                          position: Position | null,
-                        ) => {
-                          const updated = enemyTeam.selectedHeroes.map((h) =>
-                            h.heroId === heroId ? { ...h, position } : h,
-                          );
-                          setEnemyTeam({
-                            ...enemyTeam,
-                            selectedHeroes: updated,
-                          });
-                        }}
-                        variant="enemy"
-                        disabled={isPending}
-                      />
-                    )}
 
                   {/* Skill Sequence */}
                   <div className="space-y-2">
