@@ -93,31 +93,39 @@ export async function quickSubmitBattles(data: {
         let totalCount = existingRows.length; // track total including newly inserted
 
         for (const b of memberBattles) {
-          // Try to match an existing battle with the same result that lacks detail
-          const match = existingRows.find(
+          // Try to match an existing battle with the same result
+          // Prefer skeletons (no enemy info) first, then any same-result match
+          const skeleton = existingRows.find(
             (r) =>
               !matched.has(r.id) &&
               r.result === b.result &&
               !r.enemyPlayerName,
           );
+          const anyMatch = skeleton ?? existingRows.find(
+            (r) => !matched.has(r.id) && r.result === b.result,
+          );
 
-          if (match) {
-            // Update skeleton battle with extracted detail
-            matched.add(match.id);
-            await tx
-              .update(battles)
-              .set({
-                battleType: b.battleType,
-                enemyGuildName,
-                enemyPlayerName: b.enemyPlayerName || null,
-                enemyCastleType: b.enemyCastleType,
-                enemyCastleNumber: b.enemyCastleNumber,
-                updatedAt: new Date(),
-              })
-              .where(eq(battles.id, match.id));
-            updated++;
+          if (anyMatch) {
+            matched.add(anyMatch.id);
+            // Only update if incoming battle has detail the existing one lacks
+            const hasNewDetail = b.enemyPlayerName && !anyMatch.enemyPlayerName;
+            if (hasNewDetail) {
+              await tx
+                .update(battles)
+                .set({
+                  battleType: b.battleType,
+                  enemyGuildName,
+                  enemyPlayerName: b.enemyPlayerName || null,
+                  enemyCastleType: b.enemyCastleType,
+                  enemyCastleNumber: b.enemyCastleNumber,
+                  updatedAt: new Date(),
+                })
+                .where(eq(battles.id, anyMatch.id));
+              updated++;
+            }
+            // Otherwise skip — existing battle already has equal or better data
           } else if (totalCount < 5) {
-            // No matching skeleton — insert as new if under limit
+            // No match at all — insert as new battle
             totalCount++;
             await tx.insert(battles).values({
               guildId: effectiveGuildId,
