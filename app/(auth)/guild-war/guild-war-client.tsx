@@ -80,7 +80,6 @@ type Member = {
   lastBattleAt: Date | null;
 };
 
-import { weekdayLabels } from "@/lib/validations/battle";
 
 /* ── Member Multi-Select ──────────────────── */
 
@@ -239,7 +238,7 @@ export function GuildWarClient({
   stats: Stats;
   members: Member[];
   heroes: HeroInfo[];
-  filters: { member: string; result: string; day: string; date: string };
+  filters: { member: string; result: string; date: string };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -403,17 +402,6 @@ export function GuildWarClient({
           </SelectContent>
         </Select>
 
-        <Select value={filters.day} onValueChange={(v) => setFilter("day", v)}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="วัน" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">ทุกวัน</SelectItem>
-            <SelectItem value="SAT">เสาร์</SelectItem>
-            <SelectItem value="MON">จันทร์</SelectItem>
-            <SelectItem value="WED">พุธ</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Battle table */}
@@ -446,9 +434,6 @@ export function GuildWarClient({
                   </th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
                     ผลลัพธ์
-                  </th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                    วัน
                   </th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
                     จัดการ
@@ -684,9 +669,6 @@ function BattleRow({
             {battle.result === "win" ? "ชนะ" : "แพ้"}
           </span>
         </td>
-        <td className="px-4 py-3 text-text-muted text-center">
-          {weekdayLabels[battle.weekday] ?? battle.weekday}
-        </td>
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
             <Link href={`/guild-war/edit?id=${battle.id}`}>
@@ -706,7 +688,7 @@ function BattleRow({
 
       {isExpanded && (
         <tr>
-          <td colSpan={7} className="px-4 py-3 bg-bg-surface/50 border-b border-border-dim">
+          <td colSpan={6} className="px-4 py-3 bg-bg-surface/50 border-b border-border-dim">
             <div className="space-y-3">
               {/* Battle meta */}
               <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs">

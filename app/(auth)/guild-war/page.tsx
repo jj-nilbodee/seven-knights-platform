@@ -15,7 +15,6 @@ export default async function GuildWarPage({
     guildId?: string;
     member?: string;
     result?: string;
-    day?: string;
     date?: string;
   }>;
 }) {
@@ -41,7 +40,6 @@ export default async function GuildWarPage({
     date?: string;
     memberIds?: string[];
     result?: "win" | "loss";
-    weekday?: "SAT" | "MON" | "WED";
     limit?: number;
   } = { limit: 200 };
 
@@ -57,10 +55,6 @@ export default async function GuildWarPage({
   if (params.result === "win" || params.result === "loss") {
     filters.result = params.result;
   }
-  if (params.day === "SAT" || params.day === "MON" || params.day === "WED") {
-    filters.weekday = params.day;
-  }
-
   const [battles, stats, members, heroes] = await Promise.all([
     listBattles(guildId, filters),
     getBattleStats(guildId),
@@ -83,7 +77,6 @@ export default async function GuildWarPage({
       filters={{
         member: params.member ?? "all",
         result: params.result ?? "all",
-        day: params.day ?? "all",
         date: activeDate ?? "all",
       }}
     />
