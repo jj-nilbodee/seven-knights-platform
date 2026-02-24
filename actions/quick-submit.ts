@@ -54,11 +54,22 @@ export async function quickSubmitBattles(data: {
     byMember.set(b.memberId, existing);
   }
 
-  // Fetch existing battle rows per member for this date
-  const existingByMember = new Map<string, { id: string; battleNumber: number }[]>();
+  // Fetch existing battle rows per member for this date (including result & enemy info)
+  type ExistingRow = {
+    id: string;
+    battleNumber: number;
+    result: string;
+    enemyPlayerName: string | null;
+  };
+  const existingByMember = new Map<string, ExistingRow[]>();
   for (const memberId of byMember.keys()) {
     const rows = await db
-      .select({ id: battles.id, battleNumber: battles.battleNumber })
+      .select({
+        id: battles.id,
+        battleNumber: battles.battleNumber,
+        result: battles.result,
+        enemyPlayerName: battles.enemyPlayerName,
+      })
       .from(battles)
       .where(
         and(
@@ -78,16 +89,23 @@ export async function quickSubmitBattles(data: {
     await db.transaction(async (tx) => {
       for (const [memberId, memberBattles] of byMember) {
         const existingRows = existingByMember.get(memberId) ?? [];
+        const matched = new Set<string>(); // track which existing rows are already matched
 
-        for (let i = 0; i < memberBattles.length; i++) {
-          const b = memberBattles[i];
+        for (const b of memberBattles) {
+          // Try to match an existing battle with the same result that lacks detail
+          const match = existingRows.find(
+            (r) =>
+              !matched.has(r.id) &&
+              r.result === b.result &&
+              !r.enemyPlayerName,
+          );
 
-          if (i < existingRows.length) {
-            // Update existing battle with new extracted data
+          if (match) {
+            // Update skeleton battle with extracted detail
+            matched.add(match.id);
             await tx
               .update(battles)
               .set({
-                result: b.result,
                 battleType: b.battleType,
                 enemyGuildName,
                 enemyPlayerName: b.enemyPlayerName || null,
@@ -95,16 +113,17 @@ export async function quickSubmitBattles(data: {
                 enemyCastleNumber: b.enemyCastleNumber,
                 updatedAt: new Date(),
               })
-              .where(eq(battles.id, existingRows[i].id));
+              .where(eq(battles.id, match.id));
             updated++;
-          } else if (existingRows.length + (i - existingRows.length) < 5) {
-            // Insert new battle if under the 5-battle limit
+          } else if (existingRows.length < 5) {
+            // No matching skeleton — insert as new if under limit
+            const nextNumber = existingRows.length + 1;
             await tx.insert(battles).values({
               guildId: effectiveGuildId,
               memberId,
               date,
               weekday,
-              battleNumber: i + 1,
+              battleNumber: nextNumber,
               battleType: b.battleType,
               result: b.result,
               enemyGuildName,
@@ -115,6 +134,13 @@ export async function quickSubmitBattles(data: {
               enemyTeam: EMPTY_TEAM,
               firstTurn: null,
               submittedByUserId: user.id,
+            });
+            // Add to existingRows so the count stays accurate
+            existingRows.push({
+              id: "",
+              battleNumber: nextNumber,
+              result: b.result,
+              enemyPlayerName: b.enemyPlayerName || null,
             });
             inserted++;
           }
