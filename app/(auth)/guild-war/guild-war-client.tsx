@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Plus,
@@ -79,25 +79,32 @@ export function GuildWarClient({
   initialBattles,
   stats,
   members,
+  filters,
 }: {
   initialBattles: Battle[];
   stats: Stats;
   members: Member[];
+  filters: { member: string; result: string; day: string };
 }) {
   const router = useRouter();
-  const [filterMember, setFilterMember] = useState("all");
-  const [filterResult, setFilterResult] = useState("all");
-  const [filterDay, setFilterDay] = useState("all");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingBattle, setDeletingBattle] = useState<Battle | null>(null);
   const [isDeleting, startDelete] = useTransition();
 
-  const filtered = initialBattles.filter((b) => {
-    if (filterMember !== "all" && b.memberId !== filterMember) return false;
-    if (filterResult !== "all" && b.result !== filterResult) return false;
-    if (filterDay !== "all" && b.weekday !== filterDay) return false;
-    return true;
-  });
+  function setFilter(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "all") {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
+  // Data is already filtered server-side
+  const filtered = initialBattles;
 
   function confirmDelete(battle: Battle) {
     setDeletingBattle(battle);
@@ -197,7 +204,7 @@ export function GuildWarClient({
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <Filter className="h-4 w-4 text-text-muted" />
-        <Select value={filterMember} onValueChange={setFilterMember}>
+        <Select value={filters.member} onValueChange={(v) => setFilter("member", v)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="สมาชิก" />
           </SelectTrigger>
@@ -211,7 +218,7 @@ export function GuildWarClient({
           </SelectContent>
         </Select>
 
-        <Select value={filterResult} onValueChange={setFilterResult}>
+        <Select value={filters.result} onValueChange={(v) => setFilter("result", v)}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="ผลลัพธ์" />
           </SelectTrigger>
@@ -222,7 +229,7 @@ export function GuildWarClient({
           </SelectContent>
         </Select>
 
-        <Select value={filterDay} onValueChange={setFilterDay}>
+        <Select value={filters.day} onValueChange={(v) => setFilter("day", v)}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="วัน" />
           </SelectTrigger>
