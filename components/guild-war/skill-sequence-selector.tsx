@@ -266,11 +266,6 @@ export function SkillSequenceSelector({
       {skillSequence.length === 3 && (
         <p className="text-sm text-green text-center">ลำดับสกิลครบแล้ว</p>
       )}
-      {skillSequence.length > 0 && skillSequence.length < 3 && (
-        <p className="text-sm text-accent text-center">
-          เลือกอีก {3 - skillSequence.length} สกิลเพื่อให้ครบลำดับ
-        </p>
-      )}
     </div>
   );
 }
