@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { battles } from "@/lib/db/schema";
 import { quickSubmitSchema } from "@/lib/validations/quick-submit";
 import { getWeekdayFromDate } from "@/lib/validations/battle";
-import { getMemberBattleCountForDate } from "@/lib/db/queries/battles";
+import { eq, and, asc } from "drizzle-orm";
 
 const EMPTY_TEAM = {
   heroes: [],
@@ -46,7 +46,7 @@ export async function quickSubmitBattles(data: {
   const { date, enemyGuildName, battles: battleList } = parsed.data;
   const weekday = getWeekdayFromDate(date);
 
-  // Group battles by member to assign battle numbers
+  // Group incoming battles by member
   const byMember = new Map<string, typeof battleList>();
   for (const b of battleList) {
     const existing = byMember.get(b.memberId) ?? [];
@@ -54,63 +54,80 @@ export async function quickSubmitBattles(data: {
     byMember.set(b.memberId, existing);
   }
 
-  // Pre-check existing battle counts
-  const existingCounts = new Map<string, number>();
+  // Fetch existing battle rows per member for this date
+  const existingByMember = new Map<string, { id: string; battleNumber: number }[]>();
   for (const memberId of byMember.keys()) {
-    const count = await getMemberBattleCountForDate(
-      effectiveGuildId,
-      memberId,
-      date,
-    );
-    existingCounts.set(memberId, count);
+    const rows = await db
+      .select({ id: battles.id, battleNumber: battles.battleNumber })
+      .from(battles)
+      .where(
+        and(
+          eq(battles.guildId, effectiveGuildId),
+          eq(battles.memberId, memberId),
+          eq(battles.date, date),
+        ),
+      )
+      .orderBy(asc(battles.battleNumber));
+    existingByMember.set(memberId, rows);
   }
 
   try {
-    const rows: (typeof battles.$inferInsert)[] = [];
-
-    for (const [memberId, memberBattles] of byMember) {
-      const existing = existingCounts.get(memberId) ?? 0;
-      const slotsLeft = Math.max(0, 5 - existing);
-
-      // Only insert battles that fit within the 5-battle limit
-      const toInsert = memberBattles.slice(0, slotsLeft);
-      const startNumber = existing + 1;
-
-      for (let i = 0; i < toInsert.length; i++) {
-        const b = toInsert[i];
-        rows.push({
-          guildId: effectiveGuildId,
-          memberId,
-          date,
-          weekday,
-          battleNumber: startNumber + i,
-          battleType: b.battleType,
-          result: b.result,
-          enemyGuildName,
-          enemyPlayerName: b.enemyPlayerName || null,
-          enemyCastleType: b.enemyCastleType,
-          enemyCastleNumber: b.enemyCastleNumber,
-          alliedTeam: EMPTY_TEAM,
-          enemyTeam: EMPTY_TEAM,
-          firstTurn: null,
-          submittedByUserId: user.id,
-        });
-      }
-    }
-
-    const totalRequested = battleList.length;
-    const skipped = totalRequested - rows.length;
-
-    if (rows.length === 0) {
-      return { error: "สมาชิกทุกคนมีข้อมูลการต่อสู้ครบ 5 ครั้งแล้ว" };
-    }
+    let updated = 0;
+    let inserted = 0;
 
     await db.transaction(async (tx) => {
-      await tx.insert(battles).values(rows);
+      for (const [memberId, memberBattles] of byMember) {
+        const existingRows = existingByMember.get(memberId) ?? [];
+
+        for (let i = 0; i < memberBattles.length; i++) {
+          const b = memberBattles[i];
+
+          if (i < existingRows.length) {
+            // Update existing battle with new extracted data
+            await tx
+              .update(battles)
+              .set({
+                result: b.result,
+                battleType: b.battleType,
+                enemyGuildName,
+                enemyPlayerName: b.enemyPlayerName || null,
+                enemyCastleType: b.enemyCastleType,
+                enemyCastleNumber: b.enemyCastleNumber,
+                updatedAt: new Date(),
+              })
+              .where(eq(battles.id, existingRows[i].id));
+            updated++;
+          } else if (existingRows.length + (i - existingRows.length) < 5) {
+            // Insert new battle if under the 5-battle limit
+            await tx.insert(battles).values({
+              guildId: effectiveGuildId,
+              memberId,
+              date,
+              weekday,
+              battleNumber: i + 1,
+              battleType: b.battleType,
+              result: b.result,
+              enemyGuildName,
+              enemyPlayerName: b.enemyPlayerName || null,
+              enemyCastleType: b.enemyCastleType,
+              enemyCastleNumber: b.enemyCastleNumber,
+              alliedTeam: EMPTY_TEAM,
+              enemyTeam: EMPTY_TEAM,
+              firstTurn: null,
+              submittedByUserId: user.id,
+            });
+            inserted++;
+          }
+        }
+      }
     });
 
+    if (updated === 0 && inserted === 0) {
+      return { error: "ไม่มีข้อมูลที่จะบันทึก" };
+    }
+
     revalidatePath("/guild-war");
-    return { success: true, count: rows.length, skipped };
+    return { success: true, updated, inserted };
   } catch (err: unknown) {
     if (err instanceof Error && err.message.includes("unique")) {
       return { error: "พบข้อมูลการต่อสู้ซ้ำ — สมาชิกบางคนอาจมีข้อมูลในวันนี้แล้ว" };
