@@ -1,4 +1,5 @@
 import { VertexAI } from "@google-cloud/vertexai";
+import type { GoogleAuthOptions } from "google-auth-library";
 
 let vertexAI: VertexAI | null = null;
 
@@ -11,7 +12,16 @@ export function getVertexAI(): VertexAI {
       throw new Error("GCP_PROJECT_ID environment variable is required");
     }
 
-    vertexAI = new VertexAI({ project: projectId, location });
+    // On Vercel: parse JSON credentials from env var
+    // Locally: falls back to GOOGLE_APPLICATION_CREDENTIALS file path
+    const googleAuthOptions: GoogleAuthOptions = {};
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      googleAuthOptions.credentials = JSON.parse(
+        process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
+      );
+    }
+
+    vertexAI = new VertexAI({ project: projectId, location, googleAuthOptions });
   }
   return vertexAI;
 }
