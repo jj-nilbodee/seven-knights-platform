@@ -594,18 +594,26 @@ function reconstructTeamState(
 
 /* ── Main Form ──────────────────── */
 
+type SkillSequenceHistoryMap = Record<string, Array<{ heroId: string; skillId: string; order: number }[]>>;
+
+function getCompositeKey(heroes: SelectedHero[]): string {
+  return heroes.map((h) => h.heroId).sort().join("|");
+}
+
 export function BattleSubmitClient({
   members,
   heroes,
   guildId,
   initialBattle,
   heroCooccurrence,
+  skillSequenceHistory,
 }: {
   members: Member[];
   heroes: HeroData[];
   guildId: string;
   initialBattle?: InitialBattle;
   heroCooccurrence?: Record<string, string[]>;
+  skillSequenceHistory?: SkillSequenceHistoryMap;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -986,6 +994,7 @@ export function BattleSubmitClient({
                       }
                       variant="allied"
                       disabled={isPending}
+                      historicalSequences={skillSequenceHistory?.[getCompositeKey(alliedTeam.selectedHeroes)]}
                     />
                   </div>
 
@@ -1036,6 +1045,7 @@ export function BattleSubmitClient({
                       }
                       variant="enemy"
                       disabled={isPending}
+                      historicalSequences={skillSequenceHistory?.[getCompositeKey(enemyTeam.selectedHeroes)]}
                     />
                   </div>
 

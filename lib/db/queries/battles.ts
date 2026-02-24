@@ -249,6 +249,41 @@ export async function getHeroCooccurrence(
   return result;
 }
 
+export async function getSkillSequenceHistory(
+  guildId: string,
+): Promise<Record<string, Array<{ heroId: string; skillId: string; order: number }[]>>> {
+  const rows = await db
+    .select({
+      alliedTeam: battles.alliedTeam,
+      enemyTeam: battles.enemyTeam,
+    })
+    .from(battles)
+    .where(eq(battles.guildId, guildId));
+
+  const result: Record<string, Array<{ heroId: string; skillId: string; order: number }[]>> = {};
+
+  function addTeam(team: unknown) {
+    const t = team as {
+      heroes?: { heroId: string }[];
+      skillSequence?: { heroId: string; skillId: string; order: number }[];
+    } | null;
+    const heroIds = (t?.heroes ?? []).map((h) => h.heroId);
+    const seq = t?.skillSequence ?? [];
+    if (heroIds.length === 0 || seq.length === 0) return;
+
+    const key = [...heroIds].sort().join("|");
+    if (!result[key]) result[key] = [];
+    result[key].push(seq.map((s) => ({ heroId: s.heroId, skillId: s.skillId, order: s.order })));
+  }
+
+  for (const row of rows) {
+    addTeam(row.alliedTeam);
+    addTeam(row.enemyTeam);
+  }
+
+  return result;
+}
+
 export async function getBattleStats(guildId: string) {
   const [row] = await db
     .select({

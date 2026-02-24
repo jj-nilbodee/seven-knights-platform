@@ -1,5 +1,5 @@
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
-import { getBattleById, getHeroCooccurrence } from "@/lib/db/queries/battles";
+import { getBattleById, getHeroCooccurrence, getSkillSequenceHistory } from "@/lib/db/queries/battles";
 import { listMembers } from "@/lib/db/queries/members";
 import { listHeroes } from "@/lib/db/queries/heroes";
 import { redirect } from "next/navigation";
@@ -28,10 +28,11 @@ export default async function BattleEditPage({
   if (!battle) redirect("/guild-war");
   if (user.role !== "admin" && battle.guildId !== guildId) redirect("/guild-war");
 
-  const [members, heroes, heroCooccurrence] = await Promise.all([
+  const [members, heroes, heroCooccurrence, skillSequenceHistory] = await Promise.all([
     listMembers(guildId),
     listHeroes({ isActive: true }),
     getHeroCooccurrence(guildId),
+    getSkillSequenceHistory(guildId),
   ]);
 
   return (
@@ -40,6 +41,7 @@ export default async function BattleEditPage({
       heroes={heroes}
       guildId={guildId}
       heroCooccurrence={heroCooccurrence}
+      skillSequenceHistory={skillSequenceHistory}
       initialBattle={{
         id: battle.id,
         memberId: battle.memberId,

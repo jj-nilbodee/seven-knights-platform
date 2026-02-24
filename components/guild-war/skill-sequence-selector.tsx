@@ -9,6 +9,7 @@ interface SkillSequenceSelectorProps {
   onSequenceChange: (sequence: SkillSequenceItem[]) => void;
   variant: "allied" | "enemy";
   disabled?: boolean;
+  historicalSequences?: Array<{ heroId: string; skillId: string; order: number }[]>;
 }
 
 const variantStyles = {
@@ -54,16 +55,62 @@ function getActiveSkills(selectedHeroes: SelectedHero[]) {
   return skills;
 }
 
+function getSuggestedSkillId(
+  skillSequence: SkillSequenceItem[],
+  historicalSequences: Array<{ heroId: string; skillId: string; order: number }[]> | undefined,
+): string | null {
+  if (!historicalSequences || historicalSequences.length === 0) return null;
+  if (skillSequence.length >= 3) return null;
+
+  const nextPosition = skillSequence.length + 1;
+
+  // Filter sequences that match the current prefix
+  const matching = historicalSequences.filter((seq) => {
+    for (const current of skillSequence) {
+      const entry = seq.find((s) => s.order === current.order);
+      if (!entry || entry.skillId !== current.skillId) return false;
+    }
+    return true;
+  });
+
+  if (matching.length === 0) return null;
+
+  // Count which skillId appears most at the next position
+  const counts = new Map<string, number>();
+  for (const seq of matching) {
+    const next = seq.find((s) => s.order === nextPosition);
+    if (next) {
+      counts.set(next.skillId, (counts.get(next.skillId) ?? 0) + 1);
+    }
+  }
+
+  if (counts.size === 0) return null;
+
+  let bestSkillId = "";
+  let bestCount = 0;
+  for (const [skillId, count] of counts) {
+    if (count > bestCount) {
+      bestCount = count;
+      bestSkillId = skillId;
+    }
+  }
+
+  return bestSkillId || null;
+}
+
 export function SkillSequenceSelector({
   selectedHeroes,
   skillSequence,
   onSequenceChange,
   variant,
   disabled = false,
+  historicalSequences,
 }: SkillSequenceSelectorProps) {
   const styles = variantStyles[variant];
 
   const availableSkills = getActiveSkills(selectedHeroes);
+
+  const suggestedSkillId = getSuggestedSkillId(skillSequence, historicalSequences);
 
   const isSkillSelected = (skillId: string) =>
     skillSequence.some((s) => s.skillId === skillId);
@@ -144,6 +191,7 @@ export function SkillSequenceSelector({
             {skills.map((skill) => {
               const selected = isSkillSelected(skill.skillId);
               const canSelect = !selected && skillSequence.length < 3;
+              const isSuggested = !selected && canSelect && suggestedSkillId === skill.skillId;
 
               return (
                 <button
@@ -156,10 +204,12 @@ export function SkillSequenceSelector({
                     "disabled:opacity-40 disabled:cursor-not-allowed",
                     selected
                       ? styles.skillSelected
-                      : cn(
-                          "bg-transparent border-text-muted/30",
-                          styles.skillBtn,
-                        ),
+                      : isSuggested
+                        ? "bg-gold/10 border-gold/50 shadow-[0_0_6px_rgba(255,215,0,0.2)]"
+                        : cn(
+                            "bg-transparent border-text-muted/30",
+                            styles.skillBtn,
+                          ),
                   )}
                 >
                   {skill.skillLabel}
@@ -176,6 +226,9 @@ export function SkillSequenceSelector({
                         )?.order
                       }
                     </span>
+                  )}
+                  {isSuggested && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-gold border border-gold/80" />
                   )}
                 </button>
               );
