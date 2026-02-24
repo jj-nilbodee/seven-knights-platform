@@ -1,6 +1,16 @@
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import { listMembers } from "@/lib/db/queries/members";
+import { getEnemyGuildNameForDate } from "@/lib/db/queries/battles";
 import { QuickSubmitClient } from "./quick-submit-client";
+
+function getLatestGuildWarDate() {
+  const now = new Date();
+  const day = now.getDay();
+  const daysBack = [1, 0, 1, 0, 1, 1, 0];
+  const target = new Date(now);
+  target.setDate(target.getDate() - daysBack[day]);
+  return target.toISOString().split("T")[0];
+}
 
 export default async function QuickSubmitPage({
   searchParams,
@@ -18,7 +28,12 @@ export default async function QuickSubmitPage({
     );
   }
 
-  const members = await listMembers(guild.guildId);
+  const defaultDate = getLatestGuildWarDate();
+
+  const [members, initialEnemyGuildName] = await Promise.all([
+    listMembers(guild.guildId),
+    getEnemyGuildNameForDate(guild.guildId, defaultDate),
+  ]);
 
   return (
     <QuickSubmitClient
@@ -27,6 +42,7 @@ export default async function QuickSubmitPage({
         ign: m.ign,
       }))}
       guildId={guild.guildId}
+      initialEnemyGuildName={initialEnemyGuildName}
     />
   );
 }
