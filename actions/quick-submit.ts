@@ -90,11 +90,8 @@ export async function quickSubmitBattles(data: {
       for (const [memberId, memberBattles] of byMember) {
         const existingRows = existingByMember.get(memberId) ?? [];
         const matched = new Set<string>(); // track which existing rows are already matched
-        // Use max battle number (not count) to avoid gaps causing collisions
-        let maxBattleNumber = existingRows.reduce(
-          (max, r) => Math.max(max, r.battleNumber),
-          0,
-        );
+        // Track taken battle numbers to find gaps
+        const takenNumbers = new Set(existingRows.map((r) => r.battleNumber));
 
         for (const b of memberBattles) {
           // Try to match an existing battle with the same result
@@ -128,15 +125,21 @@ export async function quickSubmitBattles(data: {
               updated++;
             }
             // Otherwise skip — existing battle already has equal or better data
-          } else if (maxBattleNumber < 5) {
-            // No match at all — insert as new battle
-            maxBattleNumber++;
+          } else {
+            // No match — find first available battle number (1-5)
+            let nextNumber = 0;
+            for (let n = 1; n <= 5; n++) {
+              if (!takenNumbers.has(n)) { nextNumber = n; break; }
+            }
+            if (nextNumber === 0) continue; // all 5 slots taken
+
+            takenNumbers.add(nextNumber);
             await tx.insert(battles).values({
               guildId: effectiveGuildId,
               memberId,
               date,
               weekday,
-              battleNumber: maxBattleNumber,
+              battleNumber: nextNumber,
               battleType: b.battleType,
               result: b.result,
               enemyGuildName,
