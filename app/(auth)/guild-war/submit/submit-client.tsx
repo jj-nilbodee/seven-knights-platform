@@ -341,6 +341,7 @@ function HeroChipPicker({
   variant,
   disabled,
   maxHeroes = 3,
+  suggestions,
 }: {
   heroes: HeroData[];
   selectedHeroes: SelectedHero[];
@@ -348,6 +349,7 @@ function HeroChipPicker({
   variant: "allied" | "enemy";
   disabled?: boolean;
   maxHeroes?: number;
+  suggestions?: Record<string, string[]>;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -361,11 +363,28 @@ function HeroChipPicker({
 
   const selectedIds = new Set(selectedHeroes.map((h) => h.heroId));
 
+  // Compute suggested hero IDs from co-occurrence data
+  const suggestedIds = new Set<string>();
+  if (suggestions && selectedHeroes.length > 0) {
+    for (const sh of selectedHeroes) {
+      const teammates = suggestions[sh.heroId];
+      if (teammates) {
+        for (const id of teammates) {
+          if (!selectedIds.has(id)) suggestedIds.add(id);
+        }
+      }
+    }
+  }
+
   const filtered = heroes.filter(
     (h) =>
       h.name.toLowerCase().includes(query.toLowerCase()) &&
       !selectedIds.has(h.id),
   );
+
+  // Split into suggested and rest, suggested first
+  const suggestedHeroes = filtered.filter((h) => suggestedIds.has(h.id));
+  const restHeroes = filtered.filter((h) => !suggestedIds.has(h.id));
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -393,6 +412,33 @@ function HeroChipPicker({
   const handleRemove = (heroId: string) => {
     onSelectionChange(selectedHeroes.filter((h) => h.heroId !== heroId));
   };
+
+  const renderHeroOption = (hero: HeroData, isSuggested: boolean) => (
+    <button
+      key={hero.id}
+      type="button"
+      onClick={() => handleSelect(hero)}
+      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors cursor-pointer text-text-primary hover:bg-bg-card-hover"
+    >
+      {hero.imageUrl ? (
+        <img
+          src={hero.imageUrl}
+          alt=""
+          className="w-7 h-7 rounded-[var(--radius-sm)] object-cover object-top"
+        />
+      ) : (
+        <div className="w-7 h-7 rounded-[var(--radius-sm)] flex items-center justify-center text-xs bg-bg-input text-text-muted">
+          ?
+        </div>
+      )}
+      <span className="flex-1">{hero.name}</span>
+      {isSuggested && (
+        <span className="text-[10px] text-gold/70 bg-gold/10 px-1.5 py-0.5 rounded-full">
+          แนะนำ
+        </span>
+      )}
+    </button>
+  );
 
   return (
     <div className="space-y-2">
@@ -461,27 +507,15 @@ function HeroChipPicker({
           </div>
           {open && filtered.length > 0 && (
             <div className="absolute z-30 w-full mt-1 rounded-[var(--radius-md)] overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border-default shadow-lg">
-              {filtered.slice(0, 20).map((hero) => (
-                <button
-                  key={hero.id}
-                  type="button"
-                  onClick={() => handleSelect(hero)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors cursor-pointer text-text-primary hover:bg-bg-card-hover"
-                >
-                  {hero.imageUrl ? (
-                    <img
-                      src={hero.imageUrl}
-                      alt=""
-                      className="w-7 h-7 rounded-[var(--radius-sm)] object-cover object-top"
-                    />
-                  ) : (
-                    <div className="w-7 h-7 rounded-[var(--radius-sm)] flex items-center justify-center text-xs bg-bg-input text-text-muted">
-                      ?
-                    </div>
-                  )}
-                  {hero.name}
-                </button>
-              ))}
+              {suggestedHeroes.slice(0, 10).map((hero) =>
+                renderHeroOption(hero, true),
+              )}
+              {suggestedHeroes.length > 0 && restHeroes.length > 0 && (
+                <div className="border-t border-border-dim" />
+              )}
+              {restHeroes.slice(0, 20 - suggestedHeroes.length).map((hero) =>
+                renderHeroOption(hero, false),
+              )}
             </div>
           )}
         </div>
@@ -565,11 +599,13 @@ export function BattleSubmitClient({
   heroes,
   guildId,
   initialBattle,
+  heroCooccurrence,
 }: {
   members: Member[];
   heroes: HeroData[];
   guildId: string;
   initialBattle?: InitialBattle;
+  heroCooccurrence?: Record<string, string[]>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -886,6 +922,7 @@ export function BattleSubmitClient({
               onSelectionChange={handleAlliedHeroChange}
               variant="allied"
               disabled={isPending}
+              suggestions={heroCooccurrence}
             />
           </div>
 
@@ -896,6 +933,7 @@ export function BattleSubmitClient({
               onSelectionChange={handleEnemyHeroChange}
               variant="enemy"
               disabled={isPending}
+              suggestions={heroCooccurrence}
             />
           </div>
         </div>

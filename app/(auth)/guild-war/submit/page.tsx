@@ -1,6 +1,7 @@
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import { listMembers } from "@/lib/db/queries/members";
 import { listHeroes } from "@/lib/db/queries/heroes";
+import { getHeroCooccurrence } from "@/lib/db/queries/battles";
 import { BattleSubmitClient } from "./submit-client";
 
 export default async function BattleSubmitPage({
@@ -18,10 +19,18 @@ export default async function BattleSubmitPage({
   }
   const { guildId } = result;
 
-  const [members, heroes] = await Promise.all([
+  const [members, heroes, heroCooccurrence] = await Promise.all([
     listMembers(guildId),
     listHeroes({ isActive: true }),
+    getHeroCooccurrence(guildId),
   ]);
 
-  return <BattleSubmitClient members={members} heroes={heroes} guildId={guildId} />;
+  return (
+    <BattleSubmitClient
+      members={members}
+      heroes={heroes}
+      guildId={guildId}
+      heroCooccurrence={heroCooccurrence}
+    />
+  );
 }

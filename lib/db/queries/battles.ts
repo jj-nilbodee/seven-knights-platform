@@ -203,6 +203,52 @@ export async function getEnemyPlayerNamesForDate(guildId: string, date: string) 
   return rows.map((r) => r.enemyPlayerName!);
 }
 
+export async function getHeroCooccurrence(
+  guildId: string,
+): Promise<Record<string, string[]>> {
+  const rows = await db
+    .select({
+      alliedTeam: battles.alliedTeam,
+      enemyTeam: battles.enemyTeam,
+    })
+    .from(battles)
+    .where(eq(battles.guildId, guildId));
+
+  // Count how often each pair of heroes appears on the same team
+  const pairCounts = new Map<string, Map<string, number>>();
+
+  function addTeam(team: unknown) {
+    const t = team as { heroes?: { heroId: string }[] } | null;
+    const heroIds = (t?.heroes ?? []).map((h) => h.heroId);
+    for (let i = 0; i < heroIds.length; i++) {
+      for (let j = i + 1; j < heroIds.length; j++) {
+        const a = heroIds[i];
+        const b = heroIds[j];
+        if (!pairCounts.has(a)) pairCounts.set(a, new Map());
+        if (!pairCounts.has(b)) pairCounts.set(b, new Map());
+        pairCounts.get(a)!.set(b, (pairCounts.get(a)!.get(b) ?? 0) + 1);
+        pairCounts.get(b)!.set(a, (pairCounts.get(b)!.get(a) ?? 0) + 1);
+      }
+    }
+  }
+
+  for (const row of rows) {
+    addTeam(row.alliedTeam);
+    addTeam(row.enemyTeam);
+  }
+
+  // For each hero, return top 10 most common teammates sorted by count
+  const result: Record<string, string[]> = {};
+  for (const [heroId, teammates] of pairCounts) {
+    result[heroId] = Array.from(teammates.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([id]) => id);
+  }
+
+  return result;
+}
+
 export async function getBattleStats(guildId: string) {
   const [row] = await db
     .select({
