@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import { useState, useTransition, useRef } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/select";
 import { fuzzyMatchMembers } from "@/lib/fuzzy-match";
 import { quickSubmitBattles } from "@/actions/quick-submit";
-import { getBattleContext } from "@/actions/battles";
 import type {
   ExtractionResult,
   MemberSummary,
@@ -70,9 +69,11 @@ function generateId() {
 export function QuickSubmitClient({
   members,
   guildId,
+  initialEnemyGuildName,
 }: {
   members: Member[];
   guildId: string;
+  initialEnemyGuildName: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -80,17 +81,7 @@ export function QuickSubmitClient({
 
   // Form state
   const [date, setDate] = useState(getLatestGuildWarDate());
-  const [enemyGuildName, setEnemyGuildName] = useState("");
-
-  // Auto-populate enemy guild name from existing battles
-  useEffect(() => {
-    if (!date) return;
-    getBattleContext(guildId, "", date).then((ctx) => {
-      if (ctx.enemyGuildName) {
-        setEnemyGuildName(ctx.enemyGuildName);
-      }
-    });
-  }, [date, guildId]);
+  const [enemyGuildName, setEnemyGuildName] = useState(initialEnemyGuildName);
 
   // Upload state
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -280,6 +271,21 @@ export function QuickSubmitClient({
             enemyCastleNumber: battle.enemyCastleNumber,
           });
         }
+      }
+
+      // Sync wins/losses to match actual battle details when details
+      // exceed the current summary counts (e.g. type 2 only uploads)
+      for (const member of updated) {
+        if (member.battleDetails.length === 0) continue;
+        const detailWins = member.battleDetails.filter(
+          (d) => d.result === "win",
+        ).length;
+        const detailLosses = member.battleDetails.filter(
+          (d) => d.result === "loss",
+        ).length;
+        // Use the larger of summary vs detail counts
+        member.wins = Math.max(member.wins, detailWins);
+        member.losses = Math.max(member.losses, detailLosses);
       }
 
       return updated;
@@ -519,11 +525,7 @@ export function QuickSubmitClient({
                 key={`${file.name}-${i}`}
                 className="relative group w-16 h-16 rounded-[var(--radius-sm)] overflow-hidden border border-border-dim"
               >
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={file.name}
-                  className="w-full h-full object-cover"
-                />
+                <Thumbnail file={file} />
                 <button
                   type="button"
                   onClick={(e) => {
@@ -682,6 +684,20 @@ export function QuickSubmitClient({
         </Link>
       </div>
     </div>
+  );
+}
+
+/* ── Thumbnail Component (cleanup object URL) ── */
+
+function Thumbnail({ file }: { file: File }) {
+  const src = URL.createObjectURL(file);
+  return (
+    <img
+      src={src}
+      alt={file.name}
+      className="w-full h-full object-cover"
+      onLoad={() => URL.revokeObjectURL(src)}
+    />
   );
 }
 
