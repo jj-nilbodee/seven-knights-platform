@@ -18,7 +18,7 @@ function resolveSkillStep(step: SkillStep, heroes: Hero[]) {
       skillImage: "",
       note: step.note || "",
     };
-  const skillName = step.skill_number === 1 ? "Skill 1" : "Skill 2";
+  const skillName = step.skill_number === 1 ? "Skill 1 ล่าง" : "Skill 2 บน";
   const skillImage =
     step.skill_number === 1 ? hero.skill1ImageUrl : hero.skill2ImageUrl;
   return {

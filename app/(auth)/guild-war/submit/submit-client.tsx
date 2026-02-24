@@ -323,8 +323,8 @@ function reconstructTeamState(
       const hero = heroMap.get(s.heroId);
       let skillLabel = s.skillId;
       if (hero) {
-        if (hero.skill1Id === s.skillId) skillLabel = "Skill 1";
-        else if (hero.skill2Id === s.skillId) skillLabel = "Skill 2";
+        if (hero.skill1Id === s.skillId) skillLabel = "Skill 1 ล่าง";
+        else if (hero.skill2Id === s.skillId) skillLabel = "Skill 2 บน";
       }
       return {
         heroId: s.heroId,

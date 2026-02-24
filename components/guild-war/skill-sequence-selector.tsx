@@ -43,7 +43,7 @@ function getActiveSkills(selectedHeroes: SelectedHero[]) {
         heroId: hero.id,
         heroName: hero.name,
         skillId: hero.skill1Id,
-        skillLabel: "Skill 1",
+        skillLabel: "Skill 1 ล่าง",
       });
     }
     if (hero.skill2Type === "ACTIVE" && hero.skill2Id) {
@@ -51,7 +51,7 @@ function getActiveSkills(selectedHeroes: SelectedHero[]) {
         heroId: hero.id,
         heroName: hero.name,
         skillId: hero.skill2Id,
-        skillLabel: "Skill 2",
+        skillLabel: "Skill 2 บน",
       });
     }
   }

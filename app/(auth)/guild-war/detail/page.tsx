@@ -156,9 +156,9 @@ function TeamDisplay({
                 let skillName = s.skillId;
                 if (hero) {
                   if (hero.skill1Id === s.skillId)
-                    skillName = "Skill 1";
+                    skillName = "Skill 1 ล่าง";
                   else if (hero.skill2Id === s.skillId)
-                    skillName = "Skill 2";
+                    skillName = "Skill 2 บน";
                 }
                 return (
                   <div key={i} className="flex items-center gap-1">

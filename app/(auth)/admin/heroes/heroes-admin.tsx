@@ -591,8 +591,8 @@ export function HeroesAdmin({ initialHeroes }: { initialHeroes: Hero[] }) {
                       Skills
                     </p>
                     {[
-                      { label: "Skill 1", type: "ACTIVE" },
-                      { label: "Skill 2", type: "ACTIVE" },
+                      { label: "Skill 1 ล่าง", type: "ACTIVE" },
+                      { label: "Skill 2 บน", type: "ACTIVE" },
                       { label: "Passive", type: "PASSIVE" },
                     ].map((skill, i) => (
                       <div key={i} className="text-xs text-text-secondary flex items-center gap-1.5">

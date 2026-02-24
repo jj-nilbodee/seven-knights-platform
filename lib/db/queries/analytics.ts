@@ -604,8 +604,8 @@ export async function getSkillOrderImpact(
 
   const skillLabelMap = new Map<string, string>();
   for (const h of heroRows) {
-    if (h.skill1Id) skillLabelMap.set(h.skill1Id, "Skill 1");
-    if (h.skill2Id) skillLabelMap.set(h.skill2Id, "Skill 2");
+    if (h.skill1Id) skillLabelMap.set(h.skill1Id, "Skill 1 ล่าง");
+    if (h.skill2Id) skillLabelMap.set(h.skill2Id, "Skill 2 บน");
   }
 
   return Array.from(skillMap.values())

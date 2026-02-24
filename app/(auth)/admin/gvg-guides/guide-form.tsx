@@ -289,8 +289,8 @@ function SkillOrderBuilder({
                     }
                     className="h-9 rounded-[var(--radius-sm)] border border-border-default bg-bg-input px-3 text-sm text-text-primary"
                   >
-                    <option value={1}>Skill 1</option>
-                    <option value={2}>Skill 2</option>
+                    <option value={1}>Skill 1 ล่าง</option>
+                    <option value={2}>Skill 2 บน</option>
                   </select>
                 </div>
                 <Input

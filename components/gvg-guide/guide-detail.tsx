@@ -106,7 +106,7 @@ function SkillIcon({
     );
   const url =
     skillNumber === 1 ? hero.skill1ImageUrl : hero.skill2ImageUrl;
-  const name = skillNumber === 1 ? "Skill 1" : "Skill 2";
+  const name = skillNumber === 1 ? "Skill 1 ล่าง" : "Skill 2 บน";
   return url ? (
     <img
       src={url}
@@ -385,7 +385,7 @@ export function GuideDetailView({
                     ? hero?.skill1ImageUrl
                     : hero?.skill2ImageUrl;
                 const skillName =
-                  step.skill_number === 1 ? "Skill 1" : "Skill 2";
+                  step.skill_number === 1 ? "Skill 1 ล่าง" : "Skill 2 บน";
                 return (
                   <div
                     key={i}
