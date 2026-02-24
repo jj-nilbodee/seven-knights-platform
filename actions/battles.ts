@@ -20,7 +20,6 @@ import {
 export async function createBattle(data: {
   memberId: string;
   date: string;
-  battleNumber: number;
   battleType: string;
   result: string;
   enemyGuildName: string;
@@ -61,7 +60,6 @@ export async function createBattle(data: {
 export async function updateBattle(id: string, data: {
   memberId?: string;
   date?: string;
-  battleNumber?: number;
   battleType?: string;
   result?: string;
   enemyGuildName?: string;
@@ -128,7 +126,6 @@ export async function getBattleContext(guildId: string, memberId: string, date: 
 
   return {
     memberBattleCount: memberCount,
-    nextBattleNumber: Math.min(memberCount + 1, 5),
     enemyGuildName,
     enemyPlayerNames,
   };

@@ -126,7 +126,6 @@ export async function quickSubmitBattles(data: {
               memberId,
               date,
               weekday,
-              battleNumber: rowCount,
               battleType: b.battleType,
               result: b.result,
               enemyGuildName,

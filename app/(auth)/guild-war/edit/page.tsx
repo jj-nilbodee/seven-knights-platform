@@ -46,7 +46,6 @@ export default async function BattleEditPage({
         id: battle.id,
         memberId: battle.memberId,
         date: battle.date,
-        battleNumber: battle.battleNumber,
         battleType: battle.battleType,
         result: battle.result,
         enemyGuildName: battle.enemyGuildName,

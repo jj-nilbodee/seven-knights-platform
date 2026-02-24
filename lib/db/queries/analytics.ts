@@ -27,7 +27,6 @@ export interface HeroCombo {
 export interface RecentBattle {
   id: string;
   date: string;
-  battleNumber: number;
   result: string;
   enemyGuildName: string | null;
   memberIgn: string | null;
@@ -330,7 +329,6 @@ export async function getRecentBattles(
     .select({
       id: battles.id,
       date: battles.date,
-      battleNumber: battles.battleNumber,
       result: battles.result,
       enemyGuildName: battles.enemyGuildName,
       memberIgn: members.ign,
@@ -347,7 +345,6 @@ export async function getRecentBattles(
     return {
       id: r.id,
       date: r.date,
-      battleNumber: r.battleNumber,
       result: r.result,
       enemyGuildName: r.enemyGuildName,
       memberIgn: r.memberIgn,

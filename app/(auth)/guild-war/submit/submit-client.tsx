@@ -529,7 +529,6 @@ export type InitialBattle = {
   id: string;
   memberId: string;
   date: string;
-  battleNumber: number;
   battleType: string | null;
   result: string;
   enemyGuildName: string | null;
@@ -620,9 +619,6 @@ export function BattleSubmitClient({
   // Form state
   const [memberId, setMemberId] = useState(initialBattle?.memberId ?? "");
   const [date, setDate] = useState(initialBattle?.date ?? getLatestGuildWarDate());
-  const [battleNumber, setBattleNumber] = useState(
-    initialBattle ? String(initialBattle.battleNumber) : "1",
-  );
   const [battleType, setBattleType] = useState(
     initialBattle?.battleType ?? "attack",
   );
@@ -664,14 +660,13 @@ export function BattleSubmitClient({
       : initialTeamState,
   );
 
-  // Auto-populate battle number and enemy guild name (skip in edit mode)
+  // Auto-populate enemy guild name and check battle count (skip in edit mode)
   useEffect(() => {
     if (isEditMode || !date) return;
 
     if (memberId) {
       getBattleContext(guildId, memberId, date).then((ctx) => {
         setMemberBattleCount(ctx.memberBattleCount);
-        setBattleNumber(String(ctx.nextBattleNumber));
         if (ctx.enemyGuildName) {
           setEnemyGuildName(ctx.enemyGuildName);
         }
@@ -740,7 +735,6 @@ export function BattleSubmitClient({
       const battleData = {
         memberId,
         date,
-        battleNumber: parseInt(battleNumber, 10),
         battleType,
         result,
         enemyGuildName,
@@ -787,17 +781,6 @@ export function BattleSubmitClient({
               : "เพิ่มข้อมูลการต่อสู้สงครามกิลด์"}
           </p>
         </div>
-        {/* Battle # badge */}
-        {!isEditMode && memberId && (
-          <div className="flex flex-col items-center px-3 py-1.5 rounded-[var(--radius-md)] bg-accent/10 border border-accent/30">
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">
-              ครั้งที่
-            </span>
-            <span className="text-lg font-bold text-accent">
-              {battleNumber}
-            </span>
-          </div>
-        )}
       </div>
 
       <form

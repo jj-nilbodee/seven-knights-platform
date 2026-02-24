@@ -51,7 +51,7 @@ export async function listBattles(guildId: string, filters: BattleFilters = {}) 
       memberIgn: members.ign,
       date: battles.date,
       weekday: battles.weekday,
-      battleNumber: battles.battleNumber,
+
       battleType: battles.battleType,
       result: battles.result,
       enemyGuildName: battles.enemyGuildName,
@@ -82,7 +82,7 @@ export async function getBattleById(id: string) {
       memberIgn: members.ign,
       date: battles.date,
       weekday: battles.weekday,
-      battleNumber: battles.battleNumber,
+
       battleType: battles.battleType,
       result: battles.result,
       enemyGuildName: battles.enemyGuildName,
@@ -111,7 +111,7 @@ export async function createBattle(data: BattleCreate) {
       memberId: data.memberId,
       date: data.date,
       weekday: data.weekday,
-      battleNumber: data.battleNumber,
+
       battleType: data.battleType,
       result: data.result,
       enemyGuildName: data.enemyGuildName,
@@ -136,7 +136,7 @@ export async function updateBattle(id: string, data: BattleUpdate) {
     values.date = data.date;
     values.weekday = getWeekdayFromDate(data.date);
   }
-  if (data.battleNumber !== undefined) values.battleNumber = data.battleNumber;
+
   if (data.battleType !== undefined) values.battleType = data.battleType;
   if (data.result !== undefined) values.result = data.result;
   if (data.enemyGuildName !== undefined) values.enemyGuildName = data.enemyGuildName;

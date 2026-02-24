@@ -50,7 +50,6 @@ type Battle = {
   memberIgn: string | null;
   date: string;
   weekday: string;
-  battleNumber: number;
   battleType: string | null;
   result: string;
   enemyGuildName: string | null;
@@ -426,9 +425,6 @@ export function GuildWarClient({
                   <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
                     สมาชิก
                   </th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                    ครั้งที่
-                  </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
                     คู่ต่อสู้
                   </th>
@@ -483,8 +479,7 @@ export function GuildWarClient({
           {deletingBattle && (
             <div className="py-3 text-sm text-text-secondary">
               <p>
-                {deletingBattle.memberIgn} — {deletingBattle.date} ครั้งที่{" "}
-                {deletingBattle.battleNumber}
+                {deletingBattle.memberIgn} — {deletingBattle.date}
               </p>
             </div>
           )}
@@ -653,9 +648,6 @@ function BattleRow({
         <td className="px-4 py-3 text-text-secondary">
           {battle.memberIgn ?? "—"}
         </td>
-        <td className="px-4 py-3 text-text-secondary text-center">
-          {battle.battleNumber}
-        </td>
         <td className="px-4 py-3 text-text-secondary">
           {battle.enemyGuildName || "—"}
           {battle.enemyPlayerName && (
@@ -688,7 +680,7 @@ function BattleRow({
 
       {isExpanded && (
         <tr>
-          <td colSpan={6} className="px-4 py-3 bg-bg-surface/50 border-b border-border-dim">
+          <td colSpan={5} className="px-4 py-3 bg-bg-surface/50 border-b border-border-dim">
             <div className="space-y-3">
               {/* Battle meta */}
               <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs">

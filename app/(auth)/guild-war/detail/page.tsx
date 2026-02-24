@@ -266,14 +266,6 @@ export default async function BattleDetailPage({
           </div>
           <div>
             <p className="text-xs text-text-muted uppercase tracking-wider">
-              ครั้งที่
-            </p>
-            <p className="text-sm text-text-primary font-medium mt-1">
-              {battle.battleNumber}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-text-muted uppercase tracking-wider">
               ประเภท
             </p>
             <p className="text-sm text-text-primary font-medium mt-1">

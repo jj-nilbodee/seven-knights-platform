@@ -60,7 +60,6 @@ export const battleCreateSchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "รูปแบบวันที่ไม่ถูกต้อง (YYYY-MM-DD)")
       .refine(isGuildWarDay, "วันที่ต้องเป็นวัน เสาร์, จันทร์ หรือ พุธ เท่านั้น"),
-    battleNumber: z.number().int().min(1, "ต้องระบุครั้งที่").max(5),
     battleType: z.enum(battleTypes).default("attack"),
     result: z.enum(battleResults, {
       message: "กรุณาเลือกผลการต่อสู้",
@@ -86,7 +85,6 @@ export const battleUpdateSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .refine(isGuildWarDay, "วันที่ต้องเป็นวัน เสาร์, จันทร์ หรือ พุธ เท่านั้น")
     .optional(),
-  battleNumber: z.number().int().min(1).max(5).optional(),
   battleType: z.enum(battleTypes).optional(),
   result: z.enum(battleResults).optional(),
   enemyGuildName: z.string().optional(),
