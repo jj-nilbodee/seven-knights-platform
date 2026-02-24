@@ -1,4 +1,8 @@
 import { getGenerativeModel } from "@/lib/ai/vertex-client";
+import {
+  SchemaType,
+  type ResponseSchema,
+} from "@google-cloud/vertexai";
 
 export interface MemberSummary {
   memberName: string;
@@ -46,27 +50,42 @@ Castle number is typically 1-5.
 - Multiple screenshots may show scrolled views of the same list — deduplicate by player name
 - Each member can have a maximum of 5 battles
 - Extract ALL visible data from ALL images
+- If a screenshot type is not present, return an empty array for that field
+- If castle type or number cannot be determined, omit those fields`;
 
-## Output Format
-Return ONLY valid JSON with this exact structure (no markdown, no code blocks):
-{
-  "memberSummaries": [
-    { "memberName": "PlayerName", "wins": 3, "losses": 2 }
-  ],
-  "individualBattles": [
-    {
-      "memberName": "PlayerName",
-      "result": "win",
-      "enemyPlayerName": "EnemyName",
-      "battleType": "attack",
-      "enemyCastleType": "main",
-      "enemyCastleNumber": 1
-    }
-  ]
-}
-
-If a screenshot type is not present, return an empty array for that field.
-If castle type or number cannot be determined, use null.`;
+const RESPONSE_SCHEMA: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    memberSummaries: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          memberName: { type: SchemaType.STRING },
+          wins: { type: SchemaType.INTEGER },
+          losses: { type: SchemaType.INTEGER },
+        },
+        required: ["memberName", "wins", "losses"],
+      },
+    },
+    individualBattles: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          memberName: { type: SchemaType.STRING },
+          result: { type: SchemaType.STRING, enum: ["win", "loss"] },
+          enemyPlayerName: { type: SchemaType.STRING },
+          battleType: { type: SchemaType.STRING, enum: ["attack", "defense"] },
+          enemyCastleType: { type: SchemaType.STRING, enum: ["main", "inner", "outer"] },
+          enemyCastleNumber: { type: SchemaType.INTEGER },
+        },
+        required: ["memberName", "result", "enemyPlayerName", "battleType"],
+      },
+    },
+  },
+  required: ["memberSummaries", "individualBattles"],
+};
 
 export async function extractBattleResults(
   images: { base64: string; mimeType: string }[],
@@ -93,19 +112,15 @@ export async function extractBattleResults(
     generationConfig: {
       temperature: 0.1,
       maxOutputTokens: 4096,
+      responseMimeType: "application/json",
+      responseSchema: RESPONSE_SCHEMA,
     },
   });
 
   const text =
-    response.response.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    response.response.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
 
-  // Strip markdown code fences if present
-  const cleaned = text
-    .replace(/^```(?:json)?\s*\n?/m, "")
-    .replace(/\n?```\s*$/m, "")
-    .trim();
-
-  const parsed = JSON.parse(cleaned) as ExtractionResult;
+  const parsed = JSON.parse(text) as ExtractionResult;
 
   // Validate and normalize
   return {
