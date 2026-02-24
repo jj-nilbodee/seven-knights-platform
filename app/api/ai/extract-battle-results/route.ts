@@ -32,9 +32,10 @@ export async function POST(request: Request) {
     const result = await extractBattleResults(parsed.data.images);
     return NextResponse.json(result);
   } catch (err) {
-    console.error("Extract battle results error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Extract battle results error:", message, err);
     return NextResponse.json(
-      { error: "ไม่สามารถวิเคราะห์ภาพได้" },
+      { error: `ไม่สามารถวิเคราะห์ภาพได้: ${message}` },
       { status: 500 },
     );
   }
