@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect, useRef, startTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -239,12 +239,19 @@ function EnemyPlayerInput({
   suggestions: string[];
   disabled?: boolean;
 }) {
+  const [localValue, setLocalValue] = useState(value);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // Sync from parent when value changes externally (e.g. reset)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
   const filtered = suggestions.filter(
     (name) =>
-      name.toLowerCase().includes(value.toLowerCase()) && name !== value,
+      name.toLowerCase().includes(localValue.toLowerCase()) &&
+      name !== localValue,
   );
 
   useEffect(() => {
@@ -264,9 +271,11 @@ function EnemyPlayerInput({
     <div ref={wrapperRef} className="relative">
       <Input
         placeholder="ชื่อผู้เล่นศัตรู"
-        value={value}
+        value={localValue}
         onChange={(e) => {
-          onChange(e.target.value);
+          const val = e.target.value;
+          setLocalValue(val);
+          startTransition(() => onChange(val));
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
@@ -279,6 +288,7 @@ function EnemyPlayerInput({
               key={name}
               type="button"
               onClick={() => {
+                setLocalValue(name);
                 onChange(name);
                 setOpen(false);
               }}
@@ -290,6 +300,35 @@ function EnemyPlayerInput({
         </div>
       )}
     </div>
+  );
+}
+
+/* ── Deferred Text Input ──────────────────── */
+
+function DeferredInput({
+  value,
+  onValueChange,
+  ...props
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> & {
+  value: string;
+  onValueChange: (value: string) => void;
+}) {
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  return (
+    <Input
+      {...props}
+      value={localValue}
+      onChange={(e) => {
+        const val = e.target.value;
+        setLocalValue(val);
+        startTransition(() => onValueChange(val));
+      }}
+    />
   );
 }
 
@@ -817,10 +856,10 @@ export function BattleSubmitClient({
             <label className="text-sm font-medium text-text-secondary">
               กิลด์ศัตรู
             </label>
-            <Input
+            <DeferredInput
               placeholder="ชื่อกิลด์ศัตรู"
               value={enemyGuildName}
-              onChange={(e) => setEnemyGuildName(e.target.value)}
+              onValueChange={setEnemyGuildName}
               disabled={isPending}
             />
           </div>
