@@ -1,4 +1,4 @@
-import { requireOfficer, resolveGuildId } from "@/lib/auth";
+import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import { getSpeedAnalysis } from "@/lib/db/queries/analytics";
 import { SpeedBracketChart } from "@/components/analytics/speed-bracket-chart";
 import { FirstTurnCard } from "@/components/analytics/first-turn-card";
@@ -10,18 +10,18 @@ export default async function SpeedPage({
 }: {
   searchParams: Promise<{ days?: string; guildId?: string }>;
 }) {
-  const user = await requireOfficer();
   const params = await searchParams;
   const days = Number(params.days) || 30;
-  const guildId = resolveGuildId(user, params);
+  const result = await requireGuild(params);
 
-  if (!guildId) {
+  if (!result) {
     return (
       <div className="flex items-center justify-center h-60 text-text-muted">
-        คุณยังไม่ได้อยู่ในกิลด์
+        {NO_GUILD_MESSAGE}
       </div>
     );
   }
+  const { guildId } = result;
 
   const speedData = await getSpeedAnalysis(guildId, days);
 

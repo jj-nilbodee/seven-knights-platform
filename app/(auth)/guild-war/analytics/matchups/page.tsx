@@ -1,4 +1,4 @@
-import { requireOfficer, resolveGuildId } from "@/lib/auth";
+import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import { getHeroMatchups } from "@/lib/db/queries/analytics";
 import { MatchupTable } from "@/components/analytics/matchup-table";
 import { PeriodSelector } from "@/components/analytics/period-selector";
@@ -8,18 +8,18 @@ export default async function MatchupsPage({
 }: {
   searchParams: Promise<{ days?: string; guildId?: string }>;
 }) {
-  const user = await requireOfficer();
   const params = await searchParams;
   const days = Number(params.days) || 30;
-  const guildId = resolveGuildId(user, params);
+  const result = await requireGuild(params);
 
-  if (!guildId) {
+  if (!result) {
     return (
       <div className="flex items-center justify-center h-60 text-text-muted">
-        คุณยังไม่ได้อยู่ในกิลด์
+        {NO_GUILD_MESSAGE}
       </div>
     );
   }
+  const { guildId } = result;
 
   const matchups = await getHeroMatchups(guildId, days, 3);
 
