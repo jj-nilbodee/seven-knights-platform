@@ -189,6 +189,20 @@ export async function getEnemyGuildNameForDate(guildId: string, date: string) {
   return row?.enemyGuildName ?? "";
 }
 
+export async function getEnemyPlayerNamesForDate(guildId: string, date: string) {
+  const rows = await db
+    .selectDistinct({ enemyPlayerName: battles.enemyPlayerName })
+    .from(battles)
+    .where(
+      and(
+        eq(battles.guildId, guildId),
+        eq(battles.date, date),
+        sql`${battles.enemyPlayerName} IS NOT NULL AND ${battles.enemyPlayerName} != ''`,
+      ),
+    );
+  return rows.map((r) => r.enemyPlayerName!);
+}
+
 export async function getBattleStats(guildId: string) {
   const [row] = await db
     .select({

@@ -14,6 +14,7 @@ import {
   getBattleById,
   getMemberBattleCountForDate,
   getEnemyGuildNameForDate,
+  getEnemyPlayerNamesForDate,
 } from "@/lib/db/queries/battles";
 
 export async function createBattle(data: {
@@ -121,16 +122,18 @@ export async function deleteBattle(id: string) {
 }
 
 export async function getBattleContext(guildId: string, memberId: string, date: string) {
-  const [memberCount, enemyGuildName] = await Promise.all([
+  const [memberCount, enemyGuildName, enemyPlayerNames] = await Promise.all([
     memberId
       ? getMemberBattleCountForDate(guildId, memberId, date)
       : Promise.resolve(0),
     getEnemyGuildNameForDate(guildId, date),
+    getEnemyPlayerNamesForDate(guildId, date),
   ]);
 
   return {
     memberBattleCount: memberCount,
     nextBattleNumber: Math.min(memberCount + 1, 5),
     enemyGuildName,
+    enemyPlayerNames,
   };
 }

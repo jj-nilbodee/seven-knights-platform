@@ -226,6 +226,73 @@ function MemberCombobox({
   );
 }
 
+/* ── Enemy Player Input with Suggestions ──────────────────── */
+
+function EnemyPlayerInput({
+  value,
+  onChange,
+  suggestions,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  suggestions: string[];
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const filtered = suggestions.filter(
+    (name) =>
+      name.toLowerCase().includes(value.toLowerCase()) && name !== value,
+  );
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <Input
+        placeholder="ชื่อผู้เล่นศัตรู"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        disabled={disabled}
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-30 w-full mt-1 rounded-md overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border-default shadow-lg">
+          {filtered.map((name) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => {
+                onChange(name);
+                setOpen(false);
+              }}
+              className="w-full flex items-center px-3 py-2 text-sm text-left transition-colors cursor-pointer text-text-primary hover:bg-bg-card-hover"
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Hero Chip Picker ──────────────────── */
 
 function HeroChipPicker({
@@ -496,6 +563,7 @@ export function BattleSubmitClient({
   );
   const [videoUrl, setVideoUrl] = useState(initialBattle?.videoUrl ?? "");
   const [memberBattleCount, setMemberBattleCount] = useState(0);
+  const [enemyPlayerSuggestions, setEnemyPlayerSuggestions] = useState<string[]>([]);
 
   // Team composition state
   const [alliedTeam, setAlliedTeam] = useState<TeamCompositionState>(
@@ -534,12 +602,14 @@ export function BattleSubmitClient({
         if (ctx.enemyGuildName) {
           setEnemyGuildName(ctx.enemyGuildName);
         }
+        setEnemyPlayerSuggestions(ctx.enemyPlayerNames);
       });
     } else {
       getBattleContext(guildId, "", date).then((ctx) => {
         if (ctx.enemyGuildName) {
           setEnemyGuildName(ctx.enemyGuildName);
         }
+        setEnemyPlayerSuggestions(ctx.enemyPlayerNames);
       });
     }
   }, [memberId, date, guildId, isEditMode]);
@@ -759,10 +829,10 @@ export function BattleSubmitClient({
             <label className="text-sm font-medium text-text-secondary">
               ผู้เล่นศัตรู
             </label>
-            <Input
-              placeholder="ชื่อผู้เล่นศัตรู"
+            <EnemyPlayerInput
               value={enemyPlayerName}
-              onChange={(e) => setEnemyPlayerName(e.target.value)}
+              onChange={setEnemyPlayerName}
+              suggestions={enemyPlayerSuggestions}
               disabled={isPending}
             />
           </div>
