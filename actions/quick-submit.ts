@@ -98,6 +98,9 @@ export async function quickSubmitBattles(data: {
       }
     }
 
+    const totalRequested = battleList.length;
+    const skipped = totalRequested - rows.length;
+
     if (rows.length === 0) {
       return { error: "สมาชิกทุกคนมีข้อมูลการต่อสู้ครบ 5 ครั้งแล้ว" };
     }
@@ -107,7 +110,7 @@ export async function quickSubmitBattles(data: {
     });
 
     revalidatePath("/guild-war");
-    return { success: true, count: rows.length };
+    return { success: true, count: rows.length, skipped };
   } catch (err: unknown) {
     if (err instanceof Error && err.message.includes("unique")) {
       return { error: "พบข้อมูลการต่อสู้ซ้ำ — สมาชิกบางคนอาจมีข้อมูลในวันนี้แล้ว" };

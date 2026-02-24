@@ -429,7 +429,10 @@ export function QuickSubmitClient({
       if (res.error) {
         toast.error(res.error);
       } else {
-        toast.success(`บันทึก ${res.count} การต่อสู้สำเร็จ!`);
+        const msg = res.skipped
+          ? `บันทึก ${res.count} การต่อสู้สำเร็จ! (ข้าม ${res.skipped} รายการที่ครบแล้ว)`
+          : `บันทึก ${res.count} การต่อสู้สำเร็จ!`;
+        toast.success(msg);
         router.push("/guild-war");
       }
     });
