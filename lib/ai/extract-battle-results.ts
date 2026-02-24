@@ -111,14 +111,19 @@ export async function extractBattleResults(
     ],
     generationConfig: {
       temperature: 0.1,
-      maxOutputTokens: 4096,
+      maxOutputTokens: 16384,
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA,
     },
   });
 
-  const text =
-    response.response.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+  const candidate = response.response.candidates?.[0];
+  const text = candidate?.content?.parts?.[0]?.text ?? "";
+
+  if (!text) {
+    const reason = candidate?.finishReason ?? "unknown";
+    throw new Error(`AI ไม่ส่งข้อมูลกลับ (${reason})`);
+  }
 
   const parsed = JSON.parse(text) as ExtractionResult;
 
