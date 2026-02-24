@@ -53,10 +53,7 @@ export async function createBattle(data: {
     const battle = await dbCreateBattle(parsed.data);
     revalidatePath("/guild-war");
     return { success: true, battleId: battle.id };
-  } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes("unique")) {
-      return { error: "สมาชิกนี้มีข้อมูลการต่อสู้ในวันและครั้งที่นี้แล้ว" };
-    }
+  } catch {
     return { error: "ไม่สามารถบันทึกการต่อสู้ได้" };
   }
 }
@@ -95,10 +92,7 @@ export async function updateBattle(id: string, data: {
     if (!battle) return { error: "ไม่พบข้อมูลการต่อสู้" };
     revalidatePath("/guild-war");
     return { success: true };
-  } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes("unique")) {
-      return { error: "สมาชิกนี้มีข้อมูลการต่อสู้ในวันและครั้งที่นี้แล้ว" };
-    }
+  } catch {
     return { error: "ไม่สามารถอัปเดตการต่อสู้ได้" };
   }
 }

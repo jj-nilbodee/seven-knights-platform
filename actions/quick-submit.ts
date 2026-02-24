@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { battles } from "@/lib/db/schema";
 import { quickSubmitSchema } from "@/lib/validations/quick-submit";
 import { getWeekdayFromDate } from "@/lib/validations/battle";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 const EMPTY_TEAM = {
   heroes: [],
@@ -54,10 +54,9 @@ export async function quickSubmitBattles(data: {
     byMember.set(b.memberId, existing);
   }
 
-  // Fetch existing battle rows per member for this date (including result & enemy info)
+  // Fetch existing battles per member for this date
   type ExistingRow = {
     id: string;
-    battleNumber: number;
     result: string;
     enemyPlayerName: string | null;
   };
@@ -66,7 +65,6 @@ export async function quickSubmitBattles(data: {
     const rows = await db
       .select({
         id: battles.id,
-        battleNumber: battles.battleNumber,
         result: battles.result,
         enemyPlayerName: battles.enemyPlayerName,
       })
@@ -77,8 +75,7 @@ export async function quickSubmitBattles(data: {
           eq(battles.memberId, memberId),
           eq(battles.date, date),
         ),
-      )
-      .orderBy(asc(battles.battleNumber));
+      );
     existingByMember.set(memberId, rows);
   }
 
@@ -89,13 +86,11 @@ export async function quickSubmitBattles(data: {
     await db.transaction(async (tx) => {
       for (const [memberId, memberBattles] of byMember) {
         const existingRows = existingByMember.get(memberId) ?? [];
-        const matched = new Set<string>(); // track which existing rows are already matched
-        // Track taken battle numbers to find gaps
-        const takenNumbers = new Set(existingRows.map((r) => r.battleNumber));
+        const matched = new Set<string>();
+        let rowCount = existingRows.length;
 
         for (const b of memberBattles) {
-          // Try to match an existing battle with the same result
-          // Prefer skeletons (no enemy info) first, then any same-result match
+          // Match by result: prefer skeletons (no enemy info), then any same-result
           const skeleton = existingRows.find(
             (r) =>
               !matched.has(r.id) &&
@@ -108,9 +103,8 @@ export async function quickSubmitBattles(data: {
 
           if (anyMatch) {
             matched.add(anyMatch.id);
-            // Only update if incoming battle has detail the existing one lacks
-            const hasNewDetail = b.enemyPlayerName && !anyMatch.enemyPlayerName;
-            if (hasNewDetail) {
+            // Only update if incoming has detail the existing lacks
+            if (b.enemyPlayerName && !anyMatch.enemyPlayerName) {
               await tx
                 .update(battles)
                 .set({
@@ -124,22 +118,15 @@ export async function quickSubmitBattles(data: {
                 .where(eq(battles.id, anyMatch.id));
               updated++;
             }
-            // Otherwise skip — existing battle already has equal or better data
-          } else {
-            // No match — find first available battle number (1-5)
-            let nextNumber = 0;
-            for (let n = 1; n <= 5; n++) {
-              if (!takenNumbers.has(n)) { nextNumber = n; break; }
-            }
-            if (nextNumber === 0) continue; // all 5 slots taken
-
-            takenNumbers.add(nextNumber);
+          } else if (rowCount < 5) {
+            // No match — insert new battle
+            rowCount++;
             await tx.insert(battles).values({
               guildId: effectiveGuildId,
               memberId,
               date,
               weekday,
-              battleNumber: nextNumber,
+              battleNumber: rowCount,
               battleType: b.battleType,
               result: b.result,
               enemyGuildName,
@@ -164,9 +151,6 @@ export async function quickSubmitBattles(data: {
     revalidatePath("/guild-war");
     return { success: true, updated, inserted };
   } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes("unique")) {
-      return { error: "พบข้อมูลการต่อสู้ซ้ำ — สมาชิกบางคนอาจมีข้อมูลในวันนี้แล้ว" };
-    }
     console.error("Quick submit error:", err);
     return { error: "ไม่สามารถบันทึกข้อมูลได้" };
   }

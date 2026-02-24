@@ -166,12 +166,6 @@ export const battles = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
-    uniqueIndex("battle_unique").on(
-      table.guildId,
-      table.memberId,
-      table.date,
-      table.battleNumber,
-    ),
     index("idx_battle_guild_date").on(table.guildId, table.date),
     index("idx_battle_guild_member").on(table.guildId, table.memberId),
   ],
