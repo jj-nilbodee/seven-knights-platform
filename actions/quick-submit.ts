@@ -65,24 +65,19 @@ export async function quickSubmitBattles(data: {
     existingCounts.set(memberId, count);
   }
 
-  // Validate no member exceeds 5 battles
-  for (const [memberId, memberBattles] of byMember) {
-    const existing = existingCounts.get(memberId) ?? 0;
-    if (existing + memberBattles.length > 5) {
-      return {
-        error: `สมาชิกบางคนมีการต่อสู้เกิน 5 ครั้ง (มีอยู่แล้ว ${existing} ครั้ง, กำลังเพิ่ม ${memberBattles.length} ครั้ง)`,
-      };
-    }
-  }
-
   try {
     const rows: (typeof battles.$inferInsert)[] = [];
 
     for (const [memberId, memberBattles] of byMember) {
-      const startNumber = (existingCounts.get(memberId) ?? 0) + 1;
+      const existing = existingCounts.get(memberId) ?? 0;
+      const slotsLeft = Math.max(0, 5 - existing);
 
-      for (let i = 0; i < memberBattles.length; i++) {
-        const b = memberBattles[i];
+      // Only insert battles that fit within the 5-battle limit
+      const toInsert = memberBattles.slice(0, slotsLeft);
+      const startNumber = existing + 1;
+
+      for (let i = 0; i < toInsert.length; i++) {
+        const b = toInsert[i];
         rows.push({
           guildId: effectiveGuildId,
           memberId,
@@ -101,6 +96,10 @@ export async function quickSubmitBattles(data: {
           submittedByUserId: user.id,
         });
       }
+    }
+
+    if (rows.length === 0) {
+      return { error: "สมาชิกทุกคนมีข้อมูลการต่อสู้ครบ 5 ครั้งแล้ว" };
     }
 
     await db.transaction(async (tx) => {
