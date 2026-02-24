@@ -633,6 +633,12 @@ export function BattleSubmitClient({
   const [enemyPlayerName, setEnemyPlayerName] = useState(
     initialBattle?.enemyPlayerName ?? "",
   );
+  const [enemyCastleType, setEnemyCastleType] = useState<string>(
+    (initialBattle as InitialBattle & { enemyCastleType?: string })?.enemyCastleType ?? "",
+  );
+  const [enemyCastleNumber, setEnemyCastleNumber] = useState<string>(
+    (initialBattle as InitialBattle & { enemyCastleNumber?: number })?.enemyCastleNumber?.toString() ?? "",
+  );
   const [firstTurn, setFirstTurn] = useState(
     initialBattle
       ? initialBattle.firstTurn === true
@@ -739,6 +745,8 @@ export function BattleSubmitClient({
         result,
         enemyGuildName,
         enemyPlayerName,
+        enemyCastleType: enemyCastleType || null,
+        enemyCastleNumber: enemyCastleNumber ? parseInt(enemyCastleNumber, 10) : null,
         alliedTeam: serializeTeam(alliedTeam),
         enemyTeam: serializeTeam(enemyTeam),
         firstTurn:
@@ -926,6 +934,42 @@ export function BattleSubmitClient({
               suggestions={enemyPlayerSuggestions}
             />
           </div>
+        </div>
+
+        {/* Row 3b: Castle type + Castle number */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="space-y-1.5 col-span-2 sm:col-span-3">
+            <label className="text-sm font-medium text-text-secondary">
+              ปราสาทศัตรู
+            </label>
+            <RadioGroup
+              value={enemyCastleType}
+              onChange={setEnemyCastleType}
+              options={[
+                { value: "", label: "ไม่ระบุ", color: "cyan" },
+                { value: "main", label: "ปราสาทหลัก", color: "accent" },
+                { value: "inner", label: "ด้านใน", color: "gold" },
+                { value: "outer", label: "รอบนอก", color: "green" },
+              ]}
+            />
+          </div>
+
+          {enemyCastleType && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-text-secondary">
+                ปราสาทที่
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={5}
+                placeholder="#"
+                value={enemyCastleNumber}
+                onChange={(e) => setEnemyCastleNumber(e.target.value)}
+                className="h-9"
+              />
+            </div>
+          )}
         </div>
 
         {/* Row 4: Hero pickers side by side */}

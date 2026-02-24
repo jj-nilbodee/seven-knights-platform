@@ -25,6 +25,8 @@ export async function createBattle(data: {
   result: string;
   enemyGuildName: string;
   enemyPlayerName: string;
+  enemyCastleType?: string | null;
+  enemyCastleNumber?: number | null;
   alliedTeam: unknown;
   enemyTeam: unknown;
   firstTurn: boolean | null;
@@ -67,6 +69,8 @@ export async function updateBattle(id: string, data: {
   result?: string;
   enemyGuildName?: string;
   enemyPlayerName?: string;
+  enemyCastleType?: string | null;
+  enemyCastleNumber?: number | null;
   alliedTeam?: unknown;
   enemyTeam?: unknown;
   firstTurn?: boolean | null;

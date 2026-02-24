@@ -154,6 +154,8 @@ export const battles = pgTable(
     alliedTeam: jsonb("allied_team").notNull(),
     enemyTeam: jsonb("enemy_team").notNull(),
 
+    enemyCastleType: text("enemy_castle_type"), // main, inner, outer
+    enemyCastleNumber: integer("enemy_castle_number"), // 1-5
     firstTurn: boolean("first_turn"),
     videoUrl: text("video_url"),
     submittedByUserId: uuid("submitted_by_user_id")

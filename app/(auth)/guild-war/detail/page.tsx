@@ -300,6 +300,25 @@ export default async function BattleDetailPage({
               </p>
             </div>
           )}
+          {battle.enemyCastleType && (
+            <div>
+              <p className="text-xs text-text-muted uppercase tracking-wider">
+                ปราสาทศัตรู
+              </p>
+              <p className="text-sm text-text-primary font-medium mt-1">
+                {battle.enemyCastleType === "main"
+                  ? "ปราสาทหลัก"
+                  : battle.enemyCastleType === "inner"
+                    ? "ด้านใน"
+                    : "รอบนอก"}
+                {battle.enemyCastleNumber && (
+                  <span className="text-text-muted ml-1">
+                    #{battle.enemyCastleNumber}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-xs text-text-muted uppercase tracking-wider">
               ลงมือก่อน

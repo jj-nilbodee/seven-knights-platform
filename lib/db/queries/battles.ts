@@ -80,6 +80,8 @@ export async function getBattleById(id: string) {
       result: battles.result,
       enemyGuildName: battles.enemyGuildName,
       enemyPlayerName: battles.enemyPlayerName,
+      enemyCastleType: battles.enemyCastleType,
+      enemyCastleNumber: battles.enemyCastleNumber,
       alliedTeam: battles.alliedTeam,
       enemyTeam: battles.enemyTeam,
       firstTurn: battles.firstTurn,
@@ -107,6 +109,8 @@ export async function createBattle(data: BattleCreate) {
       result: data.result,
       enemyGuildName: data.enemyGuildName,
       enemyPlayerName: data.enemyPlayerName,
+      enemyCastleType: data.enemyCastleType,
+      enemyCastleNumber: data.enemyCastleNumber,
       alliedTeam: data.alliedTeam,
       enemyTeam: data.enemyTeam,
       firstTurn: data.firstTurn,
@@ -130,6 +134,8 @@ export async function updateBattle(id: string, data: BattleUpdate) {
   if (data.result !== undefined) values.result = data.result;
   if (data.enemyGuildName !== undefined) values.enemyGuildName = data.enemyGuildName;
   if (data.enemyPlayerName !== undefined) values.enemyPlayerName = data.enemyPlayerName;
+  if (data.enemyCastleType !== undefined) values.enemyCastleType = data.enemyCastleType;
+  if (data.enemyCastleNumber !== undefined) values.enemyCastleNumber = data.enemyCastleNumber;
   if (data.alliedTeam !== undefined) values.alliedTeam = data.alliedTeam;
   if (data.enemyTeam !== undefined) values.enemyTeam = data.enemyTeam;
   if (data.firstTurn !== undefined) values.firstTurn = data.firstTurn;

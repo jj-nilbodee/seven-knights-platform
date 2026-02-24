@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Plus,
+  Camera,
   Swords,
   Trophy,
   XCircle as XCircleIcon,
@@ -130,12 +131,20 @@ export function GuildWarClient({
             ติดตามและจัดการข้อมูลการต่อสู้
           </p>
         </div>
-        <Link href="/guild-war/submit">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            บันทึกการต่อสู้
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/guild-war/quick-submit">
+            <Button variant="outline" className="border-gold/30 text-gold hover:bg-gold/10">
+              <Camera className="h-4 w-4 mr-2" />
+              บันทึกด่วน
+            </Button>
+          </Link>
+          <Link href="/guild-war/submit">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              บันทึกการต่อสู้
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stat cards */}

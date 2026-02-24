@@ -4,6 +4,7 @@ export const formations = ["4-1", "3-2", "1-4", "2-3"] as const;
 export const positions = ["front", "back"] as const;
 export const battleResults = ["win", "loss"] as const;
 export const battleTypes = ["attack", "defense"] as const;
+export const castleTypes = ["main", "inner", "outer"] as const;
 export const guildWarDays = ["SAT", "MON", "WED"] as const;
 
 export const weekdayLabels: Record<string, string> = {
@@ -66,6 +67,8 @@ export const battleCreateSchema = z
     }),
     enemyGuildName: z.string().default(""),
     enemyPlayerName: z.string().optional(),
+    enemyCastleType: z.enum(castleTypes).nullable().default(null),
+    enemyCastleNumber: z.number().int().min(1).max(5).nullable().default(null),
     alliedTeam: teamCompositionSchema,
     enemyTeam: teamCompositionSchema,
     firstTurn: z.boolean().nullable().default(null),
@@ -88,6 +91,8 @@ export const battleUpdateSchema = z.object({
   result: z.enum(battleResults).optional(),
   enemyGuildName: z.string().optional(),
   enemyPlayerName: z.string().optional(),
+  enemyCastleType: z.enum(castleTypes).nullable().optional(),
+  enemyCastleNumber: z.number().int().min(1).max(5).nullable().optional(),
   alliedTeam: teamCompositionSchema.optional(),
   enemyTeam: teamCompositionSchema.optional(),
   firstTurn: z.boolean().nullable().optional(),
