@@ -338,6 +338,149 @@ function BulkImportDialog({
   );
 }
 
+/* ── Stat Cards ──────────────────── */
+
+function StatCards({ stats }: { stats: Stats }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {[
+        {
+          label: "ใช้งาน",
+          value: `${stats.active} / 30`,
+          icon: Users,
+          color: "text-green",
+        },
+        {
+          label: "เตือน",
+          value: stats.warning,
+          icon: AlertTriangle,
+          color: "text-gold",
+        },
+        {
+          label: "ไม่ใช้งาน",
+          value: stats.inactive,
+          icon: UserX,
+          color: "text-text-muted",
+        },
+      ].map((card) => (
+        <div
+          key={card.label}
+          className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-4"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
+              {card.label}
+            </p>
+            <card.icon className={`h-4 w-4 ${card.color}`} />
+          </div>
+          <p className={`mt-2 font-display text-2xl font-bold ${card.color}`}>
+            {card.value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Member Table ──────────────────── */
+
+function MemberTable({
+  members,
+  inactiveCount,
+  showInactive,
+  onToggleInactive,
+  onEdit,
+}: {
+  members: Member[];
+  inactiveCount: number;
+  showInactive: boolean;
+  onToggleInactive: () => void;
+  onEdit: (member: Member) => void;
+}) {
+  const filtered = showInactive
+    ? members
+    : members.filter(
+        (m) => m.status !== "inactive" && m.isActive !== false,
+      );
+
+  return (
+    <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card overflow-hidden">
+      <div className="flex items-center justify-between p-4 border-b border-border-dim">
+        <h2 className="font-display text-lg font-semibold text-text-primary">
+          รายชื่อ
+        </h2>
+        {inactiveCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleInactive}
+          >
+            {showInactive ? (
+              <EyeOff className="h-4 w-4 mr-2" />
+            ) : (
+              <Eye className="h-4 w-4 mr-2" />
+            )}
+            {showInactive ? "ซ่อนไม่ใช้งาน" : "แสดงทั้งหมด"}
+          </Button>
+        )}
+      </div>
+
+      {filtered.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-dim bg-bg-surface">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  IGN
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  สถานะ
+                </th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                  แก้ไข
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((member) => (
+                <tr
+                  key={member.id}
+                  className="border-b border-border-dim last:border-b-0 hover:bg-bg-elevated transition-colors"
+                >
+                  <td className="px-4 py-3 text-text-primary font-medium">
+                    {member.ign}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={getStatusBadgeClasses(
+                        member.status ?? "active",
+                      )}
+                    >
+                      {member.status ?? "active"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => onEdit(member)}
+                      className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-cyan hover:bg-cyan/10 transition-colors"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center h-32 text-text-muted">
+          ยังไม่มีสมาชิก
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main Roster ──────────────────── */
 
 export function RosterClient({
@@ -353,10 +496,6 @@ export function RosterClient({
   const [addOpen, setAddOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-
-  const filtered = showInactive
-    ? initialMembers
-    : initialMembers.filter((m) => m.status !== "inactive" && m.isActive !== false);
 
   return (
     <div className="space-y-6">
@@ -382,136 +521,37 @@ export function RosterClient({
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          {
-            label: "ใช้งาน",
-            value: `${stats.active} / 30`,
-            icon: Users,
-            color: "text-green",
-          },
-          {
-            label: "เตือน",
-            value: stats.warning,
-            icon: AlertTriangle,
-            color: "text-gold",
-          },
-          {
-            label: "ไม่ใช้งาน",
-            value: stats.inactive,
-            icon: UserX,
-            color: "text-text-muted",
-          },
-        ].map((card) => (
-          <div
-            key={card.label}
-            className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-4"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                {card.label}
-              </p>
-              <card.icon className={`h-4 w-4 ${card.color}`} />
-            </div>
-            <p className={`mt-2 font-display text-2xl font-bold ${card.color}`}>
-              {card.value}
-            </p>
-          </div>
-        ))}
-      </div>
+      <StatCards stats={stats} />
 
-      {/* Member table */}
-      <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-border-dim">
-          <h2 className="font-display text-lg font-semibold text-text-primary">
-            รายชื่อ
-          </h2>
-          {stats.inactive > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowInactive((v) => !v)}
-            >
-              {showInactive ? (
-                <EyeOff className="h-4 w-4 mr-2" />
-              ) : (
-                <Eye className="h-4 w-4 mr-2" />
-              )}
-              {showInactive ? "ซ่อนไม่ใช้งาน" : "แสดงทั้งหมด"}
-            </Button>
-          )}
-        </div>
+      <MemberTable
+        members={initialMembers}
+        inactiveCount={stats.inactive}
+        showInactive={showInactive}
+        onToggleInactive={() => setShowInactive((v) => !v)}
+        onEdit={setEditingMember}
+      />
 
-        {filtered.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-dim bg-bg-surface">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                    IGN
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                    สถานะ
-                  </th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
-                    แก้ไข
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((member) => (
-                  <tr
-                    key={member.id}
-                    className="border-b border-border-dim last:border-b-0 hover:bg-bg-elevated transition-colors"
-                  >
-                    <td className="px-4 py-3 text-text-primary font-medium">
-                      {member.ign}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={getStatusBadgeClasses(
-                          member.status ?? "active",
-                        )}
-                      >
-                        {member.status ?? "active"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => setEditingMember(member)}
-                        className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-cyan hover:bg-cyan/10 transition-colors"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-32 text-text-muted">
-            ยังไม่มีสมาชิก
-          </div>
-        )}
-      </div>
-
-      <AddMemberDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        guildId={guildId}
-      />
-      <EditMemberDialog
-        key={editingMember?.id}
-        member={editingMember}
-        onClose={() => setEditingMember(null)}
-      />
-      <BulkImportDialog
-        open={bulkOpen}
-        onOpenChange={setBulkOpen}
-        guildId={guildId}
-      />
+      {addOpen && (
+        <AddMemberDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          guildId={guildId}
+        />
+      )}
+      {editingMember && (
+        <EditMemberDialog
+          key={editingMember.id}
+          member={editingMember}
+          onClose={() => setEditingMember(null)}
+        />
+      )}
+      {bulkOpen && (
+        <BulkImportDialog
+          open={bulkOpen}
+          onOpenChange={setBulkOpen}
+          guildId={guildId}
+        />
+      )}
     </div>
   );
 }
