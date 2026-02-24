@@ -121,17 +121,36 @@ export function QuickSubmitClient({
     handleFileSelect(e.dataTransfer.files);
   }
 
-  // Convert file to base64
-  async function fileToBase64(file: File): Promise<string> {
+  // Resize image to fit within max dimensions and return base64 + mimeType
+  async function resizeImage(
+    file: File,
+    maxWidth = 1280,
+    maxHeight = 1280,
+    quality = 0.8,
+  ): Promise<{ base64: string; mimeType: string }> {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Remove data URL prefix
-        resolve(result.split(",")[1]);
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas not supported"));
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve({
+          base64: dataUrl.split(",")[1],
+          mimeType: "image/jpeg",
+        });
       };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = URL.createObjectURL(file);
     });
   }
 
@@ -145,10 +164,7 @@ export function QuickSubmitClient({
     setIsExtracting(true);
     try {
       const images = await Promise.all(
-        selectedFiles.map(async (file) => ({
-          base64: await fileToBase64(file),
-          mimeType: file.type,
-        })),
+        selectedFiles.map((file) => resizeImage(file)),
       );
 
       const response = await fetch("/api/ai/extract-battle-results", {
