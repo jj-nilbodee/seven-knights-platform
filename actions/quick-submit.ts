@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { battles } from "@/lib/db/schema";
 import { quickSubmitSchema } from "@/lib/validations/quick-submit";
 import { getWeekdayFromDate } from "@/lib/validations/battle";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 
 const EMPTY_TEAM = {
   heroes: [],
@@ -54,101 +54,115 @@ export async function quickSubmitBattles(data: {
     byMember.set(b.memberId, existing);
   }
 
-  // Fetch existing battles per member for this date
-  type ExistingRow = {
-    id: string;
-    result: string;
-    enemyPlayerName: string | null;
-  };
-  const existingByMember = new Map<string, ExistingRow[]>();
-  for (const memberId of byMember.keys()) {
-    const rows = await db
-      .select({
-        id: battles.id,
-        result: battles.result,
-        enemyPlayerName: battles.enemyPlayerName,
-      })
-      .from(battles)
-      .where(
-        and(
-          eq(battles.guildId, effectiveGuildId),
-          eq(battles.memberId, memberId),
-          eq(battles.date, date),
-        ),
-      );
-    existingByMember.set(memberId, rows);
+  const memberIds = [...byMember.keys()];
+
+  // Single query to fetch all existing battles for these members on this date
+  const existingRows = memberIds.length > 0
+    ? await db
+        .select({
+          id: battles.id,
+          memberId: battles.memberId,
+          result: battles.result,
+          enemyPlayerName: battles.enemyPlayerName,
+        })
+        .from(battles)
+        .where(
+          and(
+            eq(battles.guildId, effectiveGuildId),
+            eq(battles.date, date),
+            inArray(battles.memberId, memberIds),
+          ),
+        )
+    : [];
+
+  // Group existing by member
+  const existingByMember = new Map<string, typeof existingRows>();
+  for (const row of existingRows) {
+    const list = existingByMember.get(row.memberId) ?? [];
+    list.push(row);
+    existingByMember.set(row.memberId, list);
   }
 
   try {
-    let updated = 0;
-    let inserted = 0;
+    // Collect all updates and inserts, then batch them
+    const updates: { id: string; values: Record<string, unknown> }[] = [];
+    const inserts: (typeof battles.$inferInsert)[] = [];
 
-    await db.transaction(async (tx) => {
-      for (const [memberId, memberBattles] of byMember) {
-        const existingRows = existingByMember.get(memberId) ?? [];
-        const matched = new Set<string>();
-        let rowCount = existingRows.length;
+    for (const [memberId, memberBattles] of byMember) {
+      const existing = existingByMember.get(memberId) ?? [];
+      const matched = new Set<string>();
+      let rowCount = existing.length;
 
-        for (const b of memberBattles) {
-          // Match by result: prefer skeletons (no enemy info), then any same-result
-          const skeleton = existingRows.find(
-            (r) =>
-              !matched.has(r.id) &&
-              r.result === b.result &&
-              !r.enemyPlayerName,
-          );
-          const anyMatch = skeleton ?? existingRows.find(
-            (r) => !matched.has(r.id) && r.result === b.result,
-          );
+      for (const b of memberBattles) {
+        const skeleton = existing.find(
+          (r) =>
+            !matched.has(r.id) &&
+            r.result === b.result &&
+            !r.enemyPlayerName,
+        );
+        const anyMatch = skeleton ?? existing.find(
+          (r) => !matched.has(r.id) && r.result === b.result,
+        );
 
-          if (anyMatch) {
-            matched.add(anyMatch.id);
-            // Only update if incoming has detail the existing lacks
-            if (b.enemyPlayerName && !anyMatch.enemyPlayerName) {
-              await tx
-                .update(battles)
-                .set({
-                  battleType: b.battleType,
-                  enemyGuildName,
-                  enemyPlayerName: b.enemyPlayerName || null,
-                  enemyCastleType: b.enemyCastleType,
-                  enemyCastleNumber: b.enemyCastleNumber,
-                  updatedAt: new Date(),
-                })
-                .where(eq(battles.id, anyMatch.id));
-              updated++;
-            }
-          } else if (rowCount < 5) {
-            // No match — insert new battle
-            rowCount++;
-            await tx.insert(battles).values({
-              guildId: effectiveGuildId,
-              memberId,
-              date,
-              weekday,
-              battleType: b.battleType,
-              result: b.result,
-              enemyGuildName,
-              enemyPlayerName: b.enemyPlayerName || null,
-              enemyCastleType: b.enemyCastleType,
-              enemyCastleNumber: b.enemyCastleNumber,
-              alliedTeam: EMPTY_TEAM,
-              enemyTeam: EMPTY_TEAM,
-              firstTurn: null,
-              submittedByUserId: user.id,
+        if (anyMatch) {
+          matched.add(anyMatch.id);
+          if (b.enemyPlayerName && !anyMatch.enemyPlayerName) {
+            updates.push({
+              id: anyMatch.id,
+              values: {
+                battleType: b.battleType,
+                enemyGuildName,
+                enemyPlayerName: b.enemyPlayerName || null,
+                enemyCastleType: b.enemyCastleType,
+                enemyCastleNumber: b.enemyCastleNumber,
+                updatedAt: new Date(),
+              },
             });
-            inserted++;
           }
+        } else if (rowCount < 5) {
+          rowCount++;
+          inserts.push({
+            guildId: effectiveGuildId,
+            memberId,
+            date,
+            weekday,
+            battleType: b.battleType,
+            result: b.result,
+            enemyGuildName,
+            enemyPlayerName: b.enemyPlayerName || null,
+            enemyCastleType: b.enemyCastleType,
+            enemyCastleNumber: b.enemyCastleNumber,
+            alliedTeam: EMPTY_TEAM,
+            enemyTeam: EMPTY_TEAM,
+            firstTurn: null,
+            submittedByUserId: user.id,
+          });
         }
       }
-    });
+    }
 
-    if (updated === 0 && inserted === 0) {
+    if (updates.length === 0 && inserts.length === 0) {
       return { error: "ไม่มีข้อมูลที่จะบันทึก" };
     }
 
+    await db.transaction(async (tx) => {
+      // Batch insert all new battles at once
+      if (inserts.length > 0) {
+        await tx.insert(battles).values(inserts);
+      }
+      // Updates must be individual (different values per row)
+      // but run them with Promise.all for concurrency
+      if (updates.length > 0) {
+        await Promise.all(
+          updates.map((u) =>
+            tx.update(battles).set(u.values).where(eq(battles.id, u.id)),
+          ),
+        );
+      }
+    });
+
     revalidatePath("/guild-war");
-    return { success: true, updated, inserted };
+    return { success: true, updated: updates.length, inserted: inserts.length };
   } catch (err: unknown) {
     console.error("Quick submit error:", err);
     return { error: "ไม่สามารถบันทึกข้อมูลได้" };
