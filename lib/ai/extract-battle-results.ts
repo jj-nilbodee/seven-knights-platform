@@ -50,6 +50,7 @@ Castle number is typically 1-5.
 - Multiple screenshots may show scrolled views of the same list — deduplicate by player name
 - Each member can have a maximum of 5 battles
 - Extract ALL visible data from ALL images
+- memberSummaries should ONLY be populated from Type 1 "ข้อมูลอันดับ" screens that explicitly show "ชนะ X แพ้ Y". Do NOT generate memberSummaries by counting individual battles from Type 2 screens.
 - If a screenshot type is not present, return an empty array for that field
 - If castle type or number cannot be determined, omit those fields`;
 
