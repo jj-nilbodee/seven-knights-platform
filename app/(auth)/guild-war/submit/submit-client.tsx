@@ -61,9 +61,15 @@ function serializeTeam(state: TeamCompositionState) {
   };
 }
 
-function getTodayDate() {
+function getLatestGuildWarDate() {
   const now = new Date();
-  return now.toISOString().split("T")[0];
+  const day = now.getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  // Guild war days: Monday(1), Wednesday(3), Saturday(6)
+  // daysBack[day] = how many days to subtract to reach the latest eligible day (including today)
+  const daysBack = [1, 0, 1, 0, 1, 1, 0]; // Sun→Sat, Mon→Mon, Tue→Mon, Wed→Wed, Thu→Wed, Fri→Wed, Sat→Sat
+  const target = new Date(now);
+  target.setDate(target.getDate() - daysBack[day]);
+  return target.toISOString().split("T")[0];
 }
 
 function RadioGroup({
@@ -357,7 +363,7 @@ export function BattleSubmitClient({
 
   // Form state
   const [memberId, setMemberId] = useState(initialBattle?.memberId ?? "");
-  const [date, setDate] = useState(initialBattle?.date ?? getTodayDate());
+  const [date, setDate] = useState(initialBattle?.date ?? getLatestGuildWarDate());
   const [battleNumber, setBattleNumber] = useState(
     initialBattle ? String(initialBattle.battleNumber) : "1",
   );
