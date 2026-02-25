@@ -1,17 +1,8 @@
-import dynamic from "next/dynamic";
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import { getWinRateTrend, getHeroUsage } from "@/lib/db/queries/analytics";
+import { WinRateTrendChart } from "@/components/analytics/win-rate-trend-chart";
+import { HeroUsageChart } from "@/components/analytics/hero-usage-chart";
 import { PeriodSelector } from "@/components/analytics/period-selector";
-
-const WinRateTrendChart = dynamic(
-  () => import("@/components/analytics/win-rate-trend-chart").then((m) => m.WinRateTrendChart),
-  { loading: () => <div className="h-[300px] animate-pulse rounded bg-bg-elevated" /> },
-);
-
-const HeroUsageChart = dynamic(
-  () => import("@/components/analytics/hero-usage-chart").then((m) => m.HeroUsageChart),
-  { loading: () => <div className="h-[300px] animate-pulse rounded bg-bg-elevated" /> },
-);
 
 export default async function AnalyticsOverviewPage({
   searchParams,

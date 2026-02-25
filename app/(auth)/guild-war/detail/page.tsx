@@ -3,7 +3,6 @@ import { getBattleById } from "@/lib/db/queries/battles";
 import { listHeroes } from "@/lib/db/queries/heroes";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowLeft,
   Trophy,
@@ -82,14 +81,12 @@ function TeamDisplay({
                   key={i}
                   className="flex flex-col items-center p-2 rounded-[var(--radius-sm)] bg-bg-card/50 border border-border-dim min-w-[70px]"
                 >
-                  <div className="w-12 h-16 rounded-[var(--radius-sm)] overflow-hidden bg-bg-surface mb-1 relative">
+                  <div className="w-12 h-16 rounded-[var(--radius-sm)] overflow-hidden bg-bg-surface mb-1">
                     {hero?.imageUrl ? (
-                      <Image
+                      <img
                         src={hero.imageUrl}
                         alt={hero.name}
-                        fill
-                        sizes="48px"
-                        className="object-cover object-top"
+                        className="w-full h-full object-cover object-top"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

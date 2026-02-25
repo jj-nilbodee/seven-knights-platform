@@ -1,18 +1,9 @@
-import dynamic from "next/dynamic";
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import { getSpeedAnalysis } from "@/lib/db/queries/analytics";
+import { SpeedBracketChart } from "@/components/analytics/speed-bracket-chart";
 import { FirstTurnCard } from "@/components/analytics/first-turn-card";
+import { SpeedScatterChart } from "@/components/analytics/speed-scatter-chart";
 import { PeriodSelector } from "@/components/analytics/period-selector";
-
-const SpeedBracketChart = dynamic(
-  () => import("@/components/analytics/speed-bracket-chart").then((m) => m.SpeedBracketChart),
-  { loading: () => <div className="h-[300px] animate-pulse rounded bg-bg-elevated" /> },
-);
-
-const SpeedScatterChart = dynamic(
-  () => import("@/components/analytics/speed-scatter-chart").then((m) => m.SpeedScatterChart),
-  { loading: () => <div className="h-[300px] animate-pulse rounded bg-bg-elevated" /> },
-);
 
 export default async function SpeedPage({
   searchParams,
