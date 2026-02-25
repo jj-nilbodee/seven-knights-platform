@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getUserFromDb } from "@/lib/db/queries/users";
@@ -13,7 +14,7 @@ export interface AppUser {
   accessStatus: string | null;
 }
 
-export async function getCurrentUser(): Promise<AppUser | null> {
+export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,7 +32,7 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     guildId: dbUser.guildId ?? null,
     accessStatus: dbUser.accessStatus ?? null,
   };
-}
+});
 
 export async function requireUser(): Promise<AppUser> {
   const user = await getCurrentUser();

@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowRight, Clock, Settings } from "lucide-react";
 import { requireUser, resolveGuildId } from "@/lib/auth";
@@ -9,8 +10,12 @@ import {
 } from "@/lib/db/queries/analytics";
 import { listGuilds } from "@/lib/db/queries/guilds";
 import { KPICards } from "@/components/analytics/kpi-cards";
-import { WinRateTrendChart } from "@/components/analytics/win-rate-trend-chart";
 import { getResultBadgeClasses } from "@/lib/badge-utils";
+
+const WinRateTrendChart = dynamic(
+  () => import("@/components/analytics/win-rate-trend-chart").then((m) => m.WinRateTrendChart),
+  { loading: () => <div className="h-[300px] animate-pulse rounded bg-bg-elevated" /> },
+);
 
 export default async function DashboardPage({
   searchParams,

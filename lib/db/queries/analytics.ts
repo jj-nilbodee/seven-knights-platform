@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/lib/db";
 import { battles, battleHeroPairs, members, heroes } from "@/lib/db/schema";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
@@ -172,12 +173,24 @@ function compositionId(heroIds: string[]): string {
   return [...heroIds].sort().join("|");
 }
 
-async function getHeroNameMap(): Promise<Map<string, string>> {
+const getHeroNameMap = cache(async (): Promise<Map<string, string>> => {
   const rows = await db
     .select({ id: heroes.id, name: heroes.name })
     .from(heroes);
   return new Map(rows.map((r) => [r.id, r.name]));
-}
+});
+
+const getSkillLabelMap = cache(async (): Promise<Map<string, string>> => {
+  const rows = await db
+    .select({ skill1Id: heroes.skill1Id, skill2Id: heroes.skill2Id })
+    .from(heroes);
+  const map = new Map<string, string>();
+  for (const h of rows) {
+    if (h.skill1Id) map.set(h.skill1Id, "Skill 1 ล่าง");
+    if (h.skill2Id) map.set(h.skill2Id, "Skill 2 บน");
+  }
+  return map;
+});
 
 // ============================================
 // 1. Dashboard KPIs
@@ -491,20 +504,10 @@ export async function getSkillOrderImpact(
   }
 
   // Resolve hero names and skill ID → label mapping
-  const heroMap = await getHeroNameMap();
-  const heroRows = await db
-    .select({
-      id: heroes.id,
-      skill1Id: heroes.skill1Id,
-      skill2Id: heroes.skill2Id,
-    })
-    .from(heroes);
-
-  const skillLabelMap = new Map<string, string>();
-  for (const h of heroRows) {
-    if (h.skill1Id) skillLabelMap.set(h.skill1Id, "Skill 1 ล่าง");
-    if (h.skill2Id) skillLabelMap.set(h.skill2Id, "Skill 2 บน");
-  }
+  const [heroMap, skillLabelMap] = await Promise.all([
+    getHeroNameMap(),
+    getSkillLabelMap(),
+  ]);
 
   return Array.from(skillMap.values())
     .map((entry) => {

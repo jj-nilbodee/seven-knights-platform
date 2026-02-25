@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/lib/db";
 import { gvgGuides, gvgGuideVersions } from "@/lib/db/schema";
 import { eq, and, asc, desc, sql } from "drizzle-orm";
@@ -34,13 +35,13 @@ export async function searchGuides(filters: GuideSearchFilters = {}) {
     .orderBy(asc(gvgGuides.attackPriority), desc(gvgGuides.updatedAt));
 }
 
-export async function getGuideById(id: string) {
+export const getGuideById = cache(async (id: string) => {
   const [guide] = await db
     .select()
     .from(gvgGuides)
     .where(eq(gvgGuides.id, id));
   return guide ?? null;
-}
+});
 
 export async function createGuide(
   data: GuideCreate & { createdBy: string },

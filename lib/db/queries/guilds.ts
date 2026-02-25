@@ -1,11 +1,12 @@
+import { cache } from "react";
 import { db } from "@/lib/db";
 import { guilds } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import type { GuildCreate, GuildUpdate } from "@/lib/validations/guild";
 
-export async function listGuilds() {
+export const listGuilds = cache(async () => {
   return db.select().from(guilds).orderBy(asc(guilds.name));
-}
+});
 
 export async function getGuildById(id: string) {
   const [guild] = await db.select().from(guilds).where(eq(guilds.id, id));

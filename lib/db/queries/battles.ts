@@ -214,14 +214,19 @@ export async function getEnemyPlayerNamesForDate(guildId: string, date: string) 
 
 export async function getHeroCooccurrence(
   guildId: string,
+  days: number = 90,
 ): Promise<Record<string, string[]>> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString().split("T")[0];
+
   const rows = await db
     .select({
       alliedTeam: battles.alliedTeam,
       enemyTeam: battles.enemyTeam,
     })
     .from(battles)
-    .where(eq(battles.guildId, guildId));
+    .where(and(eq(battles.guildId, guildId), gte(battles.date, cutoffStr)));
 
   // Count how often each pair of heroes appears on the same team
   const pairCounts = new Map<string, Map<string, number>>();
@@ -260,14 +265,19 @@ export async function getHeroCooccurrence(
 
 export async function getSkillSequenceHistory(
   guildId: string,
+  days: number = 90,
 ): Promise<Record<string, Array<{ heroId: string; skillId: string; order: number }[]>>> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString().split("T")[0];
+
   const rows = await db
     .select({
       alliedTeam: battles.alliedTeam,
       enemyTeam: battles.enemyTeam,
     })
     .from(battles)
-    .where(eq(battles.guildId, guildId));
+    .where(and(eq(battles.guildId, guildId), gte(battles.date, cutoffStr)));
 
   const result: Record<string, Array<{ heroId: string; skillId: string; order: number }[]>> = {};
 

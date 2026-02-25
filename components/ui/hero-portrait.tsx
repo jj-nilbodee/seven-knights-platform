@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export function HeroPortrait({
   hero,
   size = 48,
@@ -25,11 +27,13 @@ export function HeroPortrait({
   }
 
   return hero.imageUrl ? (
-    <img
+    <Image
       src={hero.imageUrl}
       alt={hero.name}
+      width={size}
+      height={size}
       className={`hero-portrait ${className}`}
-      style={{ ...style, objectFit: "cover" as const }}
+      style={{ objectFit: "cover", borderRadius: size * 0.25 }}
     />
   ) : (
     <div

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { members } from "@/lib/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, sql } from "drizzle-orm";
 import type { MemberCreate, MemberUpdate } from "@/lib/validations/member";
 
 export async function listMembers(guildId: string, includeInactive = false) {
@@ -66,15 +66,26 @@ export async function bulkCreateMembers(
 }
 
 export async function getMemberStats(guildId: string) {
-  const all = await db
-    .select({ status: members.status, isActive: members.isActive })
+  const rows = await db
+    .select({
+      status: members.status,
+      count: sql<number>`count(*)::int`,
+    })
     .from(members)
-    .where(eq(members.guildId, guildId));
+    .where(eq(members.guildId, guildId))
+    .groupBy(members.status);
+
+  const counts: Record<string, number> = {};
+  let total = 0;
+  for (const row of rows) {
+    if (row.status) counts[row.status] = row.count;
+    total += row.count;
+  }
 
   return {
-    total: all.length,
-    active: all.filter((m) => m.status === "active").length,
-    warning: all.filter((m) => m.status === "warning").length,
-    inactive: all.filter((m) => m.status === "inactive").length,
+    total,
+    active: counts["active"] ?? 0,
+    warning: counts["warning"] ?? 0,
+    inactive: counts["inactive"] ?? 0,
   };
 }

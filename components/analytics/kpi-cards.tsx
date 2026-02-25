@@ -1,5 +1,3 @@
-"use client";
-
 import { TrendingUp, TrendingDown } from "lucide-react";
 import type { DashboardKPIs } from "@/lib/db/queries/analytics";
 

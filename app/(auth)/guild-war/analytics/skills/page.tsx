@@ -1,7 +1,12 @@
+import dynamic from "next/dynamic";
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import { getSkillOrderImpact } from "@/lib/db/queries/analytics";
-import { SkillOrderChart } from "@/components/analytics/skill-order-chart";
 import { PeriodSelector } from "@/components/analytics/period-selector";
+
+const SkillOrderChart = dynamic(
+  () => import("@/components/analytics/skill-order-chart").then((m) => m.SkillOrderChart),
+  { loading: () => <div className="h-[300px] animate-pulse rounded bg-bg-elevated" /> },
+);
 
 export default async function SkillsPage({
   searchParams,
