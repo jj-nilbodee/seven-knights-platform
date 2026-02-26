@@ -245,7 +245,7 @@ export function GuildWarClient({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingBattle, setDeletingBattle] = useState<Battle | null>(null);
   const [isDeleting, startDelete] = useTransition();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isFiltering, startFiltering] = useTransition();
 
   const heroMap = new Map(heroes.map((h) => [h.id, h]));
 
@@ -256,7 +256,9 @@ export function GuildWarClient({
     } else {
       params.set(key, value);
     }
-    router.push(`${pathname}?${params.toString()}`);
+    startFiltering(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
   }
 
   const selectedMemberIds = filters.member === "all"
@@ -404,7 +406,7 @@ export function GuildWarClient({
       </div>
 
       {/* Battle table */}
-      <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card overflow-hidden">
+      <div className={`rounded-[var(--radius-md)] border border-border-dim bg-bg-card overflow-hidden transition-opacity ${isFiltering ? "opacity-60" : ""}`}>
         <div className="flex items-center justify-between p-4 border-b border-border-dim">
           <h2 className="font-display text-lg font-semibold text-text-primary">
             รายการการต่อสู้
@@ -437,20 +439,14 @@ export function GuildWarClient({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((battle) => {
-                  const isExpanded = expandedId === battle.id;
-                  return (
-                    <BattleRow
-                      key={battle.id}
-                      battle={battle}
-                      isExpanded={isExpanded}
-                      heroMap={heroMap}
-                      onToggle={() => setExpandedId(isExpanded ? null : battle.id)}
-                      onEdit={() => router.push(`/guild-war/edit?id=${battle.id}`)}
-                      onDelete={() => confirmDelete(battle)}
-                    />
-                  );
-                })}
+                {filtered.map((battle) => (
+                  <BattleRow
+                    key={battle.id}
+                    battle={battle}
+                    heroMap={heroMap}
+                    onDelete={() => confirmDelete(battle)}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
@@ -618,19 +614,14 @@ function InlineTeam({
 
 function BattleRow({
   battle,
-  isExpanded,
   heroMap,
-  onToggle,
-  onEdit,
   onDelete,
 }: {
   battle: Battle;
-  isExpanded: boolean;
   heroMap: Map<string, HeroInfo>;
-  onToggle: () => void;
-  onEdit: () => void;
   onDelete: () => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const alliedTeam = (battle.alliedTeam ?? {}) as TeamData;
   const enemyTeam = (battle.enemyTeam ?? {}) as TeamData;
   const hasTeamData = (alliedTeam.heroes?.length ?? 0) > 0 || (enemyTeam.heroes?.length ?? 0) > 0;
@@ -638,7 +629,7 @@ function BattleRow({
   return (
     <>
       <tr
-        onClick={onToggle}
+        onClick={() => setIsExpanded(!isExpanded)}
         className={`border-b border-border-dim hover:bg-bg-elevated transition-colors cursor-pointer ${isExpanded ? "bg-bg-elevated" : ""}`}
       >
         <td className="px-4 py-3 text-text-primary font-medium">
@@ -702,7 +693,7 @@ function BattleRow({
               ) : (
                 <p className="text-xs text-text-muted">
                   ยังไม่มีข้อมูลทีม —{" "}
-                  <button onClick={onEdit} className="text-gold hover:underline cursor-pointer">แก้ไขเพื่อเพิ่มข้อมูล</button>
+                  <Link href={`/guild-war/edit?id=${battle.id}`} className="text-gold hover:underline">แก้ไขเพื่อเพิ่มข้อมูล</Link>
                 </p>
               )}
             </div>
