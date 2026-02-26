@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { cn, winRateColor } from "@/lib/utils";
 import type { MemberPerformance } from "@/lib/db/queries/analytics";
 
-type SortField = "ign" | "winRate" | "totalBattles" | "attackWinRate" | "defenseWinRate";
+type SortField = "ign" | "winRate" | "totalBattles" | "attackWinRate" | "defenseWinRate" | "participationRate";
 
 function TrendIcon({ trend }: { trend: MemberPerformance["recentTrend"] }) {
   if (trend === "improving")
@@ -20,6 +20,18 @@ function TrendIcon({ trend }: { trend: MemberPerformance["recentTrend"] }) {
   if (trend === "declining")
     return <TrendingDown className="h-3.5 w-3.5 text-accent" />;
   return <Minus className="h-3.5 w-3.5 text-text-muted" />;
+}
+
+function RateCell({ rate, count }: { rate: number | null; count?: number }) {
+  if (rate === null) return <span className="text-text-muted">—</span>;
+  return (
+    <span className="text-text-secondary">
+      <span className={cn("font-medium", winRateColor(rate))}>{rate}%</span>
+      {count !== undefined && (
+        <span className="text-text-muted text-xs"> ({count})</span>
+      )}
+    </span>
+  );
 }
 
 export function MemberPerformanceTable({
@@ -47,7 +59,13 @@ export function MemberPerformanceTable({
   const sorted = [...members].sort((a, b) => {
     const mul = sortAsc ? 1 : -1;
     if (sortField === "ign") return mul * a.ign.localeCompare(b.ign);
-    return mul * ((a[sortField] as number) - (b[sortField] as number));
+    // null values sort last regardless of direction
+    const aVal = a[sortField] as number | null;
+    const bVal = b[sortField] as number | null;
+    if (aVal === null && bVal === null) return 0;
+    if (aVal === null) return 1;
+    if (bVal === null) return -1;
+    return mul * (aVal - bVal);
   });
 
   const headers: { label: string; field: SortField; className?: string }[] = [
@@ -56,6 +74,7 @@ export function MemberPerformanceTable({
     { label: "อัตราชนะ", field: "winRate", className: "text-center" },
     { label: "บุก", field: "attackWinRate", className: "text-center" },
     { label: "รับ", field: "defenseWinRate", className: "text-center" },
+    { label: "เข้าร่วม", field: "participationRate", className: "text-center" },
   ];
 
   return (
@@ -93,36 +112,19 @@ export function MemberPerformanceTable({
                 {m.ign}
               </td>
               <td className="px-3 py-2.5 text-center text-text-secondary">
-                {m.wins}/{m.totalBattles}
+                {m.totalBattles > 0 ? `${m.wins}/${m.totalBattles}` : <span className="text-text-muted">—</span>}
               </td>
               <td className="px-3 py-2.5 text-center">
-                <span className={cn("font-medium", winRateColor(m.winRate))}>
-                  {m.winRate}%
-                </span>
+                <RateCell rate={m.winRate} />
               </td>
               <td className="px-3 py-2.5 text-center">
-                {m.attackBattles > 0 ? (
-                  <span className="text-text-secondary">
-                    {m.attackWinRate}%{" "}
-                    <span className="text-text-muted text-xs">
-                      ({m.attackBattles})
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-text-muted">—</span>
-                )}
+                <RateCell rate={m.attackWinRate} count={m.attackBattles > 0 ? m.attackBattles : undefined} />
               </td>
               <td className="px-3 py-2.5 text-center">
-                {m.defenseBattles > 0 ? (
-                  <span className="text-text-secondary">
-                    {m.defenseWinRate}%{" "}
-                    <span className="text-text-muted text-xs">
-                      ({m.defenseBattles})
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-text-muted">—</span>
-                )}
+                <RateCell rate={m.defenseWinRate} count={m.defenseBattles > 0 ? m.defenseBattles : undefined} />
+              </td>
+              <td className="px-3 py-2.5 text-center">
+                <RateCell rate={m.participationRate} count={m.eligibleWarDays > 0 ? m.eligibleWarDays : undefined} />
               </td>
               <td className="px-3 py-2.5 text-center">
                 <TrendIcon trend={m.recentTrend} />

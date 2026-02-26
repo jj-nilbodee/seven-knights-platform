@@ -122,11 +122,13 @@ export interface MemberPerformance {
   totalBattles: number;
   wins: number;
   losses: number;
-  winRate: number;
+  winRate: number | null;
   attackBattles: number;
-  attackWinRate: number;
+  attackWinRate: number | null;
   defenseBattles: number;
-  defenseWinRate: number;
+  defenseWinRate: number | null;
+  eligibleWarDays: number;
+  participationRate: number | null;
   recentTrend: "improving" | "stable" | "declining";
 }
 
@@ -161,6 +163,10 @@ export interface CounterRecommendationResult {
 
 function calcWinRate(wins: number, total: number): number {
   return total > 0 ? Math.round((wins / total) * 1000) / 10 : 0;
+}
+
+function calcWinRateNullable(wins: number, total: number): number | null {
+  return total > 0 ? Math.round((wins / total) * 1000) / 10 : null;
 }
 
 function getDateCutoff(days: number): string {
@@ -688,7 +694,7 @@ export async function getMemberPerformance(
   const cutoff = getDateCutoff(days);
   const prevCutoff = getDateCutoff(days * 2);
 
-  // Current period
+  // Current period — only count battles on or after member's join date
   const currentRows = await db.execute<{
     member_id: string;
     member_ign: string;
@@ -698,6 +704,7 @@ export async function getMemberPerformance(
     attack_wins: string;
     defense_total: string;
     defense_wins: string;
+    eligible_war_days: string;
   }>(sql`
     SELECT
       m.id AS member_id,
@@ -707,15 +714,24 @@ export async function getMemberPerformance(
       count(b.id) filter (where b.battle_type = 'attack')::text AS attack_total,
       count(b.id) filter (where b.battle_type = 'attack' AND b.result = 'win')::text AS attack_wins,
       count(b.id) filter (where b.battle_type = 'defense')::text AS defense_total,
-      count(b.id) filter (where b.battle_type = 'defense' AND b.result = 'win')::text AS defense_wins
+      count(b.id) filter (where b.battle_type = 'defense' AND b.result = 'win')::text AS defense_wins,
+      (
+        SELECT count(DISTINCT wd.date)
+        FROM battles wd
+        WHERE wd.guild_id = ${guildId}
+          AND wd.date >= ${cutoff}
+          AND wd.date >= m.joined_at::date
+      )::text AS eligible_war_days
     FROM members m
-    LEFT JOIN battles b ON b.member_id = m.id AND b.guild_id = ${guildId} AND b.date >= ${cutoff}
+    LEFT JOIN battles b ON b.member_id = m.id AND b.guild_id = ${guildId}
+      AND b.date >= ${cutoff}
+      AND b.date >= m.joined_at::date
     WHERE m.guild_id = ${guildId} AND m.is_active = true
-    GROUP BY m.id, m.ign
+    GROUP BY m.id, m.ign, m.joined_at
     ORDER BY count(b.id) DESC
   `);
 
-  // Previous period for trend
+  // Previous period for trend — also respect join date
   const prevRows = await db.execute<{
     member_id: string;
     total: string;
@@ -728,6 +744,7 @@ export async function getMemberPerformance(
     FROM members m
     LEFT JOIN battles b ON b.member_id = m.id AND b.guild_id = ${guildId}
       AND b.date >= ${prevCutoff} AND b.date < ${cutoff}
+      AND b.date >= m.joined_at::date
     WHERE m.guild_id = ${guildId} AND m.is_active = true
     GROUP BY m.id
   `);
@@ -735,19 +752,18 @@ export async function getMemberPerformance(
   const prevMap = new Map(
     prevRows.map((r) => [
       r.member_id,
-      calcWinRate(Number(r.wins), Number(r.total)),
+      calcWinRateNullable(Number(r.wins), Number(r.total)),
     ]),
   );
 
   return currentRows.map((r) => {
     const total = Number(r.total);
     const wins = Number(r.wins);
-    const currentWR = calcWinRate(wins, total);
-    const prevWR = prevMap.get(r.member_id) ?? 0;
-    const prevTotal = prevRows.find((p) => p.member_id === r.member_id);
+    const currentWR = calcWinRateNullable(wins, total);
+    const prevWR = prevMap.get(r.member_id);
 
     let trend: "improving" | "stable" | "declining" = "stable";
-    if (total > 0 && prevTotal && Number(prevTotal.total) > 0) {
+    if (currentWR !== null && prevWR != null) {
       if (currentWR > prevWR + 5) trend = "improving";
       else if (currentWR < prevWR - 5) trend = "declining";
     }
@@ -756,6 +772,7 @@ export async function getMemberPerformance(
     const attackWins = Number(r.attack_wins);
     const defenseTotal = Number(r.defense_total);
     const defenseWins = Number(r.defense_wins);
+    const eligibleWarDays = Number(r.eligible_war_days);
 
     return {
       memberId: r.member_id,
@@ -765,9 +782,13 @@ export async function getMemberPerformance(
       losses: total - wins,
       winRate: currentWR,
       attackBattles: attackTotal,
-      attackWinRate: calcWinRate(attackWins, attackTotal),
+      attackWinRate: calcWinRateNullable(attackWins, attackTotal),
       defenseBattles: defenseTotal,
-      defenseWinRate: calcWinRate(defenseWins, defenseTotal),
+      defenseWinRate: calcWinRateNullable(defenseWins, defenseTotal),
+      eligibleWarDays,
+      participationRate: eligibleWarDays > 0
+        ? Math.round((total / (eligibleWarDays * 5)) * 1000) / 10
+        : null,
       recentTrend: trend,
     };
   });
