@@ -167,6 +167,7 @@ export const battles = pgTable(
   (table) => [
     index("idx_battle_guild_date").on(table.guildId, table.date),
     index("idx_battle_guild_member").on(table.guildId, table.memberId),
+    index("idx_battle_guild_type_date").on(table.guildId, table.battleType, table.date),
   ],
 );
 
@@ -196,6 +197,7 @@ export const battleHeroPairs = pgTable(
   (table) => [
     index("idx_bhp_guild_date").on(table.guildId, table.date),
     index("idx_bhp_matchup").on(table.alliedHeroId, table.enemyHeroId),
+    index("idx_bhp_guild_result_date").on(table.guildId, table.result, table.date),
   ],
 );
 

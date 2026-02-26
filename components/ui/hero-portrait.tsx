@@ -28,6 +28,7 @@ export function HeroPortrait({
     <img
       src={hero.imageUrl}
       alt={hero.name}
+      loading="lazy"
       className={`hero-portrait ${className}`}
       style={{ ...style, objectFit: "cover" as const }}
     />

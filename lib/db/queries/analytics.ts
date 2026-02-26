@@ -209,36 +209,38 @@ export async function getDashboardKPIs(
   const cutoff = getDateCutoff(days);
   const prevCutoff = getDateCutoff(days * 2);
 
-  // Current period stats
-  const [current] = await db
-    .select({
-      total: sql<number>`count(*)::int`,
-      wins: sql<number>`count(*) filter (where ${battles.result} = 'win')::int`,
-      maxDate: sql<string>`max(${battles.date})`,
-    })
-    .from(battles)
-    .where(and(eq(battles.guildId, guildId), gte(battles.date, cutoff)));
-
-  // Previous period stats for trend
-  const [previous] = await db
-    .select({
-      total: sql<number>`count(*)::int`,
-      wins: sql<number>`count(*) filter (where ${battles.result} = 'win')::int`,
-    })
-    .from(battles)
-    .where(
-      and(
-        eq(battles.guildId, guildId),
-        gte(battles.date, prevCutoff),
-        sql`${battles.date} < ${cutoff}`,
+  // Run all three queries in parallel
+  const [currentArr, previousArr, memberCountArr] = await Promise.all([
+    db
+      .select({
+        total: sql<number>`count(*)::int`,
+        wins: sql<number>`count(*) filter (where ${battles.result} = 'win')::int`,
+        maxDate: sql<string>`max(${battles.date})`,
+      })
+      .from(battles)
+      .where(and(eq(battles.guildId, guildId), gte(battles.date, cutoff))),
+    db
+      .select({
+        total: sql<number>`count(*)::int`,
+        wins: sql<number>`count(*) filter (where ${battles.result} = 'win')::int`,
+      })
+      .from(battles)
+      .where(
+        and(
+          eq(battles.guildId, guildId),
+          gte(battles.date, prevCutoff),
+          sql`${battles.date} < ${cutoff}`,
+        ),
       ),
-    );
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(members)
+      .where(and(eq(members.guildId, guildId), eq(members.isActive, true))),
+  ]);
 
-  // Active members
-  const [memberCount] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(members)
-    .where(and(eq(members.guildId, guildId), eq(members.isActive, true)));
+  const [current] = currentArr;
+  const [previous] = previousArr;
+  const [memberCount] = memberCountArr;
 
   const currentWinRate = calcWinRate(
     current?.wins ?? 0,
@@ -275,45 +277,60 @@ export async function getTopHeroCombos(
 ): Promise<HeroCombo[]> {
   const cutoff = getDateCutoff(days);
 
-  const rows = await db
-    .select({
-      alliedTeam: battles.alliedTeam,
-      result: battles.result,
-    })
-    .from(battles)
-    .where(and(eq(battles.guildId, guildId), gte(battles.date, cutoff)));
+  // Aggregate compositions entirely in SQL using sorted hero ID arrays
+  const [rows, heroMap] = await Promise.all([
+    db.execute<{
+      hero_ids: string;
+      wins: string;
+      total: string;
+    }>(sql`
+      WITH battle_comps AS (
+        SELECT
+          b.id,
+          b.result,
+          (
+            SELECT string_agg(hero_id, '|' ORDER BY hero_id)
+            FROM (
+              SELECT elem->>'heroId' AS hero_id
+              FROM jsonb_array_elements(b.allied_team->'heroes') AS elem
+            ) sub
+          ) AS comp_key,
+          (
+            SELECT array_agg(hero_id ORDER BY hero_id)
+            FROM (
+              SELECT elem->>'heroId' AS hero_id
+              FROM jsonb_array_elements(b.allied_team->'heroes') AS elem
+            ) sub
+          ) AS hero_ids
+        FROM battles b
+        WHERE b.guild_id = ${guildId} AND b.date >= ${cutoff}
+      )
+      SELECT
+        array_to_string(hero_ids, ',') AS hero_ids,
+        count(*) filter (where result = 'win')::text AS wins,
+        count(*)::text AS total
+      FROM battle_comps
+      WHERE comp_key IS NOT NULL
+      GROUP BY comp_key, hero_ids
+      HAVING count(*) >= ${minBattles}
+      ORDER BY count(*) filter (where result = 'win')::float / count(*)::float DESC, count(*) DESC
+      LIMIT ${limit}
+    `),
+    getHeroNameMap(),
+  ]);
 
-  // Aggregate by sorted hero composition
-  const comboMap = new Map<
-    string,
-    { heroIds: string[]; wins: number; total: number }
-  >();
-
-  for (const row of rows) {
-    const team = row.alliedTeam as { heroes?: { heroId: string }[] };
-    const heroIds = (team.heroes ?? []).map((h) => h.heroId);
-    if (heroIds.length === 0) continue;
-
-    const key = compositionId(heroIds);
-    const entry = comboMap.get(key) ?? { heroIds: [...heroIds].sort(), wins: 0, total: 0 };
-    entry.total++;
-    if (row.result === "win") entry.wins++;
-    comboMap.set(key, entry);
-  }
-
-  const heroMap = await getHeroNameMap();
-
-  return Array.from(comboMap.values())
-    .filter((c) => c.total >= minBattles)
-    .sort((a, b) => calcWinRate(b.wins, b.total) - calcWinRate(a.wins, a.total) || b.total - a.total)
-    .slice(0, limit)
-    .map((c) => ({
-      heroIds: c.heroIds,
-      heroNames: c.heroIds.map((id) => heroMap.get(id) ?? id.slice(0, 8)),
-      wins: c.wins,
-      total: c.total,
-      winRate: calcWinRate(c.wins, c.total),
-    }));
+  return rows.map((r) => {
+    const heroIds = r.hero_ids.split(",");
+    const wins = Number(r.wins);
+    const total = Number(r.total);
+    return {
+      heroIds,
+      heroNames: heroIds.map((id) => heroMap.get(id) ?? id.slice(0, 8)),
+      wins,
+      total,
+      winRate: calcWinRate(wins, total),
+    };
+  });
 }
 
 // ============================================
@@ -557,77 +574,92 @@ export async function getSpeedAnalysis(
 ): Promise<SpeedAnalysisData> {
   const cutoff = getDateCutoff(days);
 
-  // Fetch raw battle data for speed
-  const rows = await db.execute<{
-    allied_speed: string | null;
-    enemy_speed: string | null;
-    first_turn: boolean | null;
-    result: string;
-  }>(sql`
-    SELECT
-      (${battles.alliedTeam}->>'speed')::int AS allied_speed,
-      (${battles.enemyTeam}->>'speed')::int AS enemy_speed,
-      ${battles.firstTurn} AS first_turn,
-      ${battles.result} AS result
-    FROM ${battles}
-    WHERE ${battles.guildId} = ${guildId} AND ${battles.date} >= ${cutoff}
-  `);
+  // Run all three queries in parallel
+  const [bracketRows, firstTurnRows, scatterRows] = await Promise.all([
+    // Speed brackets aggregated in SQL
+    db.execute<{
+      bracket: string;
+      wins: string;
+      total: string;
+    }>(sql`
+      SELECT
+        (floor((${battles.alliedTeam}->>'speed')::int / 50) * 50)::int::text AS bracket,
+        count(*) filter (where ${battles.result} = 'win')::text AS wins,
+        count(*)::text AS total
+      FROM ${battles}
+      WHERE ${battles.guildId} = ${guildId}
+        AND ${battles.date} >= ${cutoff}
+        AND (${battles.alliedTeam}->>'speed')::int > 0
+      GROUP BY floor((${battles.alliedTeam}->>'speed')::int / 50) * 50
+      ORDER BY bracket::int
+    `),
+    // First-turn analysis aggregated in SQL
+    db.execute<{
+      allied_first_wins: string;
+      allied_first_total: string;
+      enemy_first_wins: string;
+      enemy_first_total: string;
+    }>(sql`
+      SELECT
+        count(*) filter (where ${battles.firstTurn} = true AND ${battles.result} = 'win')::text AS allied_first_wins,
+        count(*) filter (where ${battles.firstTurn} = true)::text AS allied_first_total,
+        count(*) filter (where ${battles.firstTurn} = false AND ${battles.result} = 'win')::text AS enemy_first_wins,
+        count(*) filter (where ${battles.firstTurn} = false)::text AS enemy_first_total
+      FROM ${battles}
+      WHERE ${battles.guildId} = ${guildId}
+        AND ${battles.date} >= ${cutoff}
+        AND ${battles.firstTurn} IS NOT NULL
+    `),
+    // Scatter data — raw points needed for chart (limit 200)
+    db.execute<{
+      allied_speed: string;
+      enemy_speed: string;
+      result: string;
+    }>(sql`
+      SELECT
+        (${battles.alliedTeam}->>'speed')::int::text AS allied_speed,
+        (${battles.enemyTeam}->>'speed')::int::text AS enemy_speed,
+        ${battles.result} AS result
+      FROM ${battles}
+      WHERE ${battles.guildId} = ${guildId}
+        AND ${battles.date} >= ${cutoff}
+        AND (${battles.alliedTeam}->>'speed')::int > 0
+        AND (${battles.enemyTeam}->>'speed')::int > 0
+      LIMIT 200
+    `),
+  ]);
 
-  // Speed brackets (50-point intervals)
-  const bracketMap = new Map<number, { wins: number; total: number }>();
-  const scatterData: SpeedDataPoint[] = [];
-
-  let alliedFirstWins = 0,
-    alliedFirstTotal = 0,
-    enemyFirstWins = 0,
-    enemyFirstTotal = 0;
-
-  for (const row of rows) {
-    const alliedSpeed = row.allied_speed != null ? Number(row.allied_speed) : null;
-    const enemySpeed = row.enemy_speed != null ? Number(row.enemy_speed) : null;
-    const isWin = row.result === "win";
-
-    // Speed brackets
-    if (alliedSpeed != null && alliedSpeed > 0) {
-      const bracket = Math.floor(alliedSpeed / 50) * 50;
-      const entry = bracketMap.get(bracket) ?? { wins: 0, total: 0 };
-      entry.total++;
-      if (isWin) entry.wins++;
-      bracketMap.set(bracket, entry);
-    }
-
-    // Scatter data
-    if (alliedSpeed != null && enemySpeed != null && alliedSpeed > 0 && enemySpeed > 0) {
-      scatterData.push({
-        alliedSpeed,
-        enemySpeed,
-        result: row.result,
-        speedDiff: alliedSpeed - enemySpeed,
-      });
-    }
-
-    // First turn analysis
-    if (row.first_turn === true) {
-      alliedFirstTotal++;
-      if (isWin) alliedFirstWins++;
-    } else if (row.first_turn === false) {
-      enemyFirstTotal++;
-      if (isWin) enemyFirstWins++;
-    }
-  }
-
-  const speedBrackets = Array.from(bracketMap.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([min, { wins, total }]) => ({
+  const speedBrackets = bracketRows.map((r) => {
+    const min = Number(r.bracket);
+    const wins = Number(r.wins);
+    const total = Number(r.total);
+    return {
       minSpeed: min,
       maxSpeed: min + 49,
       wins,
       total,
       winRate: calcWinRate(wins, total),
-    }));
+    };
+  });
 
+  const ft = firstTurnRows[0];
+  const alliedFirstWins = Number(ft?.allied_first_wins ?? 0);
+  const alliedFirstTotal = Number(ft?.allied_first_total ?? 0);
+  const enemyFirstWins = Number(ft?.enemy_first_wins ?? 0);
+  const enemyFirstTotal = Number(ft?.enemy_first_total ?? 0);
   const alliedFirstWinRate = calcWinRate(alliedFirstWins, alliedFirstTotal);
   const enemyFirstWinRate = calcWinRate(enemyFirstWins, enemyFirstTotal);
+
+  const speedVsResult: SpeedDataPoint[] = scatterRows.map((r) => {
+    const alliedSpeed = Number(r.allied_speed);
+    const enemySpeed = Number(r.enemy_speed);
+    return {
+      alliedSpeed,
+      enemySpeed,
+      result: r.result,
+      speedDiff: alliedSpeed - enemySpeed,
+    };
+  });
 
   return {
     speedBrackets,
@@ -641,7 +673,7 @@ export async function getSpeedAnalysis(
       advantageDelta:
         Math.round((alliedFirstWinRate - enemyFirstWinRate) * 10) / 10,
     },
-    speedVsResult: scatterData.slice(0, 200),
+    speedVsResult,
   };
 }
 
@@ -694,60 +726,65 @@ export async function getMemberPerformance(
   const cutoff = getDateCutoff(days);
   const prevCutoff = getDateCutoff(days * 2);
 
-  // Current period — only count battles on or after member's join date
-  const currentRows = await db.execute<{
-    member_id: string;
-    member_ign: string;
-    total: string;
-    wins: string;
-    attack_total: string;
-    attack_wins: string;
-    defense_total: string;
-    defense_wins: string;
-    eligible_war_days: string;
-  }>(sql`
-    SELECT
-      m.id AS member_id,
-      m.ign AS member_ign,
-      count(b.id)::text AS total,
-      count(b.id) filter (where b.result = 'win')::text AS wins,
-      count(b.id) filter (where b.battle_type = 'attack')::text AS attack_total,
-      count(b.id) filter (where b.battle_type = 'attack' AND b.result = 'win')::text AS attack_wins,
-      count(b.id) filter (where b.battle_type = 'defense')::text AS defense_total,
-      count(b.id) filter (where b.battle_type = 'defense' AND b.result = 'win')::text AS defense_wins,
-      (
-        SELECT count(DISTINCT wd.date)
-        FROM battles wd
-        WHERE wd.guild_id = ${guildId}
-          AND wd.date >= ${cutoff}
-          AND wd.date >= m.joined_at::date
-      )::text AS eligible_war_days
-    FROM members m
-    LEFT JOIN battles b ON b.member_id = m.id AND b.guild_id = ${guildId}
-      AND b.date >= ${cutoff}
-      AND b.date >= m.joined_at::date
-    WHERE m.guild_id = ${guildId} AND m.is_active = true
-    GROUP BY m.id, m.ign, m.joined_at
-    ORDER BY count(b.id) DESC
-  `);
-
-  // Previous period for trend — also respect join date
-  const prevRows = await db.execute<{
-    member_id: string;
-    total: string;
-    wins: string;
-  }>(sql`
-    SELECT
-      m.id AS member_id,
-      count(b.id)::text AS total,
-      count(b.id) filter (where b.result = 'win')::text AS wins
-    FROM members m
-    LEFT JOIN battles b ON b.member_id = m.id AND b.guild_id = ${guildId}
-      AND b.date >= ${prevCutoff} AND b.date < ${cutoff}
-      AND b.date >= m.joined_at::date
-    WHERE m.guild_id = ${guildId} AND m.is_active = true
-    GROUP BY m.id
-  `);
+  // Run current + previous period queries in parallel
+  const [currentRows, prevRows] = await Promise.all([
+    db.execute<{
+      member_id: string;
+      member_ign: string;
+      total: string;
+      wins: string;
+      attack_total: string;
+      attack_wins: string;
+      defense_total: string;
+      defense_wins: string;
+      eligible_war_days: string;
+    }>(sql`
+      WITH war_days AS (
+        SELECT count(DISTINCT date)::text AS cnt, min(date) AS min_date
+        FROM battles
+        WHERE guild_id = ${guildId} AND date >= ${cutoff}
+      )
+      SELECT
+        m.id AS member_id,
+        m.ign AS member_ign,
+        count(b.id)::text AS total,
+        count(b.id) filter (where b.result = 'win')::text AS wins,
+        count(b.id) filter (where b.battle_type = 'attack')::text AS attack_total,
+        count(b.id) filter (where b.battle_type = 'attack' AND b.result = 'win')::text AS attack_wins,
+        count(b.id) filter (where b.battle_type = 'defense')::text AS defense_total,
+        count(b.id) filter (where b.battle_type = 'defense' AND b.result = 'win')::text AS defense_wins,
+        (
+          SELECT count(DISTINCT wd2.date)
+          FROM battles wd2
+          WHERE wd2.guild_id = ${guildId}
+            AND wd2.date >= ${cutoff}
+            AND wd2.date >= m.joined_at::date
+        )::text AS eligible_war_days
+      FROM members m
+      LEFT JOIN battles b ON b.member_id = m.id AND b.guild_id = ${guildId}
+        AND b.date >= ${cutoff}
+        AND b.date >= m.joined_at::date
+      WHERE m.guild_id = ${guildId} AND m.is_active = true
+      GROUP BY m.id, m.ign, m.joined_at
+      ORDER BY count(b.id) DESC
+    `),
+    db.execute<{
+      member_id: string;
+      total: string;
+      wins: string;
+    }>(sql`
+      SELECT
+        m.id AS member_id,
+        count(b.id)::text AS total,
+        count(b.id) filter (where b.result = 'win')::text AS wins
+      FROM members m
+      LEFT JOIN battles b ON b.member_id = m.id AND b.guild_id = ${guildId}
+        AND b.date >= ${prevCutoff} AND b.date < ${cutoff}
+        AND b.date >= m.joined_at::date
+      WHERE m.guild_id = ${guildId} AND m.is_active = true
+      GROUP BY m.id
+    `),
+  ]);
 
   const prevMap = new Map(
     prevRows.map((r) => [
@@ -804,20 +841,66 @@ export async function getCounterRecommendations(
   days: number = 90,
 ): Promise<CounterRecommendationResult> {
   const cutoff = getDateCutoff(days);
-  const targetKey = compositionId(enemyHeroIds);
-  const targetSet = new Set(enemyHeroIds);
+  const sortedTargetIds = [...enemyHeroIds].sort();
+  const targetKey = sortedTargetIds.join("|");
 
-  const rows = await db
-    .select({
-      alliedTeam: battles.alliedTeam,
-      enemyTeam: battles.enemyTeam,
-      result: battles.result,
-    })
-    .from(battles)
-    .where(and(eq(battles.guildId, guildId), gte(battles.date, cutoff)));
+  // Build a JSONB array of target hero IDs for SQL containment checks
+  const targetJsonb = JSON.stringify(
+    sortedTargetIds.map((id) => ({ heroId: id })),
+  );
 
-  const heroMap = await getHeroNameMap();
+  // Run DB queries and hero name resolution in parallel
+  const [matchRows, heroMap] = await Promise.all([
+    db.execute<{
+      enemy_comp_key: string;
+      enemy_hero_ids: string;
+      allied_comp_key: string;
+      allied_hero_ids: string;
+      result: string;
+      overlap: string;
+    }>(sql`
+      WITH battle_data AS (
+        SELECT
+          b.id,
+          b.result,
+          (
+            SELECT string_agg(hero_id, '|' ORDER BY hero_id)
+            FROM (SELECT elem->>'heroId' AS hero_id FROM jsonb_array_elements(b.enemy_team->'heroes') AS elem) sub
+          ) AS enemy_comp_key,
+          (
+            SELECT array_agg(hero_id ORDER BY hero_id)
+            FROM (SELECT elem->>'heroId' AS hero_id FROM jsonb_array_elements(b.enemy_team->'heroes') AS elem) sub
+          ) AS enemy_hero_ids,
+          (
+            SELECT string_agg(hero_id, '|' ORDER BY hero_id)
+            FROM (SELECT elem->>'heroId' AS hero_id FROM jsonb_array_elements(b.allied_team->'heroes') AS elem) sub
+          ) AS allied_comp_key,
+          (
+            SELECT array_agg(hero_id ORDER BY hero_id)
+            FROM (SELECT elem->>'heroId' AS hero_id FROM jsonb_array_elements(b.allied_team->'heroes') AS elem) sub
+          ) AS allied_hero_ids,
+          (
+            SELECT count(*)
+            FROM (SELECT elem->>'heroId' AS hero_id FROM jsonb_array_elements(b.enemy_team->'heroes') AS elem) sub
+            WHERE sub.hero_id = ANY(${sql.raw(`ARRAY[${sortedTargetIds.map((id) => `'${id}'`).join(",")}]::text[]`)})
+          ) AS overlap
+        FROM battles b
+        WHERE b.guild_id = ${guildId} AND b.date >= ${cutoff}
+      )
+      SELECT
+        enemy_comp_key,
+        array_to_string(enemy_hero_ids, ',') AS enemy_hero_ids,
+        allied_comp_key,
+        array_to_string(allied_hero_ids, ',') AS allied_hero_ids,
+        result,
+        overlap::text
+      FROM battle_data
+      WHERE overlap >= 3
+    `),
+    getHeroNameMap(),
+  ]);
 
+  // Process results in JS (now working with a much smaller filtered dataset)
   let exactMatch: EnemyComposition | null = null;
   const similarMap = new Map<string, {
     heroIds: string[];
@@ -831,22 +914,18 @@ export async function getCounterRecommendations(
     total: number;
   }>();
 
-  for (const row of rows) {
-    const enemy = row.enemyTeam as { heroes?: { heroId: string }[] };
-    const allied = row.alliedTeam as { heroes?: { heroId: string }[] };
-    const eHeroIds = (enemy.heroes ?? []).map((h) => h.heroId);
-    if (eHeroIds.length === 0) continue;
-
-    const eKey = compositionId(eHeroIds);
+  for (const row of matchRows) {
+    const eKey = row.enemy_comp_key;
+    const eHeroIds = row.enemy_hero_ids.split(",");
     const isExact = eKey === targetKey;
-    const overlap = eHeroIds.filter((id) => targetSet.has(id)).length;
+    const overlap = Number(row.overlap);
     const isWin = row.result === "win";
 
     if (isExact) {
       if (!exactMatch) {
         exactMatch = {
           compositionId: eKey,
-          heroIds: [...eHeroIds].sort(),
+          heroIds: eHeroIds,
           heroNames: [],
           seenCount: 0,
           winAgainst: 0,
@@ -860,33 +939,22 @@ export async function getCounterRecommendations(
       else exactMatch.lossAgainst++;
     } else if (overlap >= 3) {
       if (!similarMap.has(eKey)) {
-        similarMap.set(eKey, {
-          heroIds: [...eHeroIds].sort(),
-          wins: 0,
-          losses: 0,
-          overlap,
-        });
+        similarMap.set(eKey, { heroIds: eHeroIds, wins: 0, losses: 0, overlap });
       }
       const sim = similarMap.get(eKey)!;
       if (isWin) sim.wins++;
       else sim.losses++;
     }
 
-    // Track winning allied teams as counters (for exact + similar)
-    if (isWin && (isExact || overlap >= 3)) {
-      const aHeroIds = (allied.heroes ?? []).map((h) => h.heroId);
-      if (aHeroIds.length > 0) {
-        const counterKey = compositionId(aHeroIds);
-        if (!counterMap.has(counterKey)) {
-          counterMap.set(counterKey, {
-            heroIds: [...aHeroIds].sort(),
-            wins: 0,
-            total: 0,
-          });
-        }
-        counterMap.get(counterKey)!.wins++;
-        counterMap.get(counterKey)!.total++;
+    // Track winning allied teams as counters
+    if (isWin && row.allied_hero_ids) {
+      const aHeroIds = row.allied_hero_ids.split(",");
+      const counterKey = row.allied_comp_key;
+      if (!counterMap.has(counterKey)) {
+        counterMap.set(counterKey, { heroIds: aHeroIds, wins: 0, total: 0 });
       }
+      counterMap.get(counterKey)!.wins++;
+      counterMap.get(counterKey)!.total++;
     }
   }
 

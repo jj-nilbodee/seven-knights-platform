@@ -1,8 +1,7 @@
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import { getWinRateTrend, getHeroUsage } from "@/lib/db/queries/analytics";
-import { WinRateTrendChart } from "@/components/analytics/win-rate-trend-chart";
-import { HeroUsageChart } from "@/components/analytics/hero-usage-chart";
 import { PeriodSelector } from "@/components/analytics/period-selector";
+import { LazyWinRateTrendChart, LazyHeroUsageChart } from "@/components/analytics/lazy-charts";
 
 export default async function AnalyticsOverviewPage({
   searchParams,
@@ -38,14 +37,14 @@ export default async function AnalyticsOverviewPage({
           <h3 className="text-sm font-medium text-text-secondary mb-4">
             อัตราชนะรายวัน
           </h3>
-          <WinRateTrendChart data={trendData} />
+          <LazyWinRateTrendChart data={trendData} />
         </div>
 
         <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-5">
           <h3 className="text-sm font-medium text-text-secondary mb-4">
             ฮีโร่ที่ใช้บ่อย
           </h3>
-          <HeroUsageChart data={heroUsage} />
+          <LazyHeroUsageChart data={heroUsage} />
         </div>
       </div>
     </div>

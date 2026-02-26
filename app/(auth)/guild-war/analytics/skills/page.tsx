@@ -1,7 +1,7 @@
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import { getSkillOrderImpact } from "@/lib/db/queries/analytics";
-import { SkillOrderChart } from "@/components/analytics/skill-order-chart";
 import { PeriodSelector } from "@/components/analytics/period-selector";
+import { LazySkillOrderChart } from "@/components/analytics/lazy-charts";
 
 export default async function SkillsPage({
   searchParams,
@@ -35,7 +35,7 @@ export default async function SkillsPage({
           เปรียบเทียบอัตราชนะเมื่อใช้สกิลในลำดับที่ 1, 2, หรือ 3 (ขั้นต่ำ 3
           ครั้ง)
         </p>
-        <SkillOrderChart skills={skills} />
+        <LazySkillOrderChart skills={skills} />
       </div>
     </div>
   );
