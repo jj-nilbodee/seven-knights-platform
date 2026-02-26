@@ -103,7 +103,7 @@ export async function quickSubmitBattles(data: {
             updates.push({
               id: anyMatch.id,
               values: {
-                battleType: b.battleType,
+                battleType: b.battleType || "attack",
                 enemyGuildName,
                 enemyPlayerName: b.enemyPlayerName || null,
                 enemyCastleType: b.enemyCastleType,
@@ -119,7 +119,7 @@ export async function quickSubmitBattles(data: {
             memberId,
             date,
             weekday,
-            battleType: b.battleType,
+            battleType: b.battleType || "attack",
             result: b.result,
             enemyGuildName,
             enemyPlayerName: b.enemyPlayerName || null,
