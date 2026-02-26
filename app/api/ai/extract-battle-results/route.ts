@@ -12,7 +12,7 @@ const requestSchema = z.object({
       }),
     )
     .min(1)
-    .max(10),
+    .max(6),
 });
 
 export async function POST(request: Request) {

@@ -78,6 +78,10 @@ export function QuickSubmitClient({
   // Upload state
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionProgress, setExtractionProgress] = useState<{
+    completed: number;
+    total: number;
+  } | null>(null);
 
   // Review table state
   const [reviewMembers, setReviewMembers] = useState<ReviewMember[]>([]);
@@ -91,7 +95,7 @@ export function QuickSubmitClient({
     );
     setSelectedFiles((prev) => {
       const combined = [...prev, ...newFiles];
-      return combined.slice(0, 10);
+      return combined.slice(0, 30);
     });
   }
 
@@ -137,7 +141,9 @@ export function QuickSubmitClient({
     });
   }
 
-  // Extract from screenshots
+  // Extract from screenshots (batched: 6 images per batch, parallel)
+  const BATCH_SIZE = 6;
+
   async function handleExtract() {
     if (selectedFiles.length === 0) {
       toast.error("กรุณาเลือกภาพก่อน");
@@ -146,39 +152,73 @@ export function QuickSubmitClient({
 
     setIsExtracting(true);
     try {
+      // Resize all images in parallel
       const images = await Promise.all(
         selectedFiles.map((file) => resizeImage(file)),
       );
 
-      const response = await fetch("/api/ai/extract-battle-results", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ images }),
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || "Extraction failed");
+      // Split into batches of BATCH_SIZE
+      const batches: (typeof images)[] = [];
+      for (let i = 0; i < images.length; i += BATCH_SIZE) {
+        batches.push(images.slice(i, i + BATCH_SIZE));
       }
 
-      const result: ExtractionResult = await response.json();
-      mergeExtractionResult(result);
+      setExtractionProgress({ completed: 0, total: batches.length });
 
-      // Clear files after successful extraction
+      let totalSummaries = 0;
+      let totalBattles = 0;
+      let failedBatches = 0;
+
+      // Fire all batches in parallel, merge results as each completes
+      const promises = batches.map(async (batch) => {
+        const response = await fetch("/api/ai/extract-battle-results", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ images: batch }),
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || "Extraction failed");
+        }
+
+        const result: ExtractionResult = await response.json();
+        mergeExtractionResult(result);
+
+        totalSummaries += result.memberSummaries.length;
+        totalBattles += result.individualBattles.length;
+
+        setExtractionProgress((prev) =>
+          prev ? { ...prev, completed: prev.completed + 1 } : null,
+        );
+      });
+
+      const results = await Promise.allSettled(promises);
+      failedBatches = results.filter((r) => r.status === "rejected").length;
+
+      // Clear files after extraction
       setSelectedFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      const summaryCount = result.memberSummaries.length;
-      const battleCount = result.individualBattles.length;
-      toast.success(
-        `พบข้อมูล ${summaryCount} สมาชิก, ${battleCount} รายการต่อสู้`,
-      );
+      if (failedBatches === batches.length) {
+        toast.error("ไม่สามารถวิเคราะห์ภาพได้ทุกชุด");
+      } else {
+        toast.success(
+          `พบข้อมูล ${totalSummaries} สมาชิก, ${totalBattles} รายการต่อสู้`,
+        );
+        if (failedBatches > 0) {
+          toast.warning(
+            `${failedBatches}/${batches.length} ชุดวิเคราะห์ไม่สำเร็จ`,
+          );
+        }
+      }
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "ไม่สามารถวิเคราะห์ภาพได้",
       );
     } finally {
       setIsExtracting(false);
+      setExtractionProgress(null);
     }
   }
 
@@ -497,7 +537,7 @@ export function QuickSubmitClient({
             ลากภาพมาวางที่นี่ หรือคลิกเพื่อเลือก
           </p>
           <p className="text-xs text-text-muted mt-1">
-            รองรับสูงสุด 10 ภาพ (PNG, JPG)
+            รองรับสูงสุด 30 ภาพ (PNG, JPG)
           </p>
           <input
             ref={fileInputRef}
@@ -533,8 +573,23 @@ export function QuickSubmitClient({
           </div>
         )}
 
-        {/* Extract button */}
-        <div className="flex justify-end">
+        {/* Extract button + progress */}
+        <div className="flex items-center justify-end gap-4">
+          {extractionProgress && (
+            <div className="flex items-center gap-3 flex-1">
+              <div className="flex-1 h-2 rounded-full bg-bg-surface overflow-hidden">
+                <div
+                  className="h-full bg-gold rounded-full transition-all duration-300"
+                  style={{
+                    width: `${(extractionProgress.completed / extractionProgress.total) * 100}%`,
+                  }}
+                />
+              </div>
+              <span className="text-xs text-text-muted whitespace-nowrap">
+                {extractionProgress.completed}/{extractionProgress.total} ชุด
+              </span>
+            </div>
+          )}
           <Button
             onClick={handleExtract}
             disabled={selectedFiles.length === 0 || isExtracting}
@@ -550,6 +605,11 @@ export function QuickSubmitClient({
               <>
                 <Camera className="h-4 w-4 mr-2" />
                 วิเคราะห์ภาพ
+                {selectedFiles.length > BATCH_SIZE && (
+                  <span className="ml-1 text-xs opacity-70">
+                    ({Math.ceil(selectedFiles.length / BATCH_SIZE)} ชุด)
+                  </span>
+                )}
               </>
             )}
           </Button>
