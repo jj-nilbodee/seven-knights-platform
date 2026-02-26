@@ -4,7 +4,7 @@ import { battleResults, battleTypes, castleTypes } from "./battle";
 export const quickSubmitBattleSchema = z.object({
   memberId: z.string().uuid(),
   result: z.enum(battleResults),
-  battleType: z.enum(battleTypes).nullable().default(null),
+  battleType: z.enum(battleTypes).default("attack"),
   enemyPlayerName: z.string().default(""),
   enemyCastleType: z.enum(castleTypes).nullable().default(null),
   enemyCastleNumber: z.number().int().min(1).max(5).nullable().default(null),

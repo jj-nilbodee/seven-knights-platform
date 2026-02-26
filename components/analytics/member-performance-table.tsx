@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { cn, winRateColor } from "@/lib/utils";
 import type { MemberPerformance } from "@/lib/db/queries/analytics";
 
-type SortField = "ign" | "totalBattles" | "attackWinRate" | "defenseWinRate" | "participationRate";
+type SortField = "ign" | "attackWinRate" | "defenseWinRate" | "participationRate";
 
 function TrendIcon({ trend }: { trend: MemberPerformance["recentTrend"] }) {
   if (trend === "improving")
@@ -70,7 +70,6 @@ export function MemberPerformanceTable({
 
   const headers: { label: string; field: SortField; className?: string }[] = [
     { label: "สมาชิก", field: "ign" },
-    { label: "รวม", field: "totalBattles", className: "text-center" },
     { label: "บุก", field: "attackWinRate", className: "text-center" },
     { label: "รับ", field: "defenseWinRate", className: "text-center" },
     { label: "เข้าร่วม", field: "participationRate", className: "text-center" },
@@ -109,9 +108,6 @@ export function MemberPerformanceTable({
             >
               <td className="px-3 py-2.5 font-medium text-text-primary">
                 {m.ign}
-              </td>
-              <td className="px-3 py-2.5 text-center text-text-secondary">
-                {m.totalBattles > 0 ? `${m.wins}/${m.totalBattles}` : <span className="text-text-muted">—</span>}
               </td>
               <td className="px-3 py-2.5 text-center">
                 <RateCell rate={m.attackWinRate} count={m.attackBattles > 0 ? m.attackBattles : undefined} />

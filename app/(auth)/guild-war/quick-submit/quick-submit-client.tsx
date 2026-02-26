@@ -15,6 +15,8 @@ import {
   ChevronDown,
   ChevronUp,
   AlertCircle,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +53,8 @@ type ReviewMember = {
   matchConfidence: "high" | "medium" | "none";
   wins: number;
   losses: number;
+  summaryWins: number | null;
+  summaryLosses: number | null;
   battleDetails: BattleDetail[];
 };
 
@@ -95,7 +99,7 @@ export function QuickSubmitClient({
     );
     setSelectedFiles((prev) => {
       const combined = [...prev, ...newFiles];
-      return combined.slice(0, 30);
+      return combined.slice(0, 36);
     });
   }
 
@@ -238,11 +242,13 @@ export function QuickSubmitClient({
         );
 
         if (existingIdx >= 0) {
-          // Update existing — use latest extracted values
+          // Update existing — use latest extracted values + track summary
           updated[existingIdx] = {
             ...updated[existingIdx],
             wins: summary.wins,
             losses: summary.losses,
+            summaryWins: summary.wins,
+            summaryLosses: summary.losses,
           };
         } else {
           // Add new member
@@ -253,6 +259,8 @@ export function QuickSubmitClient({
             matchConfidence: matchResult.confidence,
             wins: summary.wins,
             losses: summary.losses,
+            summaryWins: summary.wins,
+            summaryLosses: summary.losses,
             battleDetails: [],
           });
         }
@@ -274,7 +282,7 @@ export function QuickSubmitClient({
         );
 
         if (!memberRow) {
-          // Create new member entry
+          // Create new member entry (Type 2 only — no summary data yet)
           memberRow = {
             id: generateId(),
             extractedName: battle.memberName,
@@ -282,6 +290,8 @@ export function QuickSubmitClient({
             matchConfidence: matchResult.confidence,
             wins: 0,
             losses: 0,
+            summaryWins: null,
+            summaryLosses: null,
             battleDetails: [],
           };
           updated.push(memberRow);
@@ -348,6 +358,8 @@ export function QuickSubmitClient({
       matchConfidence: "none",
       wins: 0,
       losses: 0,
+      summaryWins: null,
+      summaryLosses: null,
       battleDetails: [],
     };
     setReviewMembers((prev) => [...prev, newMember]);
@@ -421,7 +433,7 @@ export function QuickSubmitClient({
     const battleRecords: {
       memberId: string;
       result: string;
-      battleType: string | null;
+      battleType: string;
       enemyPlayerName: string;
       enemyCastleType: string | null;
       enemyCastleNumber: number | null;
@@ -443,7 +455,7 @@ export function QuickSubmitClient({
         battleRecords.push({
           memberId: member.memberId,
           result: detail?.result ?? results[i],
-          battleType: detail?.battleType ?? null,
+          battleType: detail?.battleType ?? "attack",
           enemyPlayerName: detail?.enemyPlayerName ?? "",
           enemyCastleType: detail?.enemyCastleType ?? null,
           enemyCastleNumber: detail?.enemyCastleNumber ?? null,
@@ -537,7 +549,7 @@ export function QuickSubmitClient({
             ลากภาพมาวางที่นี่ หรือคลิกเพื่อเลือก
           </p>
           <p className="text-xs text-text-muted mt-1">
-            รองรับสูงสุด 30 ภาพ (PNG, JPG)
+            รองรับสูงสุด 36 ภาพ (PNG, JPG)
           </p>
           <input
             ref={fileInputRef}
@@ -860,29 +872,31 @@ function ReviewRow({
           />
         </td>
 
-        {/* Details count */}
+        {/* Details count + cross-validation */}
         <td className="px-4 py-3 text-center">
-          {totalMemberBattles > 0 ? (
-            <button
-              type="button"
-              onClick={onToggleExpand}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-[var(--radius-sm)] text-xs cursor-pointer transition-colors ${
-                detailCount >= totalMemberBattles
-                  ? "bg-green/10 text-green"
-                  : "bg-bg-surface text-text-muted hover:text-text-secondary"
-              }`}
-            >
-              {detailCount}/{totalMemberBattles}
-              {detailCount >= totalMemberBattles && " ✓"}
-              {isExpanded ? (
-                <ChevronUp className="h-3 w-3" />
-              ) : (
-                <ChevronDown className="h-3 w-3" />
-              )}
-            </button>
-          ) : (
-            <span className="text-xs text-text-muted">—</span>
-          )}
+          <div className="flex flex-col items-center gap-1">
+            {totalMemberBattles > 0 ? (
+              <button
+                type="button"
+                onClick={onToggleExpand}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-[var(--radius-sm)] text-xs cursor-pointer transition-colors ${
+                  detailCount >= totalMemberBattles
+                    ? "bg-green/10 text-green"
+                    : "bg-bg-surface text-text-muted hover:text-text-secondary"
+                }`}
+              >
+                {detailCount}/{totalMemberBattles}
+                {isExpanded ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
+              </button>
+            ) : (
+              <span className="text-xs text-text-muted">—</span>
+            )}
+            <CrossValidationBadge rm={rm} />
+          </div>
         </td>
 
         {/* Delete */}
@@ -1010,5 +1024,41 @@ function ReviewRow({
         </tr>
       )}
     </>
+  );
+}
+
+/* ── Cross-Validation Badge ──────────────── */
+
+function CrossValidationBadge({ rm }: { rm: ReviewMember }) {
+  const hasSummary = rm.summaryWins !== null;
+  const hasDetails = rm.battleDetails.length > 0;
+
+  if (!hasSummary || !hasDetails) return null;
+
+  const detailWins = rm.battleDetails.filter((d) => d.result === "win").length;
+  const detailLosses = rm.battleDetails.filter(
+    (d) => d.result === "loss",
+  ).length;
+
+  const isMatch =
+    rm.summaryWins === detailWins && rm.summaryLosses === detailLosses;
+
+  if (isMatch) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] text-green">
+        <CheckCircle2 className="h-3 w-3" />
+        ตรงกัน
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[10px] text-gold"
+      title={`สรุป ${rm.summaryWins}W/${rm.summaryLosses}L ≠ รายละเอียด ${detailWins}W/${detailLosses}L`}
+    >
+      <AlertTriangle className="h-3 w-3" />
+      {rm.summaryWins}W/{rm.summaryLosses}L ≠ {detailWins}W/{detailLosses}L
+    </span>
   );
 }

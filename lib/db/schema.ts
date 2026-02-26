@@ -145,7 +145,7 @@ export const battles = pgTable(
       .references(() => members.id),
     date: date("date").notNull(),
     weekday: text("weekday").notNull(), // SAT, MON, WED
-    battleType: text("battle_type").default("attack"),
+    battleType: text("battle_type").notNull().default("attack"),
     result: text("result").notNull(), // win, loss
     enemyGuildName: text("enemy_guild_name").default(""),
     enemyPlayerName: text("enemy_player_name"),

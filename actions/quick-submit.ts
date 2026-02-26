@@ -22,7 +22,7 @@ export async function quickSubmitBattles(data: {
   battles: {
     memberId: string;
     result: string;
-    battleType: string | null;
+    battleType: string;
     enemyPlayerName: string;
     enemyCastleType: string | null;
     enemyCastleNumber: number | null;
