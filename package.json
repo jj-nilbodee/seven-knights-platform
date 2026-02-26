@@ -54,6 +54,12 @@
     "typescript": "^5",
     "vitest": "^4.0.18"
   },
+  "browserslist": [
+    "chrome >= 109",
+    "firefox >= 115",
+    "safari >= 16",
+    "edge >= 109"
+  ],
   "lint-staged": {
     "*.{ts,tsx}": [
       "eslint --fix",

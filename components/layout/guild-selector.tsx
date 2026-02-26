@@ -45,7 +45,7 @@ export function GuildSelector({ guilds }: GuildSelectorProps) {
         ดูกิลด์
       </p>
       <Select value={currentGuildId} onValueChange={handleChange}>
-        <SelectTrigger className="h-8 text-xs">
+        <SelectTrigger className="h-8 text-xs" aria-label="เลือกกิลด์">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

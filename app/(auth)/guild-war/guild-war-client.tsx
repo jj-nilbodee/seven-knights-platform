@@ -5,13 +5,8 @@ import { toast } from "sonner";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
-  Plus,
-  Camera,
-  Swords,
   Shield,
-  Trophy,
-  XCircle as XCircleIcon,
-  Percent,
+  Swords,
   Loader2,
   Trash2,
   Pencil,
@@ -60,13 +55,6 @@ type Battle = {
   submittedByUserId: string;
   createdAt: Date | null;
   updatedAt: Date | null;
-};
-
-type Stats = {
-  total: number;
-  wins: number;
-  losses: number;
-  winRate: number;
 };
 
 type Member = {
@@ -142,10 +130,11 @@ function MemberMultiSelect({
                 {memberMap.get(id)?.ign ?? id}
                 <button
                   type="button"
+                  aria-label={`ลบ ${memberMap.get(id)?.ign ?? ""}`}
                   onClick={(e) => { e.stopPropagation(); toggle(id); }}
-                  className="hover:text-accent-bright cursor-pointer"
+                  className="hover:text-accent-bright cursor-pointer p-0.5 rounded"
                 >
-                  <X className="h-2.5 w-2.5" />
+                  <X className="h-3 w-3" />
                 </button>
               </span>
             ))}
@@ -226,15 +215,13 @@ type HeroInfo = {
   skill2Id: string | null;
 };
 
-export function GuildWarClient({
+export function GuildWarShell({
   initialBattles,
-  stats,
   members,
   heroes,
   filters,
 }: {
   initialBattles: Battle[];
-  stats: Stats;
   members: Member[];
   heroes: HeroInfo[];
   filters: { member: string; result: string; date: string };
@@ -290,79 +277,6 @@ export function GuildWarClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-text-primary">
-            สงครามกิลด์
-          </h1>
-          <p className="text-sm text-text-secondary mt-1">
-            ติดตามและจัดการข้อมูลการต่อสู้
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/guild-war/quick-submit">
-            <Button variant="outline" className="border-gold/30 text-gold hover:bg-gold/10">
-              <Camera className="h-4 w-4 mr-2" />
-              บันทึกด่วน
-            </Button>
-          </Link>
-          <Link href="/guild-war/submit">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              บันทึกการต่อสู้
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          {
-            label: "รวม",
-            value: stats.total,
-            icon: Swords,
-            color: "text-text-primary",
-          },
-          {
-            label: "ชนะ",
-            value: stats.wins,
-            icon: Trophy,
-            color: "text-green",
-          },
-          {
-            label: "แพ้",
-            value: stats.losses,
-            icon: XCircleIcon,
-            color: "text-accent",
-          },
-          {
-            label: "อัตราชนะ",
-            value: `${stats.winRate}%`,
-            icon: Percent,
-            color: "text-gold",
-          },
-        ].map((card) => (
-          <div
-            key={card.label}
-            className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-4"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                {card.label}
-              </p>
-              <card.icon className={`h-4 w-4 ${card.color}`} />
-            </div>
-            <p
-              className={`mt-2 font-display text-2xl font-bold ${card.color}`}
-            >
-              {card.value}
-            </p>
-          </div>
-        ))}
-      </div>
-
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <Filter className="h-4 w-4 text-text-muted" />
@@ -370,6 +284,7 @@ export function GuildWarClient({
         <div className="flex items-center gap-1.5">
           <input
             type="date"
+            aria-label="เลือกวันที่"
             value={filters.date === "all" ? "" : filters.date}
             onChange={(e) => setFilter("date", e.target.value || "all")}
             className="h-9 px-3 rounded-md border border-border-default bg-bg-input text-sm text-text-primary transition-colors focus-visible:outline-none focus-visible:border-accent"
@@ -393,7 +308,7 @@ export function GuildWarClient({
         />
 
         <Select value={filters.result} onValueChange={(v) => setFilter("result", v)}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px]" aria-label="กรองผลลัพธ์">
             <SelectValue placeholder="ผลลัพธ์" />
           </SelectTrigger>
           <SelectContent>
@@ -653,14 +568,17 @@ function BattleRow({
         </td>
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-            <Link href={`/guild-war/edit?id=${battle.id}`}>
-              <button className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-gold hover:bg-gold/10 transition-colors">
-                <Pencil className="h-3.5 w-3.5" />
-              </button>
+            <Link
+              href={`/guild-war/edit?id=${battle.id}`}
+              aria-label="แก้ไขการต่อสู้"
+              className="p-1.5 rounded-[var(--radius-sm)] text-text-muted hover:text-gold hover:bg-gold/10 transition-colors inline-flex items-center justify-center"
+            >
+              <Pencil className="h-3.5 w-3.5" />
             </Link>
             <button
               onClick={onDelete}
-              className="p-1 rounded-[var(--radius-sm)] text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
+              aria-label="ลบการต่อสู้"
+              className="p-1.5 rounded-[var(--radius-sm)] text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

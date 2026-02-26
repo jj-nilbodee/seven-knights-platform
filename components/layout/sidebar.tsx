@@ -99,7 +99,7 @@ export function Sidebar({ user, guilds }: SidebarProps) {
               className={cn(
                 "flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors",
                 isActive
-                  ? "bg-accent/10 text-accent font-medium"
+                  ? "bg-accent/10 text-accent-bright font-medium"
                   : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary",
               )}
             >
@@ -124,7 +124,7 @@ export function Sidebar({ user, guilds }: SidebarProps) {
               className={cn(
                 "flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors",
                 isActive
-                  ? "bg-accent/10 text-accent font-medium"
+                  ? "bg-accent/10 text-accent-bright font-medium"
                   : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary",
               )}
             >
@@ -152,7 +152,7 @@ export function Sidebar({ user, guilds }: SidebarProps) {
                   className={cn(
                     "flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors",
                     isActive
-                      ? "bg-accent/10 text-accent font-medium"
+                      ? "bg-accent/10 text-accent-bright font-medium"
                       : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary",
                   )}
                 >
