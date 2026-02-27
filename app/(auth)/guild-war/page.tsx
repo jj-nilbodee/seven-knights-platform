@@ -11,12 +11,14 @@ import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
 import {
   listBattles,
   getBattleStats,
-  getLatestBattleDate,
+  countBattles,
 } from "@/lib/db/queries/battles";
 import { listMembers } from "@/lib/db/queries/members";
 import { listHeroes } from "@/lib/db/queries/heroes";
 import { Button } from "@/components/ui/button";
 import { GuildWarShell } from "./guild-war-client";
+
+const PAGE_SIZE = 20;
 
 export default async function GuildWarPage({
   searchParams,
@@ -26,6 +28,7 @@ export default async function GuildWarPage({
     member?: string;
     result?: string;
     date?: string;
+    page?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -39,22 +42,18 @@ export default async function GuildWarPage({
   }
   const { guildId } = guild;
 
-  // Default to latest battle date when no date filter is set
-  const showAllDates = params.date === "all";
-  let activeDate: string | null = null;
-  if (!showAllDates) {
-    activeDate = params.date ?? (await getLatestBattleDate(guildId));
-  }
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
 
   const filters: {
     date?: string;
     memberIds?: string[];
     result?: "win" | "loss";
     limit?: number;
-  } = { limit: 200 };
+    offset?: number;
+  } = { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE };
 
-  if (activeDate) {
-    filters.date = activeDate;
+  if (params.date && params.date !== "all") {
+    filters.date = params.date;
   }
   if (params.member && params.member !== "all") {
     const ids = params.member.split(",").filter(Boolean);
@@ -65,12 +64,15 @@ export default async function GuildWarPage({
   if (params.result === "win" || params.result === "loss") {
     filters.result = params.result;
   }
-  const [battles, stats, members, heroes] = await Promise.all([
+  const [battles, totalCount, stats, members, heroes] = await Promise.all([
     listBattles(guildId, filters),
+    countBattles(guildId, filters),
     getBattleStats(guildId),
     listMembers(guildId),
     listHeroes({ isActive: true }),
   ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const statCards = [
     { label: "รวม", value: stats.total, icon: Swords, color: "text-text-primary" },
@@ -141,7 +143,12 @@ export default async function GuildWarPage({
         filters={{
           member: params.member ?? "all",
           result: params.result ?? "all",
-          date: activeDate ?? "all",
+          date: params.date ?? "all",
+        }}
+        pagination={{
+          page,
+          totalPages,
+          totalCount,
         }}
       />
     </div>

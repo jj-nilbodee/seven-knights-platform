@@ -14,6 +14,7 @@ import {
   X,
   Search,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ArrowUp,
   ArrowDown,
@@ -278,16 +279,31 @@ function sortBattles(battles: Battle[], key: SortKey, dir: SortDir): Battle[] {
   return sorted;
 }
 
+function generatePageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [];
+  pages.push(1);
+  if (current > 3) pages.push("...");
+  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+    pages.push(i);
+  }
+  if (current < total - 2) pages.push("...");
+  pages.push(total);
+  return pages;
+}
+
 export function GuildWarShell({
   initialBattles,
   members,
   heroes,
   filters,
+  pagination,
 }: {
   initialBattles: Battle[];
   members: Member[];
   heroes: HeroInfo[];
   filters: { member: string; result: string; date: string };
+  pagination: { page: number; totalPages: number; totalCount: number };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -308,6 +324,20 @@ export function GuildWarShell({
       params.delete(key);
     } else {
       params.set(key, value);
+    }
+    // Reset to page 1 when filters change
+    params.delete("page");
+    startFiltering(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
+  }
+
+  function goToPage(page: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (page <= 1) {
+      params.delete("page");
+    } else {
+      params.set("page", String(page));
     }
     startFiltering(() => {
       router.push(`${pathname}?${params.toString()}`);
@@ -411,7 +441,7 @@ export function GuildWarShell({
             รายการการต่อสู้
           </h2>
           <span className="text-sm text-text-muted">
-            {filtered.length} รายการ
+            {pagination.totalCount} รายการ
           </span>
         </div>
 
@@ -448,6 +478,49 @@ export function GuildWarShell({
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-text-muted">
+            หน้า {pagination.page} จาก {pagination.totalPages}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page <= 1 || isFiltering}
+              onClick={() => goToPage(pagination.page - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {generatePageNumbers(pagination.page, pagination.totalPages).map((p, i) =>
+              p === "..." ? (
+                <span key={`ellipsis-${i}`} className="px-2 text-sm text-text-muted">...</span>
+              ) : (
+                <Button
+                  key={p}
+                  variant={p === pagination.page ? "default" : "outline"}
+                  size="sm"
+                  className={`min-w-[36px] ${p === pagination.page ? "" : ""}`}
+                  disabled={isFiltering}
+                  onClick={() => goToPage(p as number)}
+                >
+                  {p}
+                </Button>
+              ),
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page >= pagination.totalPages || isFiltering}
+              onClick={() => goToPage(pagination.page + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation dialog */}
       <Dialog

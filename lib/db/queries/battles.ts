@@ -303,6 +303,38 @@ export async function getSkillSequenceHistory(
   return result;
 }
 
+export async function countBattles(guildId: string, filters: BattleFilters = {}) {
+  const conditions = [eq(battles.guildId, guildId)];
+
+  if (filters.memberIds && filters.memberIds.length > 0) {
+    conditions.push(inArray(battles.memberId, filters.memberIds));
+  } else if (filters.memberId) {
+    conditions.push(eq(battles.memberId, filters.memberId));
+  }
+  if (filters.date) {
+    conditions.push(eq(battles.date, filters.date));
+  }
+  if (filters.dateFrom) {
+    conditions.push(gte(battles.date, filters.dateFrom));
+  }
+  if (filters.dateTo) {
+    conditions.push(lte(battles.date, filters.dateTo));
+  }
+  if (filters.result) {
+    conditions.push(eq(battles.result, filters.result));
+  }
+  if (filters.weekday) {
+    conditions.push(eq(battles.weekday, filters.weekday));
+  }
+
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(battles)
+    .where(and(...conditions));
+
+  return row?.count ?? 0;
+}
+
 export async function getBattleStats(guildId: string) {
   const [row] = await db
     .select({
