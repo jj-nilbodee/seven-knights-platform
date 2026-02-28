@@ -3,7 +3,16 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Search, Trash2, Pencil } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Trash2,
+  Pencil,
+  ChevronDown,
+  ChevronRight,
+  Shield,
+  Swords,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +23,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { HeroPortrait } from "@/components/ui/hero-portrait";
 import {
   updateGvgGuide,
   deleteGvgGuide,
@@ -32,13 +42,31 @@ interface Guide {
   updatedAt: Date | null;
 }
 
+interface HeroInfo {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+}
+
 const STATUS_LABELS: Record<
   string,
-  { label: string; className: string }
+  { label: string; className: string; bg: string }
 > = {
-  draft: { label: "ฉบับร่าง", className: "text-text-muted" },
-  published: { label: "เผยแพร่", className: "text-green" },
-  archived: { label: "เก็บถาวร", className: "text-gold" },
+  draft: {
+    label: "ฉบับร่าง",
+    className: "text-text-muted",
+    bg: "bg-text-muted/10",
+  },
+  published: {
+    label: "เผยแพร่",
+    className: "text-green",
+    bg: "bg-green/10",
+  },
+  archived: {
+    label: "เก็บถาวร",
+    className: "text-gold",
+    bg: "bg-gold/10",
+  },
 };
 
 const PRIORITY_COLORS: Record<number, string> = {
@@ -49,15 +77,22 @@ const PRIORITY_COLORS: Record<number, string> = {
 
 export function GvgGuidesAdmin({
   initialGuides,
+  heroes,
 }: {
   initialGuides: Guide[];
+  heroes: HeroInfo[];
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteTarget, setDeleteTarget] = useState<Guide | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set(),
+  );
   const [isDeleting, startDelete] = useTransition();
   const [isUpdating, startUpdate] = useTransition();
+
+  const heroByName = (name: string) => heroes.find((h) => h.name === name);
 
   const filtered = initialGuides.filter((g) => {
     if (statusFilter !== "all" && g.status !== statusFilter) return false;
@@ -80,6 +115,26 @@ export function GvgGuidesAdmin({
     grouped.get(key)!.push(guide);
   }
 
+  function toggleGroup(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  function collapseAll() {
+    setCollapsedGroups(new Set(grouped.keys()));
+  }
+
+  function expandAll() {
+    setCollapsedGroups(new Set());
+  }
+
   function handleStatusChange(guide: Guide, newStatus: GuideStatus) {
     startUpdate(async () => {
       await updateGvgGuide(guide.id, { status: newStatus });
@@ -95,6 +150,9 @@ export function GvgGuidesAdmin({
       router.refresh();
     });
   }
+
+  const allCollapsed =
+    grouped.size > 0 && collapsedGroups.size === grouped.size;
 
   return (
     <div className="space-y-6">
@@ -161,131 +219,207 @@ export function GvgGuidesAdmin({
             : "ไม่พบคู่มือที่ตรงกับตัวกรอง"}
         </div>
       ) : (
-        <div className="space-y-6">
-          {Array.from(grouped.entries()).map(([defKey, groupGuides]) => (
-            <div key={defKey}>
-              {/* Defense team header */}
-              <div className="flex items-center gap-2 mb-2">
-                <span className="team-label-defense text-xs">
-                  ป้องกัน
-                </span>
-                <span className="text-sm font-medium text-text-primary">
-                  {groupGuides[0].defenseHeroes.join(" / ")}
-                </span>
-                <span className="text-xs text-text-muted">
-                  ({groupGuides.length} ตัวเลือกโจมตี)
-                </span>
-              </div>
+        <div className="space-y-4">
+          {/* Collapse/Expand controls */}
+          {grouped.size > 1 && (
+            <div className="flex justify-end">
+              <button
+                onClick={allCollapsed ? expandAll : collapseAll}
+                className="text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+              >
+                {allCollapsed ? "ขยายทั้งหมด" : "ย่อทั้งหมด"}
+              </button>
+            </div>
+          )}
 
-              <div className="space-y-2">
-                {groupGuides
-                  .sort((a, b) => a.attackPriority - b.attackPriority)
-                  .map((guide) => {
-                    const statusInfo =
-                      STATUS_LABELS[guide.status ?? "draft"];
-                    return (
-                      <div key={guide.id} className="war-card p-4">
-                        <div className="flex items-start gap-3">
-                          {/* Priority */}
+          {Array.from(grouped.entries()).map(([defKey, groupGuides]) => {
+            const isCollapsed = collapsedGroups.has(defKey);
+            const defHeroes = groupGuides[0].defenseHeroes;
+            const publishedCount = groupGuides.filter(
+              (g) => g.status === "published",
+            ).length;
+
+            return (
+              <div
+                key={defKey}
+                className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card overflow-hidden"
+              >
+                {/* Defense team group header — clickable to collapse */}
+                <button
+                  onClick={() => toggleGroup(defKey)}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-bg-elevated hover:bg-bg-card-hover transition-colors cursor-pointer"
+                >
+                  {/* Chevron */}
+                  {isCollapsed ? (
+                    <ChevronRight className="h-4 w-4 text-text-muted flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-text-muted flex-shrink-0" />
+                  )}
+
+                  {/* Defense label */}
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="h-3.5 w-3.5 text-cyan" />
+                    <span className="text-xs font-semibold text-cyan uppercase tracking-wider">
+                      ป้องกัน
+                    </span>
+                  </div>
+
+                  {/* Hero portraits */}
+                  <div className="flex items-center gap-2">
+                    {defHeroes.map((name) => (
+                      <div
+                        key={name}
+                        className="flex items-center gap-1.5"
+                      >
+                        <HeroPortrait
+                          hero={heroByName(name)}
+                          size={32}
+                          className="hero-portrait-defense"
+                        />
+                        <span className="text-sm text-text-primary hidden sm:inline">
+                          {name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Count badge */}
+                  <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                    {publishedCount > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green/10 text-green border border-green-dim">
+                        {publishedCount} เผยแพร่
+                      </span>
+                    )}
+                    <span className="text-xs text-text-muted">
+                      {groupGuides.length} ตัวเลือก
+                    </span>
+                  </div>
+                </button>
+
+                {/* Guides list — collapsible */}
+                {!isCollapsed && (
+                  <div className="divide-y divide-border-dim">
+                    {groupGuides
+                      .sort((a, b) => a.attackPriority - b.attackPriority)
+                      .map((guide) => {
+                        const statusInfo =
+                          STATUS_LABELS[guide.status ?? "draft"];
+                        return (
                           <div
-                            className="w-8 h-8 rounded-[var(--radius-sm)] flex items-center justify-center font-bold text-sm flex-shrink-0 font-display"
-                            style={{
-                              background: "var(--bg-elevated)",
-                              border: `1px solid ${PRIORITY_COLORS[guide.attackPriority] || "var(--border-default)"}`,
-                              color:
-                                PRIORITY_COLORS[guide.attackPriority] ||
-                                "var(--text-secondary)",
-                            }}
+                            key={guide.id}
+                            className="px-4 py-3 hover:bg-bg-card-hover/50 transition-colors"
                           >
-                            #{guide.attackPriority}
-                          </div>
+                            <div className="flex items-center gap-3">
+                              {/* Priority badge */}
+                              <div
+                                className="w-7 h-7 rounded-[var(--radius-sm)] flex items-center justify-center font-bold text-xs flex-shrink-0 font-display"
+                                style={{
+                                  background: "var(--bg-elevated)",
+                                  border: `1.5px solid ${PRIORITY_COLORS[guide.attackPriority] || "var(--border-default)"}`,
+                                  color:
+                                    PRIORITY_COLORS[guide.attackPriority] ||
+                                    "var(--text-secondary)",
+                                }}
+                              >
+                                #{guide.attackPriority}
+                              </div>
 
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm truncate mb-1 text-text-primary">
-                              {guide.title}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                              <span className="team-label-attack text-[10px]">
-                                โจมตี
-                              </span>
-                              <span>
-                                {guide.attackHeroes.join(", ")}
-                              </span>
-                              <span>|</span>
-                              <span className="patch-badge text-[10px]">
-                                {guide.patchVersion}
-                              </span>
-                              <span>|</span>
-                              <span className={statusInfo.className}>
-                                {statusInfo.label}
-                              </span>
-                              <span>|</span>
-                              <span>v{guide.version}</span>
+                              {/* Attack team portraits */}
+                              <div className="flex items-center gap-1.5">
+                                <Swords className="h-3 w-3 text-accent flex-shrink-0" />
+                                {guide.attackHeroes.map((name) => (
+                                  <HeroPortrait
+                                    key={name}
+                                    hero={heroByName(name)}
+                                    size={28}
+                                    className="hero-portrait-attack"
+                                  />
+                                ))}
+                              </div>
+
+                              {/* Guide info */}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm truncate text-text-primary">
+                                  {guide.title}
+                                </p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className="text-xs text-text-muted hidden sm:inline">
+                                    {guide.attackHeroes.join(", ")}
+                                  </span>
+                                  <span className="text-xs text-text-muted hidden sm:inline">
+                                    ·
+                                  </span>
+                                  <span className="patch-badge text-[10px]">
+                                    {guide.patchVersion}
+                                  </span>
+                                  <span
+                                    className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusInfo.bg} ${statusInfo.className}`}
+                                  >
+                                    {statusInfo.label}
+                                  </span>
+                                  <span className="text-[10px] text-text-muted">
+                                    v{guide.version}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {guide.status === "draft" && (
+                                  <button
+                                    onClick={() =>
+                                      handleStatusChange(guide, "published")
+                                    }
+                                    disabled={isUpdating}
+                                    className="px-2 py-1 rounded-[var(--radius-sm)] text-[11px] transition-colors cursor-pointer disabled:opacity-50 bg-green/10 border border-green-dim text-green hover:bg-green/20"
+                                  >
+                                    เผยแพร่
+                                  </button>
+                                )}
+                                {guide.status === "published" && (
+                                  <button
+                                    onClick={() =>
+                                      handleStatusChange(guide, "archived")
+                                    }
+                                    disabled={isUpdating}
+                                    className="px-2 py-1 rounded-[var(--radius-sm)] text-[11px] transition-colors cursor-pointer disabled:opacity-50 bg-bg-elevated border border-border-default text-text-muted hover:text-text-secondary"
+                                  >
+                                    เก็บถาวร
+                                  </button>
+                                )}
+                                {guide.status === "archived" && (
+                                  <button
+                                    onClick={() =>
+                                      handleStatusChange(guide, "draft")
+                                    }
+                                    disabled={isUpdating}
+                                    className="px-2 py-1 rounded-[var(--radius-sm)] text-[11px] transition-colors cursor-pointer disabled:opacity-50 bg-bg-elevated border border-border-default text-text-muted hover:text-text-secondary"
+                                  >
+                                    เปิดใหม่
+                                  </button>
+                                )}
+                                <Link
+                                  href={`/admin/gvg-guides/${guide.id}/edit`}
+                                  className="p-1.5 rounded-[var(--radius-sm)] text-text-muted hover:text-cyan hover:bg-cyan/10 transition-colors"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Link>
+                                <button
+                                  onClick={() => setDeleteTarget(guide)}
+                                  className="p-1.5 rounded-[var(--radius-sm)] text-text-muted hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
                           </div>
-
-                          {/* Actions */}
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            {guide.status === "draft" && (
-                              <button
-                                onClick={() =>
-                                  handleStatusChange(
-                                    guide,
-                                    "published",
-                                  )
-                                }
-                                disabled={isUpdating}
-                                className="px-2.5 py-1.5 rounded-[var(--radius-sm)] text-xs transition-colors cursor-pointer disabled:opacity-50 bg-green/10 border border-green-dim text-green"
-                              >
-                                เผยแพร่
-                              </button>
-                            )}
-                            {guide.status === "published" && (
-                              <button
-                                onClick={() =>
-                                  handleStatusChange(
-                                    guide,
-                                    "archived",
-                                  )
-                                }
-                                disabled={isUpdating}
-                                className="px-2.5 py-1.5 rounded-[var(--radius-sm)] text-xs transition-colors cursor-pointer disabled:opacity-50 bg-bg-elevated border border-border-default text-text-muted"
-                              >
-                                เก็บถาวร
-                              </button>
-                            )}
-                            {guide.status === "archived" && (
-                              <button
-                                onClick={() =>
-                                  handleStatusChange(guide, "draft")
-                                }
-                                disabled={isUpdating}
-                                className="px-2.5 py-1.5 rounded-[var(--radius-sm)] text-xs transition-colors cursor-pointer disabled:opacity-50 bg-bg-elevated border border-border-default text-text-muted"
-                              >
-                                เปิดใหม่
-                              </button>
-                            )}
-                            <Link
-                              href={`/admin/gvg-guides/${guide.id}/edit`}
-                              className="p-1.5 rounded-[var(--radius-sm)] text-text-muted hover:text-cyan hover:bg-cyan/10 transition-colors"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Link>
-                            <button
-                              onClick={() => setDeleteTarget(guide)}
-                              className="p-1.5 rounded-[var(--radius-sm)] text-text-muted hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
