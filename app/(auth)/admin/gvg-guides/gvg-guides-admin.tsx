@@ -15,6 +15,7 @@ import {
   Shield,
   Swords,
 } from "lucide-react";
+import { generatePageNumbers } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -78,24 +79,6 @@ const PRIORITY_COLORS: Record<number, string> = {
   3: "var(--bronze)",
 };
 
-function generatePageNumbers(
-  current: number,
-  total: number,
-): (number | "...")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | "...")[] = [1];
-  if (current > 3) pages.push("...");
-  for (
-    let i = Math.max(2, current - 1);
-    i <= Math.min(total - 1, current + 1);
-    i++
-  ) {
-    pages.push(i);
-  }
-  if (current < total - 2) pages.push("...");
-  pages.push(total);
-  return pages;
-}
 
 export function GvgGuidesAdmin({
   initialGuides,

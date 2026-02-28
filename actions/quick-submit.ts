@@ -138,15 +138,14 @@ export async function quickSubmitBattles(data: {
       return { error: "ไม่มีข้อมูลที่จะบันทึก" };
     }
 
-    // Batch insert (single query) and parallel updates (separate connections)
-    await Promise.all([
-      inserts.length > 0
-        ? db.insert(battles).values(inserts)
-        : null,
-      ...updates.map((u) =>
-        db.update(battles).set(u.values).where(eq(battles.id, u.id)),
-      ),
-    ]);
+    await db.transaction(async (tx) => {
+      if (inserts.length > 0) {
+        await tx.insert(battles).values(inserts);
+      }
+      for (const u of updates) {
+        await tx.update(battles).set(u.values).where(eq(battles.id, u.id));
+      }
+    });
 
     revalidatePath("/guild-war");
     return { success: true, updated: updates.length, inserted: inserts.length };

@@ -24,6 +24,7 @@ import {
   Gauge,
   User,
 } from "lucide-react";
+import { generatePageNumbers } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -279,18 +280,6 @@ function sortBattles(battles: Battle[], key: SortKey, dir: SortDir): Battle[] {
   return sorted;
 }
 
-function generatePageNumbers(current: number, total: number): (number | "...")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | "...")[] = [];
-  pages.push(1);
-  if (current > 3) pages.push("...");
-  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-    pages.push(i);
-  }
-  if (current < total - 2) pages.push("...");
-  pages.push(total);
-  return pages;
-}
 
 export function GuildWarShell({
   initialBattles,

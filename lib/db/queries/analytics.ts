@@ -844,11 +844,6 @@ export async function getCounterRecommendations(
   const sortedTargetIds = [...enemyHeroIds].sort();
   const targetKey = sortedTargetIds.join("|");
 
-  // Build a JSONB array of target hero IDs for SQL containment checks
-  const targetJsonb = JSON.stringify(
-    sortedTargetIds.map((id) => ({ heroId: id })),
-  );
-
   // Run DB queries and hero name resolution in parallel
   const [matchRows, heroMap] = await Promise.all([
     db.execute<{
@@ -882,7 +877,7 @@ export async function getCounterRecommendations(
           (
             SELECT count(*)
             FROM (SELECT elem->>'heroId' AS hero_id FROM jsonb_array_elements(b.enemy_team->'heroes') AS elem) sub
-            WHERE sub.hero_id = ANY(${sql.raw(`ARRAY[${sortedTargetIds.map((id) => `'${id}'`).join(",")}]::text[]`)})
+            WHERE sub.hero_id = ANY(${sortedTargetIds}::text[])
           ) AS overlap
         FROM battles b
         WHERE b.guild_id = ${guildId} AND b.date >= ${cutoff}

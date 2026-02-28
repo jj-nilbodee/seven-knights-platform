@@ -107,6 +107,8 @@ export async function deleteBattle(id: string) {
 }
 
 export async function getBattleContext(guildId: string, memberId: string, date: string) {
+  await requireOfficer();
+
   const [memberCount, enemyGuildName, enemyPlayerNames] = await Promise.all([
     memberId
       ? getMemberBattleCountForDate(guildId, memberId, date)

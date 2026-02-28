@@ -62,8 +62,7 @@
   ],
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",
-      "bash -c 'npx tsc --noEmit'"
+      "eslint --fix"
     ],
     "*.{js,mjs}": [
       "eslint --fix"

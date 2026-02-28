@@ -43,13 +43,17 @@ export async function register(formData: FormData) {
   const password = formData.get("password") as string;
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
   });
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (data.user) {
+    await ensurePublicUser(data.user.id, data.user.email ?? email);
   }
 
   redirect("/dashboard");

@@ -11,6 +11,7 @@ import {
   updateGuide as dbUpdateGuide,
   deleteGuide as dbDeleteGuide,
   getGuideById,
+  searchGuides,
 } from "@/lib/db/queries/gvg-guides";
 import { validateUUID, parseOrError } from "@/lib/action-helpers";
 
@@ -95,7 +96,6 @@ export async function reorderGuidePriority(
   if (!guide) return { error: "ไม่พบคู่มือ" };
 
   // Find all guides in the same defense group
-  const { searchGuides } = await import("@/lib/db/queries/gvg-guides");
   const allGuides = await searchGuides();
   const groupKey = (g: { defenseHeroes: string[] }) =>
     [...g.defenseHeroes].sort().join(",");

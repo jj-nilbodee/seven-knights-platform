@@ -256,7 +256,7 @@ export const gvgGuideVersions = pgTable(
     createdBy: uuid("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
-  (table) => [index("idx_guide_ver").on(table.guideId, table.version)],
+  (table) => [uniqueIndex("idx_guide_ver").on(table.guideId, table.version)],
 );
 
 // ============================================

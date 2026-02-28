@@ -102,7 +102,7 @@ export function AccessRequestsClient({
   function handleApprove(request: AccessRequest) {
     startApprove(async () => {
       const result = await approveAccessRequest(request.id);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success(`อนุมัติ ${request.email} สำเร็จ`);
@@ -115,7 +115,7 @@ export function AccessRequestsClient({
     if (!confirmAction || confirmAction.type !== "reject") return;
     startReject(async () => {
       const result = await rejectAccessRequest(confirmAction.request.id);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("ปฏิเสธคำขอสำเร็จ");
@@ -129,7 +129,7 @@ export function AccessRequestsClient({
     if (!confirmAction || confirmAction.type !== "revoke") return;
     startRevoke(async () => {
       const result = await revokeAccess(confirmAction.request.id);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("เพิกถอนสิทธิ์สำเร็จ");

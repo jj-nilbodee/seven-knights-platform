@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Swords, ArrowUpDown } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
-import { cn, winRateColor } from "@/lib/utils";
+import { cn, winRateColor, winRateBarBg } from "@/lib/utils";
 import type { EnemyGuildSummary } from "@/lib/db/queries/analytics";
 
 type SortField = "guildName" | "totalBattles" | "winRate" | "lastEncountered";
@@ -79,11 +79,7 @@ export function EnemyGuildTable({ guilds }: { guilds: EnemyGuildSummary[] }) {
                     <div
                       className={cn(
                         "h-full rounded-full",
-                        g.winRate >= 60
-                          ? "bg-green/30"
-                          : g.winRate >= 40
-                            ? "bg-gold/30"
-                            : "bg-accent/30",
+                        winRateBarBg(g.winRate),
                       )}
                       style={{ width: `${g.winRate}%` }}
                     />

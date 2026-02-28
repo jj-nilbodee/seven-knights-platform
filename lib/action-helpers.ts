@@ -3,10 +3,6 @@ import { uuidSchema } from "@/lib/validations/shared";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppUser } from "@/lib/auth";
 
-type ActionResult<T = undefined> = T extends undefined
-  ? { error: string } | { success: true }
-  : { error: string } | ({ success: true } & T);
-
 /**
  * Validate a UUID string. Returns error result if invalid.
  */
@@ -67,14 +63,17 @@ export function handleDbError(
 }
 
 /**
- * Sync user metadata to Supabase Auth (app_metadata cache) after DB write.
+ * Sync user metadata to Supabase Auth app_metadata after DB write.
+ * Merges with existing metadata to avoid overwriting unrelated fields.
  */
 export async function syncUserMetadata(
   userId: string,
   metadata: Record<string, unknown>,
 ): Promise<void> {
   const admin = createAdminClient();
+  const { data } = await admin.auth.admin.getUserById(userId);
+  const existing = data?.user?.app_metadata ?? {};
   await admin.auth.admin.updateUserById(userId, {
-    app_metadata: metadata,
+    app_metadata: { ...existing, ...metadata },
   });
 }

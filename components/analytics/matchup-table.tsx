@@ -3,16 +3,10 @@
 import { useState } from "react";
 import { Users, ArrowUpDown } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
-import { cn, winRateColor } from "@/lib/utils";
+import { cn, winRateColor, winRateBarBg } from "@/lib/utils";
 import type { HeroMatchup } from "@/lib/db/queries/analytics";
 
 type SortField = "winRate" | "total" | "alliedHeroName" | "enemyHeroName";
-
-function winRateBarColor(rate: number) {
-  if (rate >= 60) return "bg-green/30";
-  if (rate >= 40) return "bg-gold/30";
-  return "bg-accent/30";
-}
 
 export function MatchupTable({ matchups }: { matchups: HeroMatchup[] }) {
   const [sortField, setSortField] = useState<SortField>("winRate");
@@ -86,7 +80,7 @@ export function MatchupTable({ matchups }: { matchups: HeroMatchup[] }) {
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-16 rounded-full bg-bg-input overflow-hidden">
                     <div
-                      className={cn("h-full rounded-full", winRateBarColor(m.winRate))}
+                      className={cn("h-full rounded-full", winRateBarBg(m.winRate))}
                       style={{ width: `${m.winRate}%` }}
                     />
                   </div>

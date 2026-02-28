@@ -2,7 +2,7 @@
 
 import { Shield, CheckCircle, AlertTriangle } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
-import { cn, winRateColor } from "@/lib/utils";
+import { cn, winRateColor, winRateBarBg } from "@/lib/utils";
 import type {
   CounterRecommendationResult,
   CounterComposition,
@@ -27,11 +27,7 @@ function CounterCard({ counter }: { counter: CounterComposition }) {
           <div
             className={cn(
               "h-full rounded-full",
-              counter.winRate >= 60
-                ? "bg-green/40"
-                : counter.winRate >= 40
-                  ? "bg-gold/40"
-                  : "bg-accent/40",
+              winRateBarBg(counter.winRate),
             )}
             style={{ width: `${counter.winRate}%` }}
           />

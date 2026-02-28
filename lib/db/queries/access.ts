@@ -31,15 +31,20 @@ export async function listAccessRequests(
 
 export async function getAccessStats(guildId: string) {
   const rows = await db
-    .select({ status: memberAccess.status })
+    .select({
+      status: memberAccess.status,
+      count: sql<number>`count(*)::int`,
+    })
     .from(memberAccess)
-    .where(eq(memberAccess.guildId, guildId));
+    .where(eq(memberAccess.guildId, guildId))
+    .groupBy(memberAccess.status);
 
+  const counts = Object.fromEntries(rows.map((r) => [r.status, r.count]));
   return {
-    total: rows.length,
-    pending: rows.filter((r) => r.status === "pending").length,
-    approved: rows.filter((r) => r.status === "approved").length,
-    rejected: rows.filter((r) => r.status === "rejected").length,
+    total: (counts.pending ?? 0) + (counts.approved ?? 0) + (counts.rejected ?? 0),
+    pending: counts.pending ?? 0,
+    approved: counts.approved ?? 0,
+    rejected: counts.rejected ?? 0,
   };
 }
 
