@@ -9,8 +9,8 @@ export function HeroPortrait({
 }) {
   const style = {
     width: size,
-    height: size,
-    borderRadius: size * 0.25,
+    height: Math.round(size * 1.25),
+    borderRadius: size * 0.2,
   };
 
   if (!hero) {
