@@ -1,4 +1,4 @@
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { battles, battleHeroPairs, members, heroes } from "@/lib/db/schema";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
@@ -179,24 +179,42 @@ function compositionId(heroIds: string[]): string {
   return [...heroIds].sort().join("|");
 }
 
-const getHeroNameMap = cache(async (): Promise<Map<string, string>> => {
-  const rows = await db
-    .select({ id: heroes.id, name: heroes.name })
-    .from(heroes);
-  return new Map(rows.map((r) => [r.id, r.name]));
-});
+const getHeroNameRecord = unstable_cache(
+  async (): Promise<Record<string, string>> => {
+    const rows = await db
+      .select({ id: heroes.id, name: heroes.name })
+      .from(heroes);
+    return Object.fromEntries(rows.map((r) => [r.id, r.name]));
+  },
+  ["hero-name-map"],
+  { revalidate: 600, tags: ["heroes"] },
+);
 
-const getSkillLabelMap = cache(async (): Promise<Map<string, string>> => {
-  const rows = await db
-    .select({ skill1Id: heroes.skill1Id, skill2Id: heroes.skill2Id })
-    .from(heroes);
-  const map = new Map<string, string>();
-  for (const h of rows) {
-    if (h.skill1Id) map.set(h.skill1Id, "Skill 1 ล่าง");
-    if (h.skill2Id) map.set(h.skill2Id, "Skill 2 บน");
-  }
-  return map;
-});
+async function getHeroNameMap(): Promise<Map<string, string>> {
+  const obj = await getHeroNameRecord();
+  return new Map(Object.entries(obj));
+}
+
+const getSkillLabelRecord = unstable_cache(
+  async (): Promise<Record<string, string>> => {
+    const rows = await db
+      .select({ skill1Id: heroes.skill1Id, skill2Id: heroes.skill2Id })
+      .from(heroes);
+    const map: Record<string, string> = {};
+    for (const h of rows) {
+      if (h.skill1Id) map[h.skill1Id] = "Skill 1 ล่าง";
+      if (h.skill2Id) map[h.skill2Id] = "Skill 2 บน";
+    }
+    return map;
+  },
+  ["skill-label-map"],
+  { revalidate: 600, tags: ["heroes"] },
+);
+
+async function getSkillLabelMap(): Promise<Map<string, string>> {
+  const obj = await getSkillLabelRecord();
+  return new Map(Object.entries(obj));
+}
 
 // ============================================
 // 1. Dashboard KPIs
@@ -989,3 +1007,56 @@ export async function getCounterRecommendations(
 
   return { exactMatch, similarCompositions, recommendedCounters };
 }
+
+// ============================================
+// Cached variants for page-level use
+// ============================================
+
+export const getWinRateTrendCached = (guildId: string, days: number) =>
+  unstable_cache(
+    () => getWinRateTrend(guildId, days),
+    ["win-rate-trend", guildId, String(days)],
+    { revalidate: 120, tags: [`battles-${guildId}`] },
+  )();
+
+export const getHeroUsageCached = (guildId: string, days: number, limit: number) =>
+  unstable_cache(
+    () => getHeroUsage(guildId, days, limit),
+    ["hero-usage", guildId, String(days), String(limit)],
+    { revalidate: 120, tags: [`battles-${guildId}`] },
+  )();
+
+export const getHeroMatchupsCached = (guildId: string, days: number, minBattles: number) =>
+  unstable_cache(
+    () => getHeroMatchups(guildId, days, minBattles),
+    ["hero-matchups", guildId, String(days), String(minBattles)],
+    { revalidate: 120, tags: [`battles-${guildId}`] },
+  )();
+
+export const getSkillOrderImpactCached = (guildId: string, days: number) =>
+  unstable_cache(
+    () => getSkillOrderImpact(guildId, days),
+    ["skill-order", guildId, String(days)],
+    { revalidate: 120, tags: [`battles-${guildId}`] },
+  )();
+
+export const getSpeedAnalysisCached = (guildId: string, days: number) =>
+  unstable_cache(
+    () => getSpeedAnalysis(guildId, days),
+    ["speed-analysis", guildId, String(days)],
+    { revalidate: 120, tags: [`battles-${guildId}`] },
+  )();
+
+export const getMemberPerformanceCached = (guildId: string, days: number) =>
+  unstable_cache(
+    () => getMemberPerformance(guildId, days),
+    ["member-performance", guildId, String(days)],
+    { revalidate: 120, tags: [`battles-${guildId}`] },
+  )();
+
+export const getEnemyGuildsCached = (guildId: string, days: number) =>
+  unstable_cache(
+    () => getEnemyGuilds(guildId, days),
+    ["enemy-guilds", guildId, String(days)],
+    { revalidate: 120, tags: [`battles-${guildId}`] },
+  )();

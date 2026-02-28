@@ -1,7 +1,7 @@
 "use server";
 
 import { requireOfficer } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import {
   memberCreateSchema,
   memberUpdateSchema,
@@ -34,6 +34,7 @@ export async function createMember(formData: FormData, overrideGuildId?: string)
   }
 
   revalidatePath("/roster");
+  updateTag(`members-${guild.guildId}`);
   return { success: true };
 }
 
@@ -72,6 +73,7 @@ export async function updateMember(id: string, formData: FormData) {
   }
 
   revalidatePath("/roster");
+  updateTag(`members-${existing.guildId}`);
   return { success: true };
 }
 
@@ -97,6 +99,7 @@ export async function bulkAddMembers(input: string, overrideGuildId?: string) {
   try {
     const result = await bulkCreateMembers(guild.guildId, parsed.data.entries);
     revalidatePath("/roster");
+    updateTag(`members-${guild.guildId}`);
     return { success: true, ...result };
   } catch {
     return { error: "ไม่สามารถนำเข้าสมาชิกได้" };

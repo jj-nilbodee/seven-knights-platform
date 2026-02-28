@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { members } from "@/lib/db/schema";
 import { eq, and, asc, sql } from "drizzle-orm";
@@ -15,6 +16,13 @@ export async function listMembers(guildId: string, includeInactive = false) {
     .where(and(...conditions))
     .orderBy(asc(members.ign));
 }
+
+export const listMembersCached = (guildId: string) =>
+  unstable_cache(
+    () => listMembers(guildId),
+    ["members", guildId],
+    { revalidate: 300, tags: [`members-${guildId}`] },
+  )();
 
 export async function getMemberById(id: string) {
   const [member] = await db

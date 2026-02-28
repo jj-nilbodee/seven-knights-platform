@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import {
   heroCreateSchema,
   heroUpdateSchema,
@@ -38,6 +38,7 @@ export async function createHero(formData: FormData) {
   }
 
   revalidatePath("/admin/heroes");
+  updateTag("heroes");
   return { success: true };
 }
 
@@ -70,6 +71,7 @@ export async function updateHero(id: string, formData: FormData) {
   }
 
   revalidatePath("/admin/heroes");
+  updateTag("heroes");
   return { success: true };
 }
 
@@ -83,6 +85,7 @@ export async function deleteHero(id: string) {
   if (!hero) return { error: "ไม่พบฮีโร่" };
 
   revalidatePath("/admin/heroes");
+  updateTag("heroes");
   return { success: true };
 }
 
@@ -100,6 +103,7 @@ export async function bulkAddHeroes(input: string) {
   try {
     const result = await bulkCreateHeroes(parsed.data.names);
     revalidatePath("/admin/heroes");
+    updateTag("heroes");
     return { success: true, ...result };
   } catch {
     return { error: "ไม่สามารถนำเข้าฮีโร่ได้" };

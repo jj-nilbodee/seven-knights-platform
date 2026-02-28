@@ -1,7 +1,7 @@
 "use server";
 
 import { requireOfficer } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import {
   battleCreateSchema,
   battleUpdateSchema,
@@ -14,6 +14,8 @@ import {
   getMemberBattleCountForDate,
   getEnemyGuildNameForDate,
   getEnemyPlayerNamesForDate,
+  getHeroCooccurrence,
+  getSkillSequenceHistory,
 } from "@/lib/db/queries/battles";
 import { validateUUID, parseOrError, ensureGuildContext } from "@/lib/action-helpers";
 
@@ -46,6 +48,7 @@ export async function createBattle(data: {
   try {
     const battle = await dbCreateBattle(parsed.data);
     revalidatePath("/guild-war");
+    updateTag(`battles-${guild.guildId}`);
     return { success: true, battleId: battle.id };
   } catch {
     return { error: "ไม่สามารถบันทึกการต่อสู้ได้" };
@@ -81,6 +84,7 @@ export async function updateBattle(id: string, data: {
     const battle = await dbUpdateBattle(id, parsed.data);
     if (!battle) return { error: "ไม่พบข้อมูลการต่อสู้" };
     revalidatePath("/guild-war");
+    updateTag(`battles-${existing.guildId}`);
     return { success: true };
   } catch {
     return { error: "ไม่สามารถอัปเดตการต่อสู้ได้" };
@@ -100,6 +104,7 @@ export async function deleteBattle(id: string) {
   try {
     await dbDeleteBattle(id);
     revalidatePath("/guild-war");
+    updateTag(`battles-${existing.guildId}`);
     return { success: true };
   } catch {
     return { error: "ไม่สามารถลบการต่อสู้ได้" };
@@ -122,4 +127,14 @@ export async function getBattleContext(guildId: string, memberId: string, date: 
     enemyGuildName,
     enemyPlayerNames,
   };
+}
+
+export async function fetchSuggestionData(guildId: string) {
+  await requireOfficer();
+
+  const [heroCooccurrence, skillSequenceHistory] = await Promise.all([
+    getHeroCooccurrence(guildId),
+    getSkillSequenceHistory(guildId),
+  ]);
+  return { heroCooccurrence, skillSequenceHistory };
 }

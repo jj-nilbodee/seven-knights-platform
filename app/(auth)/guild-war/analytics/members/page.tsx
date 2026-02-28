@@ -1,7 +1,34 @@
+import { Suspense } from "react";
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
-import { getMemberPerformance } from "@/lib/db/queries/analytics";
+import { getMemberPerformanceCached } from "@/lib/db/queries/analytics";
 import { MemberPerformanceTable } from "@/components/analytics/member-performance-table";
 import { PeriodSelector } from "@/components/analytics/period-selector";
+
+async function MemberData({ guildId, days }: { guildId: string; days: number }) {
+  const members = await getMemberPerformanceCached(guildId, days);
+
+  return (
+    <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-5">
+      <p className="text-xs text-text-muted mb-4">
+        สถิติรายบุคคล รวมถึงอัตราบุก/รับ จัดทัพที่ใช้บ่อย และแนวโน้ม
+      </p>
+      <MemberPerformanceTable members={members} />
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-5">
+      <div className="h-3 w-64 animate-pulse rounded bg-bg-elevated mb-4" />
+      <div className="space-y-3">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="h-8 animate-pulse rounded bg-bg-elevated" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default async function MembersPage({
   searchParams,
@@ -19,9 +46,6 @@ export default async function MembersPage({
       </div>
     );
   }
-  const { guildId } = result;
-
-  const members = await getMemberPerformance(guildId, days);
 
   return (
     <div className="space-y-6">
@@ -30,12 +54,9 @@ export default async function MembersPage({
         <PeriodSelector currentDays={days} />
       </div>
 
-      <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-5">
-        <p className="text-xs text-text-muted mb-4">
-          สถิติรายบุคคล รวมถึงอัตราบุก/รับ จัดทัพที่ใช้บ่อย และแนวโน้ม
-        </p>
-        <MemberPerformanceTable members={members} />
-      </div>
+      <Suspense fallback={<TableSkeleton />}>
+        <MemberData guildId={result.guildId} days={days} />
+      </Suspense>
     </div>
   );
 }

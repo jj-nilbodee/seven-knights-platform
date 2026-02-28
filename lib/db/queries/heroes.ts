@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { heroes } from "@/lib/db/schema";
 import { eq, and, sql, asc } from "drizzle-orm";
@@ -64,6 +65,12 @@ export async function deleteHero(id: string) {
     .returning({ id: heroes.id });
   return hero ?? null;
 }
+
+export const listActiveHeroesCached = unstable_cache(
+  () => listHeroes({ isActive: true }),
+  ["active-heroes"],
+  { revalidate: 300, tags: ["heroes"] },
+);
 
 export async function bulkCreateHeroes(names: string[]) {
   // Deduplicate

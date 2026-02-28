@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { battles, members } from "@/lib/db/schema";
 import { eq, and, desc, gte, lte, sql, inArray } from "drizzle-orm";
@@ -351,6 +352,73 @@ export async function getBattleStats(guildId: string) {
     losses: row?.losses ?? 0,
     winRate: row && row.total > 0 ? Math.round((row.wins / row.total) * 100) : 0,
   };
+}
+
+export const getBattleStatsCached = (guildId: string) =>
+  unstable_cache(
+    () => getBattleStats(guildId),
+    ["battle-stats", guildId],
+    { revalidate: 60, tags: [`battles-${guildId}`] },
+  )();
+
+export async function listBattlesWithCount(guildId: string, filters: BattleFilters = {}) {
+  const conditions = [eq(battles.guildId, guildId)];
+
+  if (filters.memberIds && filters.memberIds.length > 0) {
+    conditions.push(inArray(battles.memberId, filters.memberIds));
+  } else if (filters.memberId) {
+    conditions.push(eq(battles.memberId, filters.memberId));
+  }
+  if (filters.date) {
+    conditions.push(eq(battles.date, filters.date));
+  }
+  if (filters.dateFrom) {
+    conditions.push(gte(battles.date, filters.dateFrom));
+  }
+  if (filters.dateTo) {
+    conditions.push(lte(battles.date, filters.dateTo));
+  }
+  if (filters.result) {
+    conditions.push(eq(battles.result, filters.result));
+  }
+  if (filters.weekday) {
+    conditions.push(eq(battles.weekday, filters.weekday));
+  }
+
+  const limit = filters.limit ?? 50;
+  const offset = filters.offset ?? 0;
+
+  const rows = await db
+    .select({
+      id: battles.id,
+      guildId: battles.guildId,
+      memberId: battles.memberId,
+      memberIgn: members.ign,
+      date: battles.date,
+      weekday: battles.weekday,
+      battleType: battles.battleType,
+      result: battles.result,
+      enemyGuildName: battles.enemyGuildName,
+      enemyPlayerName: battles.enemyPlayerName,
+      alliedTeam: battles.alliedTeam,
+      enemyTeam: battles.enemyTeam,
+      firstTurn: battles.firstTurn,
+      submittedByUserId: battles.submittedByUserId,
+      createdAt: battles.createdAt,
+      updatedAt: battles.updatedAt,
+      totalCount: sql<number>`count(*) over()::int`,
+    })
+    .from(battles)
+    .leftJoin(members, eq(battles.memberId, members.id))
+    .where(and(...conditions))
+    .orderBy(desc(battles.date), desc(battles.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const totalCount = rows.length > 0 ? rows[0].totalCount : 0;
+  const battleRows = rows.map(({ totalCount: _, ...rest }) => rest);
+
+  return { battles: battleRows, totalCount };
 }
 
 export async function getLatestBattleDate(guildId: string): Promise<string | null> {

@@ -22,7 +22,7 @@ import type {
   SkillSequenceItem,
 } from "@/components/guild-war/index";
 import { initialTeamState } from "@/components/guild-war/index";
-import { createBattle, updateBattle, getBattleContext } from "@/actions/battles";
+import { createBattle, updateBattle, getBattleContext, fetchSuggestionData } from "@/actions/battles";
 import { getLatestGuildWarDate } from "@/lib/validations/battle";
 
 type Member = {
@@ -590,19 +590,35 @@ export function BattleSubmitClient({
   heroes,
   guildId,
   initialBattle,
-  heroCooccurrence,
-  skillSequenceHistory,
+  heroCooccurrence: initialCooccurrence,
+  skillSequenceHistory: initialSkillHistory,
 }: {
   members: Member[];
   heroes: HeroData[];
   guildId: string;
   initialBattle?: InitialBattle;
-  heroCooccurrence?: Record<string, string[]>;
-  skillSequenceHistory?: SkillSequenceHistoryMap;
+  heroCooccurrence?: Record<string, string[]> | null;
+  skillSequenceHistory?: SkillSequenceHistoryMap | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const isEditMode = !!initialBattle;
+
+  // Suggestion data — provided server-side (edit mode) or fetched client-side (submit mode)
+  const [heroCooccurrence, setHeroCooccurrence] = useState<Record<string, string[]> | undefined>(
+    initialCooccurrence ?? undefined,
+  );
+  const [skillSequenceHistory, setSkillSequenceHistory] = useState<SkillSequenceHistoryMap | undefined>(
+    initialSkillHistory ?? undefined,
+  );
+
+  useEffect(() => {
+    if (initialCooccurrence != null && initialSkillHistory != null) return;
+    fetchSuggestionData(guildId).then((data) => {
+      if (!initialCooccurrence) setHeroCooccurrence(data.heroCooccurrence);
+      if (!initialSkillHistory) setSkillSequenceHistory(data.skillSequenceHistory);
+    });
+  }, [guildId, initialCooccurrence, initialSkillHistory]);
 
   // Form state
   const [memberId, setMemberId] = useState(initialBattle?.memberId ?? "");

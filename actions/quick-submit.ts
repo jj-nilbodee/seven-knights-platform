@@ -1,7 +1,7 @@
 "use server";
 
 import { requireOfficer } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { db } from "@/lib/db";
 import { battles } from "@/lib/db/schema";
 import { quickSubmitSchema } from "@/lib/validations/quick-submit";
@@ -148,6 +148,7 @@ export async function quickSubmitBattles(data: {
     });
 
     revalidatePath("/guild-war");
+    updateTag(`battles-${guild.guildId}`);
     return { success: true, updated: updates.length, inserted: inserts.length };
   } catch (err: unknown) {
     console.error("Quick submit error:", err);

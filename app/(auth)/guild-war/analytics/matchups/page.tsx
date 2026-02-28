@@ -1,7 +1,34 @@
+import { Suspense } from "react";
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
-import { getHeroMatchups } from "@/lib/db/queries/analytics";
+import { getHeroMatchupsCached } from "@/lib/db/queries/analytics";
 import { MatchupTable } from "@/components/analytics/matchup-table";
 import { PeriodSelector } from "@/components/analytics/period-selector";
+
+async function MatchupData({ guildId, days }: { guildId: string; days: number }) {
+  const matchups = await getHeroMatchupsCached(guildId, days, 3);
+
+  return (
+    <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-5">
+      <p className="text-xs text-text-muted mb-4">
+        อัตราชนะเมื่อฮีโร่ฝ่ายเราเจอกับฮีโร่ศัตรู (ขั้นต่ำ 3 ครั้ง)
+      </p>
+      <MatchupTable matchups={matchups} />
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-5">
+      <div className="h-3 w-64 animate-pulse rounded bg-bg-elevated mb-4" />
+      <div className="space-y-3">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="h-8 animate-pulse rounded bg-bg-elevated" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default async function MatchupsPage({
   searchParams,
@@ -19,9 +46,6 @@ export default async function MatchupsPage({
       </div>
     );
   }
-  const { guildId } = result;
-
-  const matchups = await getHeroMatchups(guildId, days, 3);
 
   return (
     <div className="space-y-6">
@@ -30,12 +54,9 @@ export default async function MatchupsPage({
         <PeriodSelector currentDays={days} />
       </div>
 
-      <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-5">
-        <p className="text-xs text-text-muted mb-4">
-          อัตราชนะเมื่อฮีโร่ฝ่ายเราเจอกับฮีโร่ศัตรู (ขั้นต่ำ 3 ครั้ง)
-        </p>
-        <MatchupTable matchups={matchups} />
-      </div>
+      <Suspense fallback={<TableSkeleton />}>
+        <MatchupData guildId={result.guildId} days={days} />
+      </Suspense>
     </div>
   );
 }
