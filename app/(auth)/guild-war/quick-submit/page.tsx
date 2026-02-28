@@ -1,5 +1,5 @@
 import { requireGuild, NO_GUILD_MESSAGE } from "@/lib/auth";
-import { listMembers } from "@/lib/db/queries/members";
+import { listMembersCached } from "@/lib/db/queries/members";
 import { getEnemyGuildNameForDate } from "@/lib/db/queries/battles";
 import { getLatestGuildWarDate } from "@/lib/validations/battle";
 import { QuickSubmitClient } from "./quick-submit-client";
@@ -23,7 +23,7 @@ export default async function QuickSubmitPage({
   const defaultDate = getLatestGuildWarDate();
 
   const [members, initialEnemyGuildName] = await Promise.all([
-    listMembers(guild.guildId),
+    listMembersCached(guild.guildId),
     getEnemyGuildNameForDate(guild.guildId, defaultDate),
   ]);
 
