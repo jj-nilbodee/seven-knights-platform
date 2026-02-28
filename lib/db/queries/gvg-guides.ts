@@ -7,9 +7,12 @@ import type { GuideCreate, GuideUpdate } from "@/lib/validations/guide";
 export interface GuideSearchFilters {
   defenseHeroes?: string[];
   status?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
 }
 
-export async function searchGuides(filters: GuideSearchFilters = {}) {
+function buildWhereConditions(filters: GuideSearchFilters) {
   const conditions = [];
 
   if (filters.status) {
@@ -17,7 +20,6 @@ export async function searchGuides(filters: GuideSearchFilters = {}) {
   }
 
   if (filters.defenseHeroes && filters.defenseHeroes.length > 0) {
-    // PostgreSQL array containment: defense_heroes @> ARRAY[...]
     conditions.push(
       sql`${gvgGuides.defenseHeroes} @> ARRAY[${sql.join(
         filters.defenseHeroes.map((h) => sql`${h}`),
@@ -26,13 +28,43 @@ export async function searchGuides(filters: GuideSearchFilters = {}) {
     );
   }
 
-  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  if (filters.search) {
+    const term = `%${filters.search}%`;
+    conditions.push(
+      sql`(
+        ${gvgGuides.title} ILIKE ${term}
+        OR EXISTS (SELECT 1 FROM unnest(${gvgGuides.defenseHeroes}) h WHERE h ILIKE ${term})
+        OR EXISTS (SELECT 1 FROM unnest(${gvgGuides.attackHeroes}) h WHERE h ILIKE ${term})
+      )`,
+    );
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+export async function searchGuides(filters: GuideSearchFilters = {}) {
+  const where = buildWhereConditions(filters);
+  const limit = filters.limit ?? 500;
+  const offset = filters.offset ?? 0;
 
   return db
     .select()
     .from(gvgGuides)
     .where(where)
-    .orderBy(asc(gvgGuides.attackPriority), desc(gvgGuides.updatedAt));
+    .orderBy(asc(gvgGuides.attackPriority), desc(gvgGuides.updatedAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function countGuides(filters: GuideSearchFilters = {}) {
+  const where = buildWhereConditions(filters);
+
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(gvgGuides)
+    .where(where);
+
+  return row?.count ?? 0;
 }
 
 export const getGuideById = cache(async (id: string) => {

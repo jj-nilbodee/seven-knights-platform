@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Plus,
@@ -9,6 +9,7 @@ import {
   Trash2,
   Pencil,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ChevronUp,
   Shield,
@@ -77,41 +78,66 @@ const PRIORITY_COLORS: Record<number, string> = {
   3: "var(--bronze)",
 };
 
+function generatePageNumbers(
+  current: number,
+  total: number,
+): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  if (current > 3) pages.push("...");
+  for (
+    let i = Math.max(2, current - 1);
+    i <= Math.min(total - 1, current + 1);
+    i++
+  ) {
+    pages.push(i);
+  }
+  if (current < total - 2) pages.push("...");
+  pages.push(total);
+  return pages;
+}
+
 export function GvgGuidesAdmin({
   initialGuides,
   heroes,
+  pagination,
 }: {
   initialGuides: Guide[];
   heroes: HeroInfo[];
+  pagination: { page: number; totalPages: number; totalCount: number };
 }) {
   const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [deleteTarget, setDeleteTarget] = useState<Guide | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     new Set(),
   );
   const [isDeleting, startDelete] = useTransition();
   const [isUpdating, startUpdate] = useTransition();
+  const [isNavigating, startNavigating] = useTransition();
+
+  const currentSearch = searchParams.get("search") ?? "";
+  const currentStatus = searchParams.get("status") ?? "all";
 
   const heroByName = (name: string) => heroes.find((h) => h.name === name);
 
-  const filtered = initialGuides.filter((g) => {
-    if (statusFilter !== "all" && g.status !== statusFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (
-        g.title.toLowerCase().includes(q) ||
-        g.defenseHeroes.some((h) => h.toLowerCase().includes(q)) ||
-        g.attackHeroes.some((h) => h.toLowerCase().includes(q))
-      );
+  function setFilter(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (!value || value === "all") {
+      params.delete(key);
+    } else {
+      params.set(key, value);
     }
-    return true;
-  });
+    params.delete("page");
+    startNavigating(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
+  }
 
   // Group by defense team
   const grouped = new Map<string, Guide[]>();
-  for (const guide of filtered) {
+  for (const guide of initialGuides) {
     const key = [...guide.defenseHeroes].sort().join(",");
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(guide);
@@ -160,6 +186,16 @@ export function GvgGuidesAdmin({
     });
   }
 
+  function goToPage(page: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (page <= 1) {
+      params.delete("page");
+    } else {
+      params.set("page", String(page));
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
   const allCollapsed =
     grouped.size > 0 && collapsedGroups.size === grouped.size;
 
@@ -186,15 +222,22 @@ export function GvgGuidesAdmin({
       {/* Filters */}
       <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-4">
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+          <form
+            className="relative flex-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              setFilter("search", fd.get("search") as string);
+            }}
+          >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
             <Input
+              name="search"
               placeholder="ค้นหาชื่อคู่มือหรือฮีโร่..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              defaultValue={currentSearch}
               className="pl-9"
             />
-          </div>
+          </form>
           <div className="flex gap-1.5">
             {(
               [
@@ -206,9 +249,10 @@ export function GvgGuidesAdmin({
             ).map((s) => (
               <button
                 key={s.value}
-                onClick={() => setStatusFilter(s.value)}
+                onClick={() => setFilter("status", s.value)}
+                disabled={isNavigating}
                 className={`px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-medium transition-all cursor-pointer border ${
-                  statusFilter === s.value
+                  currentStatus === s.value
                     ? "bg-bg-card-hover border-border-bright text-text-primary"
                     : "bg-bg-input border-border-dim text-text-muted"
                 }`}
@@ -221,11 +265,11 @@ export function GvgGuidesAdmin({
       </div>
 
       {/* Content */}
-      {filtered.length === 0 ? (
+      {initialGuides.length === 0 ? (
         <div className="flex items-center justify-center h-40 text-text-muted bg-bg-input/30 rounded-[var(--radius-md)] border border-border-dim border-dashed">
-          {initialGuides.length === 0
-            ? 'ยังไม่มีคู่มือ — คลิก "สร้างคู่มือ" เพื่อเริ่มต้น'
-            : "ไม่พบคู่มือที่ตรงกับตัวกรอง"}
+          {currentSearch || currentStatus !== "all"
+            ? "ไม่พบคู่มือที่ตรงกับตัวกรอง"
+            : 'ยังไม่มีคู่มือ — คลิก "สร้างคู่มือ" เพื่อเริ่มต้น'}
         </div>
       ) : (
         <div className="space-y-4">
@@ -446,6 +490,54 @@ export function GvgGuidesAdmin({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-text-muted">
+            หน้า {pagination.page} จาก {pagination.totalPages} ({pagination.totalCount} คู่มือ)
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page <= 1}
+              onClick={() => goToPage(pagination.page - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {generatePageNumbers(pagination.page, pagination.totalPages).map(
+              (p, i) =>
+                p === "..." ? (
+                  <span
+                    key={`ellipsis-${i}`}
+                    className="px-2 text-sm text-text-muted"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <Button
+                    key={p}
+                    variant={p === pagination.page ? "default" : "outline"}
+                    size="sm"
+                    className="min-w-[36px]"
+                    onClick={() => goToPage(p as number)}
+                  >
+                    {p}
+                  </Button>
+                ),
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => goToPage(pagination.page + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
