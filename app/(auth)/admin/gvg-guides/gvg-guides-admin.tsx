@@ -282,7 +282,7 @@ export function GvgGuidesAdmin({
                       >
                         <HeroPortrait
                           hero={heroByName(name)}
-                          size={38}
+                          size={42}
                           className="hero-portrait-defense"
                         />
                         <span className="text-sm text-text-primary hidden sm:inline">
@@ -363,7 +363,7 @@ export function GvgGuidesAdmin({
                                   <HeroPortrait
                                     key={name}
                                     hero={heroByName(name)}
-                                    size={34}
+                                    size={38}
                                     className="hero-portrait-attack"
                                   />
                                 ))}
@@ -372,15 +372,9 @@ export function GvgGuidesAdmin({
                               {/* Guide info */}
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-sm truncate text-text-primary">
-                                  {guide.title}
+                                  {guide.attackHeroes.join(", ")}
                                 </p>
                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                  <span className="text-xs text-text-muted hidden sm:inline">
-                                    {guide.attackHeroes.join(", ")}
-                                  </span>
-                                  <span className="text-xs text-text-muted hidden sm:inline">
-                                    ·
-                                  </span>
                                   <span className="patch-badge text-[10px]">
                                     {guide.patchVersion}
                                   </span>
