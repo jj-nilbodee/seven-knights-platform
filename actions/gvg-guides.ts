@@ -82,6 +82,52 @@ export async function updateGvgGuide(
   }
 }
 
+export async function reorderGuidePriority(
+  guideId: string,
+  direction: "up" | "down",
+) {
+  await requireAdmin();
+
+  const invalid = validateUUID(guideId);
+  if (invalid) return invalid;
+
+  const guide = await getGuideById(guideId);
+  if (!guide) return { error: "ไม่พบคู่มือ" };
+
+  // Find all guides in the same defense group
+  const { searchGuides } = await import("@/lib/db/queries/gvg-guides");
+  const allGuides = await searchGuides();
+  const groupKey = (g: { defenseHeroes: string[] }) =>
+    [...g.defenseHeroes].sort().join(",");
+  const thisKey = groupKey(guide);
+  const siblings = allGuides
+    .filter((g) => groupKey(g) === thisKey)
+    .sort((a, b) => a.attackPriority - b.attackPriority);
+
+  const currentIndex = siblings.findIndex((g) => g.id === guideId);
+  if (currentIndex === -1) return { error: "ไม่พบคู่มือในกลุ่ม" };
+
+  const swapIndex =
+    direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  if (swapIndex < 0 || swapIndex >= siblings.length) {
+    return { success: true }; // Already at boundary
+  }
+
+  const current = siblings[currentIndex];
+  const swap = siblings[swapIndex];
+
+  try {
+    // Swap priorities
+    await dbUpdateGuide(current.id, { attackPriority: swap.attackPriority });
+    await dbUpdateGuide(swap.id, { attackPriority: current.attackPriority });
+    revalidatePath("/gvg-guides");
+    revalidatePath("/admin/gvg-guides");
+    return { success: true };
+  } catch {
+    return { error: "ไม่สามารถเปลี่ยนลำดับได้" };
+  }
+}
+
 export async function deleteGvgGuide(id: string) {
   await requireAdmin();
 

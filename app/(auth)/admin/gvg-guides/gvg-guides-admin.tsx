@@ -10,6 +10,7 @@ import {
   Pencil,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Shield,
   Swords,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { HeroPortrait } from "@/components/ui/hero-portrait";
 import {
   updateGvgGuide,
   deleteGvgGuide,
+  reorderGuidePriority,
 } from "@/actions/gvg-guides";
 import type { GuideStatus } from "@/lib/validations/guide";
 
@@ -138,6 +140,13 @@ export function GvgGuidesAdmin({
   function handleStatusChange(guide: Guide, newStatus: GuideStatus) {
     startUpdate(async () => {
       await updateGvgGuide(guide.id, { status: newStatus });
+      router.refresh();
+    });
+  }
+
+  function handleReorder(guideId: string, direction: "up" | "down") {
+    startUpdate(async () => {
+      await reorderGuidePriority(guideId, direction);
       router.refresh();
     });
   }
@@ -273,7 +282,7 @@ export function GvgGuidesAdmin({
                       >
                         <HeroPortrait
                           hero={heroByName(name)}
-                          size={32}
+                          size={38}
                           className="hero-portrait-defense"
                         />
                         <span className="text-sm text-text-primary hidden sm:inline">
@@ -301,7 +310,10 @@ export function GvgGuidesAdmin({
                   <div className="divide-y divide-border-dim">
                     {groupGuides
                       .sort((a, b) => a.attackPriority - b.attackPriority)
-                      .map((guide) => {
+                      .map((guide, index) => {
+                        const displayPriority = index + 1;
+                        const isFirst = index === 0;
+                        const isLast = index === groupGuides.length - 1;
                         const statusInfo =
                           STATUS_LABELS[guide.status ?? "draft"];
                         return (
@@ -310,18 +322,38 @@ export function GvgGuidesAdmin({
                             className="px-4 py-3 hover:bg-bg-card-hover/50 transition-colors"
                           >
                             <div className="flex items-center gap-3">
-                              {/* Priority badge */}
-                              <div
-                                className="w-7 h-7 rounded-[var(--radius-sm)] flex items-center justify-center font-bold text-xs flex-shrink-0 font-display"
-                                style={{
-                                  background: "var(--bg-elevated)",
-                                  border: `1.5px solid ${PRIORITY_COLORS[guide.attackPriority] || "var(--border-default)"}`,
-                                  color:
-                                    PRIORITY_COLORS[guide.attackPriority] ||
-                                    "var(--text-secondary)",
-                                }}
-                              >
-                                #{guide.attackPriority}
+                              {/* Priority badge + reorder */}
+                              <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                                <button
+                                  onClick={() =>
+                                    handleReorder(guide.id, "up")
+                                  }
+                                  disabled={isFirst || isUpdating}
+                                  className="p-0.5 rounded text-text-muted hover:text-text-primary disabled:opacity-20 disabled:cursor-default cursor-pointer transition-colors"
+                                >
+                                  <ChevronUp className="h-3 w-3" />
+                                </button>
+                                <div
+                                  className="w-7 h-7 rounded-[var(--radius-sm)] flex items-center justify-center font-bold text-xs font-display"
+                                  style={{
+                                    background: "var(--bg-elevated)",
+                                    border: `1.5px solid ${PRIORITY_COLORS[displayPriority] || "var(--border-default)"}`,
+                                    color:
+                                      PRIORITY_COLORS[displayPriority] ||
+                                      "var(--text-secondary)",
+                                  }}
+                                >
+                                  #{displayPriority}
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    handleReorder(guide.id, "down")
+                                  }
+                                  disabled={isLast || isUpdating}
+                                  className="p-0.5 rounded text-text-muted hover:text-text-primary disabled:opacity-20 disabled:cursor-default cursor-pointer transition-colors"
+                                >
+                                  <ChevronDown className="h-3 w-3" />
+                                </button>
                               </div>
 
                               {/* Attack team portraits */}
@@ -331,7 +363,7 @@ export function GvgGuidesAdmin({
                                   <HeroPortrait
                                     key={name}
                                     hero={heroByName(name)}
-                                    size={28}
+                                    size={34}
                                     className="hero-portrait-attack"
                                   />
                                 ))}

@@ -242,7 +242,7 @@ body {
   height: 48px;
   border-radius: 12px;
   background: var(--bg-elevated);
-  border: 2px solid var(--border-default);
+  border: 1.5px solid var(--border-default);
   display: flex;
   align-items: center;
   justify-content: center;
