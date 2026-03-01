@@ -157,6 +157,38 @@ export interface CounterRecommendationResult {
   recommendedCounters: CounterComposition[];
 }
 
+export interface HeroUsageWithWinRate {
+  heroId: string;
+  heroName: string;
+  count: number;
+  percentage: number; // relative to most-picked hero (for bar width)
+  wins: number;
+  total: number;
+  winRate: number;
+}
+
+export interface MemberWarPerformance {
+  memberId: string;
+  ign: string;
+  totalBattles: number;
+  wins: number;
+  losses: number;
+  winRate: number | null;
+  /** Per-date breakdown: { "2026-03-01": { wins: 2, losses: 1 }, ... } */
+  perDate: Record<string, { wins: number; losses: number }>;
+}
+
+export interface DashboardKPIsFromWars {
+  winRate: number;
+  totalBattles: number;
+  wins: number;
+  losses: number;
+  activeMembers: number;
+  /** Win rate change: latest GW win rate minus previous GW win rate */
+  latestVsPrevTrend: number;
+  latestWarDate: string | null;
+}
+
 // ============================================
 // Helpers
 // ============================================
@@ -1006,6 +1038,440 @@ export async function getCounterRecommendations(
     }));
 
   return { exactMatch, similarCompositions, recommendedCounters };
+}
+
+// ============================================
+// Dashboard (war-date scoped) queries
+// ============================================
+
+export async function getLastNWarDates(
+  guildId: string,
+  n: number,
+): Promise<string[]> {
+  const rows = await db
+    .select({ date: battles.date })
+    .from(battles)
+    .where(eq(battles.guildId, guildId))
+    .groupBy(battles.date)
+    .orderBy(desc(battles.date))
+    .limit(n);
+
+  return rows.map((r) => r.date);
+}
+
+export async function getDashboardKPIsFromWars(
+  guildId: string,
+  warDates: string[],
+): Promise<DashboardKPIsFromWars> {
+  if (warDates.length === 0) {
+    const [memberCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(members)
+      .where(and(eq(members.guildId, guildId), eq(members.isActive, true)));
+    return {
+      winRate: 0,
+      totalBattles: 0,
+      wins: 0,
+      losses: 0,
+      activeMembers: memberCount?.count ?? 0,
+      latestVsPrevTrend: 0,
+      latestWarDate: null,
+    };
+  }
+
+  const latestDate = warDates[0];
+  const prevDate = warDates.length > 1 ? warDates[1] : null;
+
+  const [overallArr, latestArr, prevArr, memberCountArr] = await Promise.all([
+    db
+      .select({
+        total: sql<number>`count(*)::int`,
+        wins: sql<number>`count(*) filter (where ${battles.result} = 'win')::int`,
+      })
+      .from(battles)
+      .where(
+        and(
+          eq(battles.guildId, guildId),
+          sql`${battles.date} = ANY(${warDates}::text[])`,
+        ),
+      ),
+    db
+      .select({
+        total: sql<number>`count(*)::int`,
+        wins: sql<number>`count(*) filter (where ${battles.result} = 'win')::int`,
+      })
+      .from(battles)
+      .where(
+        and(eq(battles.guildId, guildId), eq(battles.date, latestDate)),
+      ),
+    prevDate
+      ? db
+          .select({
+            total: sql<number>`count(*)::int`,
+            wins: sql<number>`count(*) filter (where ${battles.result} = 'win')::int`,
+          })
+          .from(battles)
+          .where(
+            and(eq(battles.guildId, guildId), eq(battles.date, prevDate)),
+          )
+      : Promise.resolve([{ total: 0, wins: 0 }]),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(members)
+      .where(and(eq(members.guildId, guildId), eq(members.isActive, true))),
+  ]);
+
+  const [overall] = overallArr;
+  const [latest] = latestArr;
+  const [prev] = prevArr;
+  const [memberCount] = memberCountArr;
+
+  const overallWinRate = calcWinRate(overall?.wins ?? 0, overall?.total ?? 0);
+  const latestWinRate = calcWinRate(latest?.wins ?? 0, latest?.total ?? 0);
+  const prevWinRate = calcWinRate(prev?.wins ?? 0, prev?.total ?? 0);
+
+  return {
+    winRate: overallWinRate,
+    totalBattles: overall?.total ?? 0,
+    wins: overall?.wins ?? 0,
+    losses: (overall?.total ?? 0) - (overall?.wins ?? 0),
+    activeMembers: memberCount?.count ?? 0,
+    latestVsPrevTrend:
+      prev?.total && prev.total > 0
+        ? Math.round((latestWinRate - prevWinRate) * 10) / 10
+        : 0,
+    latestWarDate: latestDate,
+  };
+}
+
+export async function getHeroUsageWithWinRate(
+  guildId: string,
+  warDates: string[],
+  limit: number = 6,
+): Promise<HeroUsageWithWinRate[]> {
+  if (warDates.length === 0) return [];
+
+  const rows = await db.execute<{
+    hero_id: string;
+    pick_count: string;
+    wins: string;
+  }>(sql`
+    SELECT
+      elem->>'heroId' AS hero_id,
+      count(*)::text AS pick_count,
+      count(*) FILTER (WHERE b.result = 'win')::text AS wins
+    FROM ${battles} b, jsonb_array_elements(b.allied_team->'heroes') AS elem
+    WHERE b.guild_id = ${guildId} AND b.date = ANY(${warDates}::text[])
+    GROUP BY hero_id
+    ORDER BY count(*) DESC
+    LIMIT ${limit}
+  `);
+
+  const heroMap = await getHeroNameMap();
+  const maxPicks = rows.length > 0 ? Number(rows[0].pick_count) : 1;
+
+  return rows.map((r) => {
+    const count = Number(r.pick_count);
+    const wins = Number(r.wins);
+    return {
+      heroId: r.hero_id,
+      heroName: heroMap.get(r.hero_id) ?? r.hero_id.slice(0, 8),
+      count,
+      percentage: Math.round((count / maxPicks) * 100),
+      wins,
+      total: count,
+      winRate: calcWinRate(wins, count),
+    };
+  });
+}
+
+export async function getFirstTurnAdvantage(
+  guildId: string,
+  warDates: string[],
+): Promise<FirstTurnAnalysis> {
+  const empty: FirstTurnAnalysis = {
+    alliedFirstWins: 0,
+    alliedFirstTotal: 0,
+    alliedFirstWinRate: 0,
+    enemyFirstWins: 0,
+    enemyFirstTotal: 0,
+    enemyFirstWinRate: 0,
+    advantageDelta: 0,
+  };
+  if (warDates.length === 0) return empty;
+
+  const [ft] = await db.execute<{
+    allied_first_wins: string;
+    allied_first_total: string;
+    enemy_first_wins: string;
+    enemy_first_total: string;
+  }>(sql`
+    SELECT
+      count(*) filter (where ${battles.firstTurn} = true AND ${battles.result} = 'win')::text AS allied_first_wins,
+      count(*) filter (where ${battles.firstTurn} = true)::text AS allied_first_total,
+      count(*) filter (where ${battles.firstTurn} = false AND ${battles.result} = 'win')::text AS enemy_first_wins,
+      count(*) filter (where ${battles.firstTurn} = false)::text AS enemy_first_total
+    FROM ${battles}
+    WHERE ${battles.guildId} = ${guildId}
+      AND ${battles.date} = ANY(${warDates}::text[])
+      AND ${battles.firstTurn} IS NOT NULL
+  `);
+
+  if (!ft) return empty;
+
+  const alliedFirstWins = Number(ft.allied_first_wins);
+  const alliedFirstTotal = Number(ft.allied_first_total);
+  const enemyFirstWins = Number(ft.enemy_first_wins);
+  const enemyFirstTotal = Number(ft.enemy_first_total);
+  const alliedFirstWinRate = calcWinRate(alliedFirstWins, alliedFirstTotal);
+  const enemyFirstWinRate = calcWinRate(enemyFirstWins, enemyFirstTotal);
+
+  return {
+    alliedFirstWins,
+    alliedFirstTotal,
+    alliedFirstWinRate,
+    enemyFirstWins,
+    enemyFirstTotal,
+    enemyFirstWinRate,
+    advantageDelta:
+      Math.round((alliedFirstWinRate - enemyFirstWinRate) * 10) / 10,
+  };
+}
+
+export async function getMemberWarPerformance(
+  guildId: string,
+  warDates: string[],
+): Promise<MemberWarPerformance[]> {
+  if (warDates.length === 0) return [];
+
+  const rows = await db.execute<{
+    member_id: string;
+    member_ign: string;
+    battle_date: string;
+    wins: string;
+    losses: string;
+  }>(sql`
+    SELECT
+      m.id AS member_id,
+      m.ign AS member_ign,
+      b.date AS battle_date,
+      count(*) FILTER (WHERE b.result = 'win')::text AS wins,
+      count(*) FILTER (WHERE b.result = 'loss')::text AS losses
+    FROM members m
+    LEFT JOIN battles b ON b.member_id = m.id
+      AND b.guild_id = ${guildId}
+      AND b.date = ANY(${warDates}::text[])
+    WHERE m.guild_id = ${guildId} AND m.is_active = true
+    GROUP BY m.id, m.ign, b.date
+    ORDER BY m.ign
+  `);
+
+  // Aggregate per member
+  const memberMap = new Map<
+    string,
+    {
+      memberId: string;
+      ign: string;
+      totalWins: number;
+      totalLosses: number;
+      perDate: Record<string, { wins: number; losses: number }>;
+    }
+  >();
+
+  for (const row of rows) {
+    if (!memberMap.has(row.member_id)) {
+      memberMap.set(row.member_id, {
+        memberId: row.member_id,
+        ign: row.member_ign,
+        totalWins: 0,
+        totalLosses: 0,
+        perDate: {},
+      });
+    }
+    const entry = memberMap.get(row.member_id)!;
+    const wins = Number(row.wins);
+    const losses = Number(row.losses);
+    if (row.battle_date) {
+      entry.perDate[row.battle_date] = { wins, losses };
+      entry.totalWins += wins;
+      entry.totalLosses += losses;
+    }
+  }
+
+  return Array.from(memberMap.values())
+    .map((m) => {
+      const total = m.totalWins + m.totalLosses;
+      return {
+        memberId: m.memberId,
+        ign: m.ign,
+        totalBattles: total,
+        wins: m.totalWins,
+        losses: m.totalLosses,
+        winRate: calcWinRateNullable(m.totalWins, total),
+        perDate: m.perDate,
+      };
+    })
+    .sort((a, b) => b.totalBattles - a.totalBattles);
+}
+
+export async function getHardestEnemyComps(
+  guildId: string,
+  warDates: string[],
+  minBattles: number = 2,
+  limit: number = 5,
+): Promise<HeroCombo[]> {
+  if (warDates.length === 0) return [];
+
+  const [rows, heroMap] = await Promise.all([
+    db.execute<{
+      hero_ids: string;
+      wins: string;
+      total: string;
+    }>(sql`
+      WITH battle_comps AS (
+        SELECT
+          b.id,
+          b.result,
+          (
+            SELECT string_agg(hero_id, '|' ORDER BY hero_id)
+            FROM (
+              SELECT elem->>'heroId' AS hero_id
+              FROM jsonb_array_elements(b.enemy_team->'heroes') AS elem
+            ) sub
+          ) AS comp_key,
+          (
+            SELECT array_agg(hero_id ORDER BY hero_id)
+            FROM (
+              SELECT elem->>'heroId' AS hero_id
+              FROM jsonb_array_elements(b.enemy_team->'heroes') AS elem
+            ) sub
+          ) AS hero_ids
+        FROM battles b
+        WHERE b.guild_id = ${guildId} AND b.date = ANY(${warDates}::text[])
+      )
+      SELECT
+        array_to_string(hero_ids, ',') AS hero_ids,
+        count(*) filter (where result = 'win')::text AS wins,
+        count(*)::text AS total
+      FROM battle_comps
+      WHERE comp_key IS NOT NULL
+      GROUP BY comp_key, hero_ids
+      HAVING count(*) >= ${minBattles}
+      ORDER BY count(*) filter (where result = 'win')::float / count(*)::float ASC, count(*) DESC
+      LIMIT ${limit}
+    `),
+    getHeroNameMap(),
+  ]);
+
+  return rows.map((r) => {
+    const heroIds = r.hero_ids.split(",");
+    const wins = Number(r.wins);
+    const total = Number(r.total);
+    return {
+      heroIds,
+      heroNames: heroIds.map((id) => heroMap.get(id) ?? id.slice(0, 8)),
+      wins,
+      total,
+      winRate: calcWinRate(wins, total),
+    };
+  });
+}
+
+export async function getEnemyGuildsFromWars(
+  guildId: string,
+  warDates: string[],
+): Promise<EnemyGuildSummary[]> {
+  if (warDates.length === 0) return [];
+
+  const rows = await db
+    .select({
+      guildName: battles.enemyGuildName,
+      total: sql<number>`count(*)::int`,
+      wins: sql<number>`count(*) filter (where ${battles.result} = 'win')::int`,
+      lastEncountered: sql<string>`max(${battles.date})`,
+    })
+    .from(battles)
+    .where(
+      and(
+        eq(battles.guildId, guildId),
+        sql`${battles.date} = ANY(${warDates}::text[])`,
+        sql`${battles.enemyGuildName} IS NOT NULL AND ${battles.enemyGuildName} != ''`,
+      ),
+    )
+    .groupBy(battles.enemyGuildName)
+    .orderBy(sql`max(${battles.date}) desc`);
+
+  return rows.map((r) => ({
+    guildName: r.guildName ?? "",
+    totalBattles: r.total,
+    wins: r.wins,
+    losses: r.total - r.wins,
+    winRate: calcWinRate(r.wins, r.total),
+    lastEncountered: r.lastEncountered,
+  }));
+}
+
+export async function getTopHeroCombosFromWars(
+  guildId: string,
+  warDates: string[],
+  minBattles: number = 2,
+  limit: number = 5,
+): Promise<HeroCombo[]> {
+  if (warDates.length === 0) return [];
+
+  const [rows, heroMap] = await Promise.all([
+    db.execute<{
+      hero_ids: string;
+      wins: string;
+      total: string;
+    }>(sql`
+      WITH battle_comps AS (
+        SELECT
+          b.id,
+          b.result,
+          (
+            SELECT string_agg(hero_id, '|' ORDER BY hero_id)
+            FROM (
+              SELECT elem->>'heroId' AS hero_id
+              FROM jsonb_array_elements(b.allied_team->'heroes') AS elem
+            ) sub
+          ) AS comp_key,
+          (
+            SELECT array_agg(hero_id ORDER BY hero_id)
+            FROM (
+              SELECT elem->>'heroId' AS hero_id
+              FROM jsonb_array_elements(b.allied_team->'heroes') AS elem
+            ) sub
+          ) AS hero_ids
+        FROM battles b
+        WHERE b.guild_id = ${guildId} AND b.date = ANY(${warDates}::text[])
+      )
+      SELECT
+        array_to_string(hero_ids, ',') AS hero_ids,
+        count(*) filter (where result = 'win')::text AS wins,
+        count(*)::text AS total
+      FROM battle_comps
+      WHERE comp_key IS NOT NULL
+      GROUP BY comp_key, hero_ids
+      HAVING count(*) >= ${minBattles}
+      ORDER BY count(*) filter (where result = 'win')::float / count(*)::float DESC, count(*) DESC
+      LIMIT ${limit}
+    `),
+    getHeroNameMap(),
+  ]);
+
+  return rows.map((r) => {
+    const heroIds = r.hero_ids.split(",");
+    const wins = Number(r.wins);
+    const total = Number(r.total);
+    return {
+      heroIds,
+      heroNames: heroIds.map((id) => heroMap.get(id) ?? id.slice(0, 8)),
+      wins,
+      total,
+      winRate: calcWinRate(wins, total),
+    };
+  });
 }
 
 // ============================================
