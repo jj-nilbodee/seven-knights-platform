@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { battles, battleHeroPairs, members, heroes } from "@/lib/db/schema";
-import { eq, and, gte, desc, sql } from "drizzle-orm";
+import { eq, and, gte, desc, sql, inArray } from "drizzle-orm";
 
 // ============================================
 // Types
@@ -1092,7 +1092,7 @@ export async function getDashboardKPIsFromWars(
       .where(
         and(
           eq(battles.guildId, guildId),
-          sql`${battles.date} = ANY(${warDates}::date[])`,
+          inArray(battles.date, warDates),
         ),
       ),
     db
@@ -1161,7 +1161,7 @@ export async function getHeroUsageWithWinRate(
       count(*)::text AS pick_count,
       count(*) FILTER (WHERE b.result = 'win')::text AS wins
     FROM ${battles} b, jsonb_array_elements(b.allied_team->'heroes') AS elem
-    WHERE b.guild_id = ${guildId} AND b.date = ANY(${warDates}::date[])
+    WHERE b.guild_id = ${guildId} AND b.date IN (${sql.join(warDates.map(d => sql`${d}`), sql`, `)})
     GROUP BY hero_id
     ORDER BY count(*) DESC
     LIMIT ${limit}
@@ -1213,7 +1213,7 @@ export async function getFirstTurnAdvantage(
       count(*) filter (where ${battles.firstTurn} = false)::text AS enemy_first_total
     FROM ${battles}
     WHERE ${battles.guildId} = ${guildId}
-      AND ${battles.date} = ANY(${warDates}::date[])
+      AND ${battles.date} IN (${sql.join(warDates.map(d => sql`${d}`), sql`, `)})
       AND ${battles.firstTurn} IS NOT NULL
   `);
 
@@ -1260,7 +1260,7 @@ export async function getMemberWarPerformance(
     FROM members m
     LEFT JOIN battles b ON b.member_id = m.id
       AND b.guild_id = ${guildId}
-      AND b.date = ANY(${warDates}::date[])
+      AND b.date IN (${sql.join(warDates.map(d => sql`${d}`), sql`, `)})
     WHERE m.guild_id = ${guildId} AND m.is_active = true
     GROUP BY m.id, m.ign, b.date
     ORDER BY m.ign
@@ -1347,7 +1347,7 @@ export async function getHardestEnemyComps(
             ) sub
           ) AS hero_ids
         FROM battles b
-        WHERE b.guild_id = ${guildId} AND b.date = ANY(${warDates}::date[])
+        WHERE b.guild_id = ${guildId} AND b.date IN (${sql.join(warDates.map(d => sql`${d}`), sql`, `)})
       )
       SELECT
         array_to_string(hero_ids, ',') AS hero_ids,
@@ -1394,7 +1394,7 @@ export async function getEnemyGuildsFromWars(
     .where(
       and(
         eq(battles.guildId, guildId),
-        sql`${battles.date} = ANY(${warDates}::date[])`,
+        inArray(battles.date, warDates),
         sql`${battles.enemyGuildName} IS NOT NULL AND ${battles.enemyGuildName} != ''`,
       ),
     )
@@ -1444,7 +1444,7 @@ export async function getTopHeroCombosFromWars(
             ) sub
           ) AS hero_ids
         FROM battles b
-        WHERE b.guild_id = ${guildId} AND b.date = ANY(${warDates}::date[])
+        WHERE b.guild_id = ${guildId} AND b.date IN (${sql.join(warDates.map(d => sql`${d}`), sql`, `)})
       )
       SELECT
         array_to_string(hero_ids, ',') AS hero_ids,
