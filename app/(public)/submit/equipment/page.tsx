@@ -39,7 +39,7 @@ export default async function EquipmentSubmitPage() {
           ส่งรูปอุปกรณ์
         </h1>
         <p className="text-text-muted mb-6">
-          เลือกชื่อตัวละคร แล้วอัปโหลดรูปอุปกรณ์ที่มี
+          เลือกชื่อ แล้วอัปโหลดรูปอุปกรณ์ตามแต่ละทีมบุก
         </p>
         <EquipmentSubmitClient members={memberList} />
       </div>
