@@ -9,6 +9,7 @@ import {
   Users,
   BookOpen,
   Castle,
+  Shield,
   Crown,
   Waypoints,
   LogOut,
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/guild-war/analytics", label: "วิเคราะห์", icon: BarChart3 },
   { href: "/roster", label: "สมาชิก", icon: Users },
   { href: "/castle-rush", label: "Castle Rush", icon: Castle },
+  { href: "/equipment", label: "อุปกรณ์", icon: Shield },
 ];
 
 const publicNavItems = [
