@@ -1,0 +1,28 @@
+"use server";
+
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export async function uploadEquipmentImage(formData: FormData) {
+  const ign = formData.get("ign") as string;
+  const criterionId = formData.get("criterionId") as string;
+  const file = formData.get("file") as File;
+
+  if (!ign || !criterionId || !file) {
+    return { error: "ข้อมูลไม่ครบ" };
+  }
+
+  const safeName = ign.replace(/[^a-zA-Z0-9ก-๙-]/g, "").slice(0, 50);
+  const ext = (file.name.split(".").pop() ?? "png").toLowerCase();
+  const path = `equipment/${safeName}/${criterionId}-${Date.now()}.${ext}`;
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.storage
+    .from("hero-images")
+    .upload(path, file, { upsert: true });
+
+  if (error) {
+    return { error: `อัปโหลดไม่สำเร็จ: ${error.message}` };
+  }
+
+  return { success: true };
+}

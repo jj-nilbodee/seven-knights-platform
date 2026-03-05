@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import { TEAM_SCENARIOS, TOTAL_CRITERIA } from "./team-scenarios";
+import { uploadEquipmentImage } from "@/actions/equipment";
 
 interface Member {
   id: string;
@@ -69,25 +69,17 @@ export function EquipmentSubmitClient({
     setUploadedCount(0);
 
     try {
-      const supabase = createBrowserClient();
-      const safeName = selectedMember.ign
-        .replace(/[^a-zA-Z0-9ก-๙-]/g, "")
-        .slice(0, 50);
-
       const entries = Object.entries(images);
       for (let i = 0; i < entries.length; i++) {
         const [criterionId, slot] = entries[i];
-        const ext = (slot.file.name.split(".").pop() ?? "png").toLowerCase();
-        const path = `equipment/${safeName}/${criterionId}-${Date.now()}.${ext}`;
+        const formData = new FormData();
+        formData.set("ign", selectedMember.ign);
+        formData.set("criterionId", criterionId);
+        formData.set("file", slot.file);
 
-        const { error: uploadError } = await supabase.storage
-          .from("hero-images")
-          .upload(path, slot.file, { upsert: true });
-
-        if (uploadError) {
-          throw new Error(
-            `อัปโหลด ${criterionId} ไม่สำเร็จ: ${uploadError.message}`,
-          );
+        const result = await uploadEquipmentImage(formData);
+        if (result.error) {
+          throw new Error(result.error);
         }
 
         setUploadedCount(i + 1);
