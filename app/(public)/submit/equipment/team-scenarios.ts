@@ -21,7 +21,7 @@ export const TEAM_SCENARIOS: TeamScenario[] = [
         id: "t1-ling",
         heroName: "ลิง",
         requirements:
-          "เซ็ตต้าน บลอค 85 ลดความเสียหาย 1-2 ตัว",
+          "เซ็ตต้าน บลอค 85 ลดความเสียหาย 1-2 ตัว อาวุธจุดอ่อน",
       },
       {
         id: "t1-gel",
