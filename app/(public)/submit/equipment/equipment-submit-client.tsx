@@ -73,7 +73,7 @@ export function EquipmentSubmitClient({
       for (let i = 0; i < entries.length; i++) {
         const [criterionId, slot] = entries[i];
         const formData = new FormData();
-        formData.set("ign", selectedMember.ign);
+        formData.set("memberId", selectedMember.id);
         formData.set("criterionId", criterionId);
         formData.set("file", slot.file);
 

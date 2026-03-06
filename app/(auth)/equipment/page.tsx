@@ -43,36 +43,50 @@ export default async function EquipmentPage({
 
   const memberEquipment: MemberEquipment[] = await Promise.all(
     members.map(async (member) => {
-      const { data: files } = await supabase.storage
-        .from("hero-images")
-        .list(`equipment/${member.ign}/`, {
-          sortBy: { column: "created_at", order: "desc" },
-        });
+      // Check both old IGN-based path and new UUID-based path
+      const [{ data: ignFiles }, { data: idFiles }] = await Promise.all([
+        supabase.storage
+          .from("hero-images")
+          .list(`equipment/${member.ign}/`, {
+            sortBy: { column: "created_at", order: "desc" },
+          }),
+        supabase.storage
+          .from("hero-images")
+          .list(`equipment/${member.id}/`, {
+            sortBy: { column: "created_at", order: "desc" },
+          }),
+      ]);
 
       const imagesByCriterion: Record<string, CriterionImage> = {};
 
-      for (const f of files ?? []) {
-        if (f.name.startsWith(".")) continue;
+      // Process files from both paths (UUID path first = newer, takes priority)
+      const fileSources: { folder: string; files: typeof ignFiles }[] = [
+        { folder: `equipment/${member.id}`, files: idFiles },
+        { folder: `equipment/${member.ign}`, files: ignFiles },
+      ];
 
-        // File names are like "t1-ling-1709654321000.png"
-        // Extract criterion ID by matching against known IDs
-        const matchedCriterion = ALL_CRITERIA.find((c) =>
-          f.name.startsWith(c.id + "-"),
-        );
+      for (const { folder, files } of fileSources) {
+        for (const f of files ?? []) {
+          if (f.name.startsWith(".")) continue;
 
-        const criterionId = matchedCriterion?.id ?? "unknown";
+          const matchedCriterion = ALL_CRITERIA.find((c) =>
+            f.name.startsWith(c.id + "-"),
+          );
 
-        // Keep the most recent (first in list since sorted desc)
-        if (!imagesByCriterion[criterionId]) {
-          const { data: urlData } = supabase.storage
-            .from("hero-images")
-            .getPublicUrl(`equipment/${member.ign}/${f.name}`);
+          const criterionId = matchedCriterion?.id ?? "unknown";
 
-          imagesByCriterion[criterionId] = {
-            criterionId,
-            url: urlData.publicUrl,
-            createdAt: f.created_at,
-          };
+          // Keep first match (UUID path checked first = newer takes priority)
+          if (!imagesByCriterion[criterionId]) {
+            const { data: urlData } = supabase.storage
+              .from("hero-images")
+              .getPublicUrl(`${folder}/${f.name}`);
+
+            imagesByCriterion[criterionId] = {
+              criterionId,
+              url: urlData.publicUrl,
+              createdAt: f.created_at,
+            };
+          }
         }
       }
 
