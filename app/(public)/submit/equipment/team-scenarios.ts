@@ -118,7 +118,7 @@ export const TEAM_SCENARIOS: TeamScenario[] = [
         id: "t5-ling",
         heroName: "ลิง",
         requirements:
-          "เซ็ตจุดอ่อน บล็อค 100 อาวุธ atk% เกราะลดดาเมจ 2 ชิ้น จุดอ่อนสัก 50 ได้ก็ดี",
+          "บล็อค 90+ ลดดาเมจ 1 ชิ้น",
       },
       {
         id: "t5-s",
