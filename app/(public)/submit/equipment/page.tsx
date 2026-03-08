@@ -3,6 +3,8 @@ import { members, guilds } from "@/lib/db/schema";
 import { eq, asc, and } from "drizzle-orm";
 import { EquipmentSubmitClient } from "./equipment-submit-client";
 
+export const dynamic = "force-dynamic";
+
 const GUILD_NAME = "egg4k";
 
 export const metadata = {
