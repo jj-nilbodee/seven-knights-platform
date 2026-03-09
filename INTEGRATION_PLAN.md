@@ -131,8 +131,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/guild-war") ||
     request.nextUrl.pathname.startsWith("/admin") ||
     request.nextUrl.pathname.startsWith("/roster") ||
-    request.nextUrl.pathname.startsWith("/advent") ||
-    request.nextUrl.pathname.startsWith("/castle-rush");
+    request.nextUrl.pathname.startsWith("/advent");
 
   if (isAuthRoute && !user) {
     const url = request.nextUrl.clone();
@@ -516,23 +515,6 @@ export const adventProfiles = pgTable("advent_profiles", {
   uniqueIndex("advent_profile_unique").on(table.guildId, table.memberIgn, table.cycleId),
 ]);
 
-// ============================================
-// Castle Rush
-// ============================================
-export const castleRushScores = pgTable("castle_rush_scores", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  guildId: uuid("guild_id").notNull().references(() => guilds.id),
-  memberId: uuid("member_id").references(() => members.id),
-  memberIgn: text("member_ign"),
-  boss: text("boss").notNull(),
-  score: bigint("score", { mode: "number" }).notNull(),
-  date: date("date").notNull(),
-  extractionMethod: text("extraction_method").default("manual"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-}, (table) => [
-  index("idx_cr_guild_date").on(table.guildId, table.date),
-  index("idx_cr_boss").on(table.guildId, table.boss, table.date),
-]);
 ```
 
 ### 4.1 Drizzle Client
@@ -676,18 +658,6 @@ export function getGenerativeModel(modelName = "gemini-2.0-flash") {
 
 // lib/ai/screenshot-extractor.ts
 import { getGenerativeModel } from "./vertex-client";
-
-export async function extractCastleRushScore(imageBuffer: Buffer) {
-  const model = getGenerativeModel();
-  const response = await model.generateContent([
-    { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/png" } },
-    { text: `Extract Castle Rush scores from this screenshot.
-Return JSON: { "boss": "...", "scores": [{ "memberIgn": "...", "score": number }] }
-Only return valid JSON, no markdown.` },
-  ]);
-  const text = response.response.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  return JSON.parse(text.replace(/```json|```/g, "").trim());
-}
 
 // lib/ai/advent-optimizer.ts
 // Port the greedy assignment algorithm from Python to TypeScript

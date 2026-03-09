@@ -3,7 +3,7 @@
 ## Project Overview
 
 Unified guild management platform for Seven Knights Re:Birth mobile game. Combines two previously separate apps:
-1. **Guild Tracker** (battle tracking, analytics, advent expedition, castle rush)
+1. **Guild Tracker** (battle tracking, analytics, advent expedition)
 2. **GVG Guide Search** (attack guide database with hero search)
 
 ## Architecture
@@ -268,11 +268,6 @@ seven-knights-platform/
 │   │   │   ├── page.tsx
 │   │   │   ├── cycles/page.tsx
 │   │   │   └── plan/page.tsx
-│   │   ├── castle-rush/
-│   │   │   ├── page.tsx
-│   │   │   ├── submit/page.tsx
-│   │   │   ├── history/page.tsx
-│   │   │   └── rankings/page.tsx
 │   │   ├── roster/page.tsx
 │   │   ├── access-requests/page.tsx
 │   │   └── admin/
@@ -297,7 +292,6 @@ seven-knights-platform/
 │   ├── guilds.ts
 │   ├── gvg-guides.ts
 │   ├── advent.ts
-│   └── castle-rush.ts
 ├── components/
 │   ├── ui/                              # Design system (Radix + Tailwind)
 │   ├── layout/                          # App header, sidebar
@@ -380,11 +374,10 @@ Build in this order. Each phase should be fully working before moving to the nex
 - [ ] Admin guide CRUD pages
 - [ ] Auto-versioning via DB trigger
 
-### Phase 6: Advent + Castle Rush
+### Phase 6: Advent Expedition
 - [ ] Vertex AI client setup (@google-cloud/vertexai)
 - [ ] Advent optimizer (port algorithm from Python to TypeScript)
 - [ ] Advent pages (cycles, plan, public submission)
-- [ ] Castle Rush (scores, AI extraction, history, rankings)
 
 ### Phase 7: Polish
 - [ ] Error handling + loading states (Suspense boundaries)

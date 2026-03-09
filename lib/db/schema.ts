@@ -259,26 +259,3 @@ export const gvgGuideVersions = pgTable(
   (table) => [uniqueIndex("idx_guide_ver").on(table.guideId, table.version)],
 );
 
-// ============================================
-// Castle Rush
-// ============================================
-export const castleRushScores = pgTable(
-  "castle_rush_scores",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    guildId: uuid("guild_id")
-      .notNull()
-      .references(() => guilds.id),
-    memberId: uuid("member_id").references(() => members.id),
-    memberIgn: text("member_ign"),
-    boss: text("boss").notNull(),
-    score: bigint("score", { mode: "number" }).notNull(),
-    date: date("date").notNull(),
-    extractionMethod: text("extraction_method").default("manual"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  },
-  (table) => [
-    index("idx_cr_guild_date").on(table.guildId, table.date),
-    index("idx_cr_boss").on(table.guildId, table.boss, table.date),
-  ],
-);
