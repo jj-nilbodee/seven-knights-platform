@@ -297,22 +297,13 @@ export function QuickSubmitClient({
           updated.push(memberRow);
         }
 
-        // Check for duplicate battle detail
-        const isDuplicate = memberRow.battleDetails.some(
-          (d) =>
-            d.enemyPlayerName.toLowerCase() ===
-            battle.enemyPlayerName.toLowerCase(),
-        );
-
-        if (!isDuplicate) {
-          memberRow.battleDetails.push({
-            result: battle.result,
-            enemyPlayerName: battle.enemyPlayerName,
-            battleType: battle.battleType,
-            enemyCastleType: battle.enemyCastleType,
-            enemyCastleNumber: battle.enemyCastleNumber,
-          });
-        }
+        memberRow.battleDetails.push({
+          result: battle.result,
+          enemyPlayerName: battle.enemyPlayerName,
+          battleType: battle.battleType,
+          enemyCastleType: battle.enemyCastleType,
+          enemyCastleNumber: battle.enemyCastleNumber,
+        });
       }
 
       // Sync wins/losses to match actual battle details when details
