@@ -11,6 +11,11 @@ import {
 } from "@/components/ui/select";
 
 const STORAGE_KEY = "admin-last-guild";
+const COOKIE_NAME = "admin-last-guild";
+
+function setCookie(name: string, value: string) {
+  document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
+}
 
 interface Guild {
   id: string;
@@ -41,8 +46,13 @@ export function GuildSelector({ guilds }: GuildSelectorProps) {
   const defaultGuildId = getDefaultGuildId();
   const currentGuildId = urlGuildId ?? defaultGuildId;
 
-  // On mount, if no ?guildId in URL but localStorage has a non-first guild, redirect to it
+  // On mount, sync cookie with current selection and redirect if needed
   useEffect(() => {
+    // Always keep cookie in sync so server can read it
+    if (currentGuildId) {
+      setCookie(COOKIE_NAME, currentGuildId);
+    }
+
     if (!urlGuildId && defaultGuildId && defaultGuildId !== fallbackGuildId) {
       const params = new URLSearchParams(searchParams.toString());
       params.set("guildId", defaultGuildId);
@@ -51,10 +61,11 @@ export function GuildSelector({ guilds }: GuildSelectorProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleChange(value: string) {
-    // Persist selection
+    // Persist selection to localStorage and cookie
     try {
       localStorage.setItem(STORAGE_KEY, value);
     } catch {}
+    setCookie(COOKIE_NAME, value);
 
     const params = new URLSearchParams(searchParams.toString());
     if (value === fallbackGuildId) {

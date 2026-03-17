@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { listGuilds } from "@/lib/db/queries/guilds";
@@ -73,11 +74,17 @@ export async function requireGuild(
   const user = await requireOfficer();
   let guildId = resolveGuildId(user, searchParams);
 
-  // Admins without a personal guild: auto-select the first available guild
+  // Admins without a personal guild: prefer cookie selection, then first guild
   if (!guildId && user.role === "admin") {
     const allGuilds = await listGuilds();
     if (allGuilds.length > 0) {
-      guildId = allGuilds[0].id;
+      const cookieStore = await cookies();
+      const storedGuildId = cookieStore.get("admin-last-guild")?.value;
+      if (storedGuildId && allGuilds.some((g) => g.id === storedGuildId)) {
+        guildId = storedGuildId;
+      } else {
+        guildId = allGuilds[0].id;
+      }
     }
   }
 
