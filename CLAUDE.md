@@ -419,6 +419,32 @@ npx drizzle-kit migrate                  # Run pending migrations
 npx drizzle-kit studio                   # Visual schema browser
 ```
 
+## Running Ad-Hoc Database Scripts
+
+Use CJS-style `node -e` with `require()` — **not** `npx tsx` or ESM top-level await, which hang or fail in this project.
+
+```bash
+node -e "
+const { config } = require('dotenv');
+config({ path: '.env.local' });
+const postgres = require('postgres');
+const sql = postgres(process.env.DATABASE_URL, { prepare: false });
+
+// ... your queries here ...
+
+sql\`SELECT * FROM guilds LIMIT 1\`.then(async rows => {
+  console.log(rows);
+  await sql.end();  // IMPORTANT: close connection or process hangs
+});
+"
+```
+
+Key points:
+- `dotenv` with `{ path: '.env.local' }` loads the DATABASE_URL
+- `postgres` package is already installed (used by Drizzle)
+- Always call `await sql.end()` when done — the connection pool keeps the process alive otherwise
+- Use `.then()` chains instead of top-level await (CJS doesn't support it)
+
 ## Environment Variables
 
 ```bash
