@@ -6,6 +6,7 @@ import type { GuideCreate, GuideUpdate } from "@/lib/validations/guide";
 
 export interface GuideSearchFilters {
   defenseHeroes?: string[];
+  attackHeroes?: string[];
   status?: string;
   search?: string;
   limit?: number;
@@ -23,6 +24,15 @@ function buildWhereConditions(filters: GuideSearchFilters) {
     conditions.push(
       sql`${gvgGuides.defenseHeroes} @> ARRAY[${sql.join(
         filters.defenseHeroes.map((h) => sql`${h}`),
+        sql`,`,
+      )}]::TEXT[]`,
+    );
+  }
+
+  if (filters.attackHeroes && filters.attackHeroes.length > 0) {
+    conditions.push(
+      sql`${gvgGuides.attackHeroes} @> ARRAY[${sql.join(
+        filters.attackHeroes.map((h) => sql`${h}`),
         sql`,`,
       )}]::TEXT[]`,
     );

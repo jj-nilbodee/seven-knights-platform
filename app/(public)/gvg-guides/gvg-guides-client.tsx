@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { HeroSearch } from "@/components/gvg-guide/hero-search";
+import { HeroSearch, type HeroTeamFilter } from "@/components/gvg-guide/hero-search";
 import { GuideCard } from "@/components/gvg-guide/guide-card";
 
 interface Hero {
@@ -24,10 +24,11 @@ interface Guide {
   updatedAt: Date | null;
 }
 
-function matchGuides(guides: Guide[], selectedHeroes: string[]): Guide[] {
+function matchGuides(guides: Guide[], selectedHeroes: string[], team: HeroTeamFilter): Guide[] {
   if (selectedHeroes.length === 0) return guides;
+  const field = team === "defense" ? "defenseHeroes" : "attackHeroes";
   return guides.filter((g) =>
-    selectedHeroes.every((name) => g.defenseHeroes.includes(name)),
+    selectedHeroes.every((name) => g[field].includes(name)),
   );
 }
 
@@ -39,9 +40,15 @@ export function GvgGuidesClient({
   allGuides: Guide[];
 }) {
   const [selectedHeroes, setSelectedHeroes] = useState<string[]>([]);
+  const [teamFilter, setTeamFilter] = useState<HeroTeamFilter>("defense");
 
   const isSearching = selectedHeroes.length > 0;
-  const results = matchGuides(allGuides, selectedHeroes);
+  const results = matchGuides(allGuides, selectedHeroes, teamFilter);
+
+  function handleTeamChange(team: HeroTeamFilter) {
+    setTeamFilter(team);
+    setSelectedHeroes([]);
+  }
 
   return (
     <div className="min-h-screen relative">
@@ -81,11 +88,11 @@ export function GvgGuidesClient({
             </div>
 
             <h1 className="text-2xl sm:text-4xl font-bold font-display leading-tight mb-3 animate-fade-in-up stagger-2">
-              ค้นหาทีมป้องกันที่เจอ
+              ค้นหาคู่มือ GVG
             </h1>
             <p className="text-text-secondary text-sm sm:text-base mb-8 animate-fade-in-up stagger-3">
-              เลือกฮีโร่ป้องกัน 1-3 ตัว
-              เพื่อดูคู่มือทีมโจมตีแนะนำพร้อมลำดับสกิล
+              เลือกฮีโร่ 1-3 ตัว
+              เพื่อดูคู่มือแนะนำพร้อมลำดับสกิล
             </p>
 
             {/* Search */}
@@ -103,6 +110,8 @@ export function GvgGuidesClient({
                     prev.filter((h) => h !== name),
                   )
                 }
+                teamFilter={teamFilter}
+                onTeamFilterChange={handleTeamChange}
               />
             </div>
           </div>

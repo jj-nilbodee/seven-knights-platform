@@ -13,6 +13,7 @@ export default async function AdminGvgGuidesPage({
     status?: string;
     search?: string;
     heroes?: string;
+    heroTeam?: string;
   }>;
 }) {
   await requireAdmin();
@@ -20,11 +21,17 @@ export default async function AdminGvgGuidesPage({
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
   const status = params.status && params.status !== "all" ? params.status : undefined;
   const search = params.search?.trim() || undefined;
-  const defenseHeroes = params.heroes
+  const heroTeam = params.heroTeam === "attack" ? "attack" : "defense";
+  const heroNames = params.heroes
     ? params.heroes.split(",").filter(Boolean)
     : undefined;
 
-  const filters = { status, search, defenseHeroes };
+  const filters = {
+    status,
+    search,
+    defenseHeroes: heroTeam === "defense" ? heroNames : undefined,
+    attackHeroes: heroTeam === "attack" ? heroNames : undefined,
+  };
 
   const [guides, totalCount, allHeroes] = await Promise.all([
     searchGuides({
@@ -49,7 +56,8 @@ export default async function AdminGvgGuidesPage({
       initialGuides={guides}
       heroes={heroes}
       pagination={{ page, totalPages, totalCount }}
-      initialHeroFilter={defenseHeroes ?? []}
+      initialHeroFilter={heroNames ?? []}
+      initialHeroTeam={heroTeam}
     />
   );
 }

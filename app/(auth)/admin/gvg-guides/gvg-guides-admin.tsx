@@ -86,11 +86,13 @@ export function GvgGuidesAdmin({
   heroes,
   pagination,
   initialHeroFilter,
+  initialHeroTeam,
 }: {
   initialGuides: Guide[];
   heroes: HeroInfo[];
   pagination: { page: number; totalPages: number; totalCount: number };
   initialHeroFilter: string[];
+  initialHeroTeam: "defense" | "attack";
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -107,6 +109,7 @@ export function GvgGuidesAdmin({
   const currentStatus = searchParams.get("status") ?? "all";
 
   // Hero filter state
+  const [heroTeam, setHeroTeam] = useState<"defense" | "attack">(initialHeroTeam);
   const [selectedHeroes, setSelectedHeroes] = useState<string[]>(initialHeroFilter);
   const [heroQuery, setHeroQuery] = useState("");
   const [heroDropdownOpen, setHeroDropdownOpen] = useState(false);
@@ -131,18 +134,28 @@ export function GvgGuidesAdmin({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  function applyHeroFilter(newHeroes: string[]) {
+  function applyHeroFilter(newHeroes: string[], team?: "defense" | "attack") {
+    const t = team ?? heroTeam;
     setSelectedHeroes(newHeroes);
     const params = new URLSearchParams(searchParams.toString());
     if (newHeroes.length === 0) {
       params.delete("heroes");
+      params.delete("heroTeam");
     } else {
       params.set("heroes", newHeroes.join(","));
+      params.set("heroTeam", t);
     }
     params.delete("page");
     startNavigating(() => {
       router.push(`${pathname}?${params.toString()}`);
     });
+  }
+
+  function switchHeroTeam(team: "defense" | "attack") {
+    setHeroTeam(team);
+    if (selectedHeroes.length > 0) {
+      applyHeroFilter(selectedHeroes, team);
+    }
   }
 
   const heroByName = (name: string) => heroes.find((h) => h.name === name);
@@ -290,20 +303,42 @@ export function GvgGuidesAdmin({
 
         {/* Hero filter */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <Shield className="h-3.5 w-3.5 text-cyan" />
-            <span className="text-xs font-semibold text-cyan uppercase tracking-wider">
-              กรองฮีโร่ป้องกัน
-            </span>
+          {/* Team toggle */}
+          <div className="flex items-center gap-1 rounded-[var(--radius-sm)] bg-bg-input border border-border-dim p-0.5">
+            <button
+              type="button"
+              onClick={() => switchHeroTeam("defense")}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-[var(--radius-sm)] text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+                heroTeam === "defense"
+                  ? "bg-bg-card-hover text-cyan border border-cyan/40"
+                  : "text-text-muted border border-transparent"
+              }`}
+            >
+              <Shield className="h-3 w-3" />
+              ป้องกัน
+            </button>
+            <button
+              type="button"
+              onClick={() => switchHeroTeam("attack")}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-[var(--radius-sm)] text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
+                heroTeam === "attack"
+                  ? "bg-bg-card-hover text-accent border border-accent/40"
+                  : "text-text-muted border border-transparent"
+              }`}
+            >
+              <Swords className="h-3 w-3" />
+              โจมตี
+            </button>
           </div>
 
           {/* Selected hero chips */}
           {selectedHeroes.map((name) => {
             const hero = heroByName(name);
+            const chipBorder = heroTeam === "defense" ? "border-cyan/40" : "border-accent/40";
             return (
               <div
                 key={name}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-sm)] text-xs bg-bg-elevated border border-cyan/40 text-text-primary"
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-sm)] text-xs bg-bg-elevated border ${chipBorder} text-text-primary`}
               >
                 {hero?.imageUrl ? (
                   <img
