@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -14,6 +14,7 @@ import {
   ChevronUp,
   Shield,
   Swords,
+  X,
 } from "lucide-react";
 import { generatePageNumbers } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -84,10 +85,12 @@ export function GvgGuidesAdmin({
   initialGuides,
   heroes,
   pagination,
+  initialHeroFilter,
 }: {
   initialGuides: Guide[];
   heroes: HeroInfo[];
   pagination: { page: number; totalPages: number; totalCount: number };
+  initialHeroFilter: string[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -102,6 +105,45 @@ export function GvgGuidesAdmin({
 
   const currentSearch = searchParams.get("search") ?? "";
   const currentStatus = searchParams.get("status") ?? "all";
+
+  // Hero filter state
+  const [selectedHeroes, setSelectedHeroes] = useState<string[]>(initialHeroFilter);
+  const [heroQuery, setHeroQuery] = useState("");
+  const [heroDropdownOpen, setHeroDropdownOpen] = useState(false);
+  const heroDropdownRef = useRef<HTMLDivElement>(null);
+
+  const filteredHeroes = heroes.filter(
+    (h) =>
+      h.name.toLowerCase().includes(heroQuery.toLowerCase()) &&
+      !selectedHeroes.includes(h.name),
+  );
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        heroDropdownRef.current &&
+        !heroDropdownRef.current.contains(e.target as Node)
+      ) {
+        setHeroDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function applyHeroFilter(newHeroes: string[]) {
+    setSelectedHeroes(newHeroes);
+    const params = new URLSearchParams(searchParams.toString());
+    if (newHeroes.length === 0) {
+      params.delete("heroes");
+    } else {
+      params.set("heroes", newHeroes.join(","));
+    }
+    params.delete("page");
+    startNavigating(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
+  }
 
   const heroByName = (name: string) => heroes.find((h) => h.name === name);
 
@@ -203,7 +245,7 @@ export function GvgGuidesAdmin({
       </div>
 
       {/* Filters */}
-      <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-4">
+      <div className="rounded-[var(--radius-md)] border border-border-dim bg-bg-card p-4 space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
           <form
             className="relative flex-1"
@@ -216,7 +258,7 @@ export function GvgGuidesAdmin({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
             <Input
               name="search"
-              placeholder="ค้นหาชื่อคู่มือหรือฮีโร่..."
+              placeholder="ค้นหาชื่อคู่มือ..."
               defaultValue={currentSearch}
               className="pl-9"
             />
@@ -244,6 +286,95 @@ export function GvgGuidesAdmin({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Hero filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <Shield className="h-3.5 w-3.5 text-cyan" />
+            <span className="text-xs font-semibold text-cyan uppercase tracking-wider">
+              กรองฮีโร่ป้องกัน
+            </span>
+          </div>
+
+          {/* Selected hero chips */}
+          {selectedHeroes.map((name) => {
+            const hero = heroByName(name);
+            return (
+              <div
+                key={name}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-sm)] text-xs bg-bg-elevated border border-cyan/40 text-text-primary"
+              >
+                {hero?.imageUrl ? (
+                  <img
+                    src={hero.imageUrl}
+                    alt=""
+                    className="w-5 h-5 rounded object-cover"
+                  />
+                ) : null}
+                {name}
+                <button
+                  type="button"
+                  onClick={() =>
+                    applyHeroFilter(selectedHeroes.filter((h) => h !== name))
+                  }
+                  className="ml-0.5 cursor-pointer text-text-muted hover:text-accent"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            );
+          })}
+
+          {/* Hero search input */}
+          {selectedHeroes.length < 3 && (
+            <div ref={heroDropdownRef} className="relative">
+              <Input
+                type="text"
+                value={heroQuery}
+                onChange={(e) => {
+                  setHeroQuery(e.target.value);
+                  setHeroDropdownOpen(true);
+                }}
+                onFocus={() => setHeroDropdownOpen(true)}
+                placeholder={
+                  selectedHeroes.length === 0
+                    ? "ค้นหาฮีโร่..."
+                    : `เพิ่มฮีโร่... (เหลือ ${3 - selectedHeroes.length})`
+                }
+                className="w-44 h-8 text-xs"
+              />
+              {heroDropdownOpen && filteredHeroes.length > 0 && (
+                <div className="absolute z-30 w-56 mt-1 rounded-[var(--radius-md)] overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border-default shadow-lg">
+                  {filteredHeroes.slice(0, 20).map((hero) => (
+                    <button
+                      key={hero.id}
+                      type="button"
+                      onClick={() => {
+                        applyHeroFilter([...selectedHeroes, hero.name]);
+                        setHeroQuery("");
+                        setHeroDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors cursor-pointer text-text-primary hover:bg-bg-card-hover"
+                    >
+                      {hero.imageUrl ? (
+                        <img
+                          src={hero.imageUrl}
+                          alt=""
+                          className="w-7 h-7 rounded-[var(--radius-sm)] object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-[var(--radius-sm)] flex items-center justify-center text-xs bg-bg-input text-text-muted">
+                          ?
+                        </div>
+                      )}
+                      {hero.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

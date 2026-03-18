@@ -12,6 +12,7 @@ export default async function AdminGvgGuidesPage({
     page?: string;
     status?: string;
     search?: string;
+    heroes?: string;
   }>;
 }) {
   await requireAdmin();
@@ -19,8 +20,11 @@ export default async function AdminGvgGuidesPage({
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
   const status = params.status && params.status !== "all" ? params.status : undefined;
   const search = params.search?.trim() || undefined;
+  const defenseHeroes = params.heroes
+    ? params.heroes.split(",").filter(Boolean)
+    : undefined;
 
-  const filters = { status, search };
+  const filters = { status, search, defenseHeroes };
 
   const [guides, totalCount, allHeroes] = await Promise.all([
     searchGuides({
@@ -45,6 +49,7 @@ export default async function AdminGvgGuidesPage({
       initialGuides={guides}
       heroes={heroes}
       pagination={{ page, totalPages, totalCount }}
+      initialHeroFilter={defenseHeroes ?? []}
     />
   );
 }
